@@ -3,15 +3,21 @@ package main
 import (
 	"bytes"
 	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
+	"io"
+	"mime/multipart"
 	"net/http"
+	"net/textproto"
 	"os"
 	"os/signal"
+	"strconv"
 	"sync"
 	"syscall"
 	"time"
 
+	_ "github.com/lib/pq"
 	"github.com/mdp/qrterminal/v3"
 	"github.com/skip2/go-qrcode"
 	"go.mau.fi/whatsmeow"
@@ -21,10 +27,9 @@ import (
 	"go.mau.fi/whatsmeow/types/events"
 	waLog "go.mau.fi/whatsmeow/util/log"
 	"google.golang.org/protobuf/proto"
-	_ "modernc.org/sqlite"
 )
 
-type IncomingMessage struct {
+type MessagePayload struct {
 	Timestamp   time.Time `json:"timestamp"`
 	MessageID   string    `json:"message_id"`
 	ChatID      string    `json:"chat_id"`
@@ -34,6 +39,7 @@ type IncomingMessage struct {
 	Text        string    `json:"text,omitempty"`
 	MediaType   string    `json:"media_type,omitempty"`
 	IsGroup     bool      `json:"is_group"`
+	IsFromMe    bool      `json:"is_from_me"`
 }
 
 type SendRequest struct {
@@ -43,12 +49,20 @@ type SendRequest struct {
 }
 
 var (
-	webhookURL    string
-	listenAddr    string
-	dataDir       string
-	currentQRCode string
-	qrMutex       sync.RWMutex
-	waClient      *whatsmeow.Client
+	webhookURL      string
+	voiceWebhookURL string
+	listenAddr      string
+	dbHost          string
+	dbPort          string
+	dbName          string
+	dbUser          string
+	dbPassword      string
+	dbSSL           string
+	dbSchema        string
+	currentQRCode   string
+	qrMutex         sync.RWMutex
+	waClient        *whatsmeow.Client
+	bridgeDB        *sql.DB
 )
 
 func main() {
@@ -56,6 +70,7 @@ func main() {
 
 	ctx := context.Background()
 	waClient = newClient(ctx)
+	bridgeDB = newBridgeDB()
 
 	registerMessageHandler(waClient)
 	startHTTPServer(ctx, waClient)
@@ -66,15 +81,38 @@ func main() {
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	<-c
 	waClient.Disconnect()
+	bridgeDB.Close()
 }
 
 func loadConfig() {
-	webhookURL = os.Getenv("WEBHOOK_URL")
+	webhookURL = os.Getenv("MESSAGE_WEBHOOK_URL")
+	voiceWebhookURL = os.Getenv("VOICE_WEBHOOK_URL")
 	listenAddr = os.Getenv("LISTEN_ADDR")
-	dataDir = os.Getenv("DATA_DIR")
 
-	if dataDir == "" {
-		dataDir = "/data"
+	dbHost = os.Getenv("DB_POSTGRESDB_HOST")
+	dbPort = os.Getenv("DB_POSTGRESDB_PORT")
+	dbName = os.Getenv("DB_POSTGRESDB_DATABASE")
+	dbUser = os.Getenv("DB_POSTGRESDB_USER")
+	dbPassword = os.Getenv("DB_POSTGRESDB_PASSWORD")
+	dbSSL = os.Getenv("DB_POSTGRESDB_SSL_ENABLED")
+	dbSchema = os.Getenv("DB_POSTGRESDB_SCHEMA")
+
+	if dbHost == "" {
+		dbHost = "localhost"
+	}
+	if dbPort == "" {
+		dbPort = "5432"
+	}
+	if dbName == "" {
+		dbName = "postgres"
+	}
+	if dbUser == "" {
+		dbUser = "postgres"
+	}
+	if dbSSL == "true" {
+		dbSSL = "require"
+	} else {
+		dbSSL = "disable"
 	}
 	if listenAddr == "" {
 		listenAddr = ":8080"
@@ -82,12 +120,18 @@ func loadConfig() {
 	if webhookURL == "" {
 		fmt.Println("Warning: WEBHOOK_URL not set, incoming messages won't be forwarded")
 	}
+	if voiceWebhookURL == "" {
+		fmt.Println("Warning: VOICE_WEBHOOK_URL not set, audio messages won't be forwarded")
+	}
 }
 
 func newClient(ctx context.Context) *whatsmeow.Client {
-	dbPath := fmt.Sprintf("file:%s/session.db?_pragma=foreign_keys(1)&_pragma=journal_mode(WAL)&_pragma=busy_timeout(5000)", dataDir)
+	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s", dbHost, dbPort, dbUser, dbPassword, dbName, dbSSL)
+	if dbSchema != "" {
+		dsn += fmt.Sprintf(" search_path=%s", dbSchema)
+	}
 	dbLog := waLog.Stdout("Database", "WARN", true)
-	container, err := sqlstore.New(ctx, "sqlite", dbPath, dbLog)
+	container, err := sqlstore.New(ctx, "postgres", dsn, dbLog)
 	if err != nil {
 		panic(err)
 	}
@@ -99,41 +143,92 @@ func newClient(ctx context.Context) *whatsmeow.Client {
 	return whatsmeow.NewClient(deviceStore, clientLog)
 }
 
+func newBridgeDB() *sql.DB {
+	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s", dbHost, dbPort, dbUser, dbPassword, dbName, dbSSL)
+	db, err := sql.Open("postgres", dsn)
+	if err != nil {
+		panic(fmt.Sprintf("Failed to connect to bridge DB: %v", err))
+	}
+	if err := db.Ping(); err != nil {
+		panic(fmt.Sprintf("Failed to ping bridge DB: %v", err))
+	}
+	fmt.Println("Connected to bridge database")
+	return db
+}
+
+func saveMessageToDB(payload MessagePayload) {
+	ctx := context.Background()
+
+	// Upsert contact
+	if payload.SenderID != "" {
+		_, err := bridgeDB.ExecContext(ctx,
+			`INSERT INTO wa_bridge.contacts (phone_number, push_name, last_seen_at)
+			 VALUES ($1, $2, now())
+			 ON CONFLICT (phone_number) DO UPDATE SET
+			   push_name = COALESCE(NULLIF($2, ''), wa_bridge.contacts.push_name),
+			   last_seen_at = now()`,
+			payload.SenderID, payload.SenderName)
+		if err != nil {
+			fmt.Printf("Error upserting contact: %v\n", err)
+		}
+	}
+
+	// Upsert chat
+	_, err := bridgeDB.ExecContext(ctx,
+		`INSERT INTO wa_bridge.chats (chat_id, is_group, last_message_at)
+		 VALUES ($1, $2, $3)
+		 ON CONFLICT (chat_id) DO UPDATE SET
+		   last_message_at = $3`,
+		payload.ChatID, payload.IsGroup, payload.Timestamp)
+	if err != nil {
+		fmt.Printf("Error upserting chat: %v\n", err)
+		return
+	}
+
+	// Insert message
+	_, err = bridgeDB.ExecContext(ctx,
+		`INSERT INTO wa_bridge.messages (message_id, chat_id, sender_id, sender_name, message_type, media_type, content, is_from_me, timestamp)
+		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+		 ON CONFLICT (message_id, chat_id) DO NOTHING`,
+		payload.MessageID, payload.ChatID, payload.SenderID, payload.SenderName,
+		payload.MessageType, payload.MediaType, payload.Text, payload.IsFromMe, payload.Timestamp)
+	if err != nil {
+		fmt.Printf("Error inserting message: %v\n", err)
+		return
+	}
+
+	fmt.Printf("Message saved to DB: %s from %s\n", payload.MessageID, payload.SenderID)
+}
+
 func registerMessageHandler(client *whatsmeow.Client) {
 	client.AddEventHandler(func(evt interface{}) {
 		switch v := evt.(type) {
 		case *events.Message:
-			if v.Info.IsFromMe {
-				return
-			}
-			handleIncomingMessage(v)
+			handleMessage(v)
 		}
 	})
 }
 
-func handleIncomingMessage(msg *events.Message) {
-	if webhookURL == "" {
-		return
+func handleMessage(msg *events.Message) {
+	var sender string
+
+	switch msg.Info.Chat.Server {
+	case types.HiddenUserServer:
+		sender = msg.Info.MessageSource.SenderAlt.User
+	case types.GroupServer:
+		sender = msg.Info.MessageSource.Chat.User
+	default:
+		sender = msg.Info.Sender.User
 	}
 
-    var sender string
-
-    switch msg.Info.Chat.Server {
-    case types.HiddenUserServer:
-        sender = msg.Info.MessageSource.SenderAlt.User
-    case types.GroupServer:
-        sender = msg.Info.MessageSource.Chat.User
-    default:
-        sender = msg.Info.Sender.User
-    }
-
-	payload := IncomingMessage{
+	payload := MessagePayload{
 		Timestamp:  msg.Info.Timestamp,
 		MessageID:  msg.Info.ID,
 		ChatID:     msg.Info.Chat.String(),
 		SenderID:   sender,
 		SenderName: msg.Info.PushName,
 		IsGroup:    msg.Info.IsGroup,
+		IsFromMe:   msg.Info.IsFromMe,
 	}
 
 	if msg.Message.GetConversation() != "" {
@@ -153,6 +248,14 @@ func handleIncomingMessage(msg *events.Message) {
 	} else if msg.Message.AudioMessage != nil {
 		payload.MessageType = "media"
 		payload.MediaType = "audio"
+		if voiceWebhookURL != "" {
+			audioData, err := waClient.Download(context.Background(), msg.Message.AudioMessage)
+			if err != nil {
+				fmt.Printf("Error downloading audio: %v\n", err)
+			} else {
+				go sendToWebhookVoice(payload.SenderID, payload.SenderName, payload.ChatID, payload.MessageID, payload.IsGroup, audioData)
+			}
+		}
 	} else if msg.Message.DocumentMessage != nil {
 		payload.MessageType = "media"
 		payload.MediaType = "document"
@@ -161,10 +264,14 @@ func handleIncomingMessage(msg *events.Message) {
 		payload.MessageType = "other"
 	}
 
-	go sendToWebhook(payload)
+	go saveMessageToDB(payload)
+
+	if webhookURL != "" {
+		go sendToWebhook(payload)
+	}
 }
 
-func sendToWebhook(payload IncomingMessage) {
+func sendToWebhook(payload MessagePayload) {
 	data, err := json.Marshal(payload)
 	if err != nil {
 		fmt.Printf("Error marshaling payload: %v\n", err)
@@ -182,6 +289,51 @@ func sendToWebhook(payload IncomingMessage) {
 		fmt.Printf("Message forwarded: %s from %s\n", payload.MessageID, payload.SenderID)
 	} else {
 		fmt.Printf("Webhook returned status: %d\n", resp.StatusCode)
+	}
+}
+
+func sendToWebhookVoice(senderID, senderName, chatID, messageID string, isGroup bool, audioData []byte) {
+	var body bytes.Buffer
+	writer := multipart.NewWriter(&body)
+
+	writer.WriteField("sender_id", senderID)
+	writer.WriteField("sender_name", senderName)
+	writer.WriteField("chat_id", chatID)
+	writer.WriteField("message_id", messageID)
+	writer.WriteField("is_group", strconv.FormatBool(isGroup))
+
+	filename := "file.opus"
+	contentType := "audio/opus"
+	if len(audioData) >= 4 && string(audioData[:4]) == "OggS" {
+		filename = "file.oga"
+		contentType = "audio/ogg"
+	}
+
+	partHeader := make(textproto.MIMEHeader)
+	partHeader.Set("Content-Disposition", fmt.Sprintf(`form-data; name="data"; filename="%s"`, filename))
+	partHeader.Set("Content-Type", contentType)
+	part, err := writer.CreatePart(partHeader)
+	if err != nil {
+		fmt.Printf("Error creating multipart part: %v\n", err)
+		return
+	}
+	if _, err := io.Copy(part, bytes.NewReader(audioData)); err != nil {
+		fmt.Printf("Error writing audio data: %v\n", err)
+		return
+	}
+	writer.Close()
+
+	resp, err := http.Post(voiceWebhookURL, writer.FormDataContentType(), &body)
+	if err != nil {
+		fmt.Printf("Error sending to voice webhook: %v\n", err)
+		return
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode >= 200 && resp.StatusCode < 300 {
+		fmt.Printf("Audio forwarded: %s from %s\n", messageID, senderID)
+	} else {
+		fmt.Printf("Voice webhook returned status: %d\n", resp.StatusCode)
 	}
 }
 

@@ -1,5 +1,6 @@
 # Environment files
 .env
+.env.prod
 .env.local
 .env.*.local
 
@@ -16,7 +17,9 @@
 .LSOverride
 ._*
 
-# Go
+# Go binaries
+whatsapp-api/wa-bridge
+whatsapp-api/whatsapp-bridge
 *.exe
 *.exe~
 *.dll

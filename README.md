@@ -1,185 +1,143 @@
-# n8n + WhatsApp Integration
+# wa-bridge
 
-A Docker-based setup for running n8n with WhatsApp integration. Receive and send WhatsApp messages through n8n workflows.
+WhatsApp bridge that stores messages in a Supabase database. Designed as a pluggable extension for any Supabase-based application.
 
-## Prerequisites
+## What it does
 
-- Docker and Docker Compose installed
-- A WhatsApp account to link
+- Connects to WhatsApp via linked device (QR code)
+- Stores all incoming/outgoing messages in an isolated `wa_bridge` schema (contacts, chats, messages)
+- Optionally forwards messages to webhook URLs (e.g., n8n, custom backend)
+- Exposes an HTTP API for sending messages
+- Uses a dedicated database role (`wa_bridge_app`) that cannot access your application's tables
 
-## Quick Start
+## Database schema
 
-1. **Clone and configure**
+All tables live in the `wa_bridge` schema, completely isolated from your app:
 
-   ```bash
-   cp .env.example .env
-   # Edit .env with your preferred settings
-   ```
+| Table | Description |
+|-------|-------------|
+| `wa_bridge.contacts` | WhatsApp contacts (phone_number, push_name, first/last seen) |
+| `wa_bridge.chats` | Individual and group conversations |
+| `wa_bridge.messages` | All messages with sender, type, content, timestamps |
 
-2. **Build and start the containers**
+## Adding to an existing Supabase project
 
-   ```bash
-   docker compose up --build
-   ```
+### 1. Apply the migration
 
-3. **Link WhatsApp**
+You can use the Supabase CLI to apply the migration from this repo:
 
-   Open http://localhost:8080/connect in your browser to see the QR code:
-   - Open WhatsApp on your phone
-   - Go to Settings → Linked Devices → Link a Device
-   - Scan the QR code displayed on the web page
-   - The page will automatically update when connected
+```bash
+# Link to your project (if not already linked)
+supabase link --project-ref your-project-ref
 
-4. **Access n8n**
+# Apply migrations
+supabase db push
+```
 
-   Open http://localhost:5678 in your browser.
+Or run the SQL manually in the Supabase SQL Editor — copy the contents of `supabase/migrations/20260215222446_wa-bridge.sql`.
 
-   Default credentials (change in `.env`):
-   - Username: `admin`
-   - Password: `admin`
+This creates the `wa_bridge` schema with all tables, indexes, RLS policies, and grants. It does **not** touch your existing tables.
 
-## Services
+### 2. Create the database role
 
-| Service | Port | Description |
-|---------|------|-------------|
-| n8n | 5678 | Workflow automation platform |
-| whatsapp | 8080 | WhatsApp bridge API |
+The bridge uses a dedicated `wa_bridge_app` role with access limited to `wa_bridge` and `whatsapp` schemas only.
 
-### WhatsApp API Endpoints
+```bash
+cp scripts/.env.example scripts/.env
+# Edit scripts/.env with your admin credentials
+./scripts/setup-db-role.sh
+```
+
+The script will prompt for the `wa_bridge_app` password (or set `WA_BRIDGE_APP_PASSWORD` in `scripts/.env`).
+
+### 3. Configure environment
+
+```bash
+cp .env.example .env
+```
+
+Set your Supabase database credentials:
+
+```env
+DB_POSTGRESDB_HOST=db.your-project-ref.supabase.co
+DB_POSTGRESDB_PORT=5432
+DB_POSTGRESDB_DATABASE=postgres
+DB_POSTGRESDB_USER=wa_bridge_app
+DB_POSTGRESDB_PASSWORD=your-secure-password
+DB_POSTGRESDB_SSL_ENABLED=true
+```
+
+### 4. Start the bridge
+
+```bash
+docker compose up --build
+```
+
+### 5. Link WhatsApp
+
+Open http://localhost:8080/connect and scan the QR code with WhatsApp.
+
+## API endpoints
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
-| `/connect` | GET | Web page to scan QR code and link WhatsApp |
-| `/health` | GET | Health check with connection status |
-| `/send` | POST | Send a WhatsApp message |
-| `/qr` | GET | Get current QR code status (JSON) |
-| `/qr.png` | GET | Get QR code as PNG image |
+| `/connect` | GET | Web page to scan QR code |
+| `/health` | GET | Connection status |
+| `/send` | POST | Send a message |
+| `/qr` | GET | QR code status (JSON) |
+| `/qr.png` | GET | QR code as PNG |
 
-## Receiving Messages in n8n
+### Sending messages
 
-1. Create a new workflow in n8n
-2. Add a **Webhook** trigger node
-3. Set the path to `whatsapp`
-4. Messages will arrive with this structure:
-
-```json
-{
-  "timestamp": "2024-01-15T10:30:00Z",
-  "message_id": "ABC123",
-  "chat_id": "5511999999999@s.whatsapp.net",
-  "sender_id": "5511999999999@s.whatsapp.net",
-  "sender_name": "John Doe",
-  "message_type": "text",
-  "text": "Hello!",
-  "is_group": false,
-  "reply_to": "5511999999999"
-}
+```bash
+curl -X POST http://localhost:8080/send \
+  -H 'Content-Type: application/json' \
+  -d '{"number": "5511999999999", "text": "Hello!", "is_group": false}'
 ```
 
-The `reply_to` field contains the number/group ID ready to use with `/send`:
-- For individual chats: the sender's phone number
-- For group chats: the group ID
-
-## Sending Messages from n8n
-
-Use an **HTTP Request** node with these settings:
-
-- **Method**: POST
-- **URL**: `http://whatsapp:8080/send`
-- **Body Content Type**: JSON
-- **Body**:
-
-```json
-{
-  "number": "{{ $json.reply_to }}",
-  "text": "Hello from n8n!",
-  "is_group": {{ $json.is_group }}
-}
-```
-
-Or with a hardcoded number:
-
-```json
-{
-  "number": "5511999999999",
-  "text": "Hello from n8n!",
-  "is_group": false
-}
-```
-
-### Phone Number Format
-
-- Use only numbers, no `+` or spaces
-- Include country code (e.g., `5511999999999` for Brazil)
-- For groups, use the group ID and set `is_group: true`
-
-## Environment Variables
+## Environment variables
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `N8N_USER` | admin | n8n login username |
-| `N8N_PASSWORD` | admin | n8n login password |
-| `WHATSAPP_WEBHOOK_URL` | http://n8n:5678/webhook/whatsapp | Where incoming messages are sent |
+| `DB_POSTGRESDB_HOST` | localhost | Supabase/Postgres host |
+| `DB_POSTGRESDB_PORT` | 5432 | Postgres port |
+| `DB_POSTGRESDB_DATABASE` | postgres | Database name |
+| `DB_POSTGRESDB_USER` | wa_bridge_app | Database role |
+| `DB_POSTGRESDB_PASSWORD` | | Database password |
+| `DB_POSTGRESDB_SSL_ENABLED` | false | Enable SSL (set to `true` for Supabase hosted) |
+| `MESSAGE_WEBHOOK_URL` | | Optional webhook for incoming messages |
+| `VOICE_WEBHOOK_URL` | | Optional webhook for audio messages |
 
-## Data Persistence
+## Integrating with your app
 
-Data is stored in Docker volumes:
+Your app can query `wa_bridge` tables directly — they're just regular Postgres tables in a separate schema:
 
-- `n8n-data` - n8n workflows and credentials
-- `whatsapp-data` - WhatsApp session (so you don't need to re-scan QR code)
+```sql
+-- Get all messages from a chat
+SELECT * FROM wa_bridge.messages WHERE chat_id = '5511999999999@s.whatsapp.net';
 
-To backup:
-
-```bash
-docker compose down
-docker run --rm -v n8n_n8n-data:/data -v $(pwd):/backup alpine tar czf /backup/n8n-backup.tar.gz /data
-docker run --rm -v n8n_whatsapp-data:/data -v $(pwd):/backup alpine tar czf /backup/whatsapp-backup.tar.gz /data
+-- Join with your own tables
+SELECT c.name, m.content, m.timestamp
+FROM your_app.customers c
+JOIN wa_bridge.contacts wc ON wc.phone_number = c.phone
+JOIN wa_bridge.messages m ON m.sender_id = wc.phone_number
+ORDER BY m.timestamp DESC;
 ```
 
-## Running in Background
+To create a foreign key from your tables to WhatsApp contacts:
 
-```bash
-docker compose up -d
+```sql
+ALTER TABLE public.customers
+ADD FOREIGN KEY (phone_number)
+REFERENCES wa_bridge.contacts(phone_number);
 ```
 
-View logs:
+To expose `wa_bridge` tables via Supabase REST API, add `wa_bridge` to the exposed schemas in **Project Settings > API > Extra schemas**.
 
-```bash
-docker compose logs -f whatsapp
-docker compose logs -f n8n
-```
+## Security
 
-## Stopping
+The `wa_bridge_app` role has access **only** to:
+- `wa_bridge` schema — SELECT, INSERT, UPDATE on contacts, chats, messages
+- `whatsapp` schema — full access (used by whatsmeow for session storage)
 
-```bash
-docker compose down
-```
-
-## Re-linking WhatsApp
-
-If you need to re-link your WhatsApp account:
-
-```bash
-docker compose down
-docker volume rm n8n_whatsapp-data
-docker compose up
-```
-
-Then scan the new QR code.
-
-## Troubleshooting
-
-**QR code not showing**
-
-Make sure you're running with `-it` flags or `tty: true` in compose (already configured).
-
-**Messages not arriving in n8n**
-
-1. Check the webhook URL in your n8n workflow matches the path `whatsapp`
-2. Verify the workflow is active (toggle in n8n)
-3. Check whatsapp container logs: `docker compose logs whatsapp`
-
-**Can't send messages**
-
-1. Verify WhatsApp is connected: `curl http://localhost:8080/health`
-2. Check the phone number format (numbers only, with country code)
+It **cannot** read, write, or modify any tables in your application's schemas.
