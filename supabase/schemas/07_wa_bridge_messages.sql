@@ -6,6 +6,7 @@ CREATE TABLE wa_bridge.messages (
     message_type character varying NOT NULL DEFAULT 'text',
     media_type character varying,
     content text,
+    media_path text,
     is_from_me boolean NOT NULL DEFAULT false,
     is_agent boolean NOT NULL DEFAULT false,
     timestamp timestamp without time zone,

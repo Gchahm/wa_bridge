@@ -13,6 +13,7 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
@@ -49,9 +50,11 @@ type SendRequest struct {
 }
 
 var (
-	webhookURL      string
-	voiceWebhookURL string
-	listenAddr      string
+	webhookURL         string
+	voiceWebhookURL    string
+	supabaseURL        string
+	supabaseServiceKey string
+	listenAddr         string
 	dbHost          string
 	dbPort          string
 	dbName          string
@@ -87,6 +90,8 @@ func main() {
 func loadConfig() {
 	webhookURL = os.Getenv("MESSAGE_WEBHOOK_URL")
 	voiceWebhookURL = os.Getenv("VOICE_WEBHOOK_URL")
+	supabaseURL = os.Getenv("SUPABASE_URL")
+	supabaseServiceKey = os.Getenv("SUPABASE_SERVICE_KEY")
 	listenAddr = os.Getenv("LISTEN_ADDR")
 
 	dbHost = os.Getenv("DB_POSTGRESDB_HOST")
@@ -200,6 +205,126 @@ func saveMessageToDB(payload MessagePayload) {
 	fmt.Printf("Message saved to DB: %s from %s\n", payload.MessageID, payload.SenderID)
 }
 
+func storageConfigured() bool {
+	return supabaseURL != "" && supabaseServiceKey != ""
+}
+
+func mimeToExt(mimeType string) string {
+	base := strings.Split(mimeType, ";")[0]
+	switch base {
+	case "image/jpeg":
+		return "jpg"
+	case "image/png":
+		return "png"
+	case "image/webp":
+		return "webp"
+	case "image/gif":
+		return "gif"
+	case "video/mp4":
+		return "mp4"
+	case "video/3gpp":
+		return "3gp"
+	case "audio/ogg", "audio/ogg; codecs=opus":
+		return "ogg"
+	case "audio/mpeg":
+		return "mp3"
+	case "audio/mp4":
+		return "m4a"
+	case "application/pdf":
+		return "pdf"
+	case "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+		return "docx"
+	case "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
+		return "xlsx"
+	default:
+		return "bin"
+	}
+}
+
+type mediaInfo struct {
+	downloadable whatsmeow.DownloadableMessage
+	mimeType     string
+}
+
+func getMediaInfo(msg *events.Message) *mediaInfo {
+	if img := msg.Message.GetImageMessage(); img != nil {
+		return &mediaInfo{downloadable: img, mimeType: img.GetMimetype()}
+	}
+	if vid := msg.Message.GetVideoMessage(); vid != nil {
+		return &mediaInfo{downloadable: vid, mimeType: vid.GetMimetype()}
+	}
+	if aud := msg.Message.GetAudioMessage(); aud != nil {
+		return &mediaInfo{downloadable: aud, mimeType: aud.GetMimetype()}
+	}
+	if doc := msg.Message.GetDocumentMessage(); doc != nil {
+		return &mediaInfo{downloadable: doc, mimeType: doc.GetMimetype()}
+	}
+	return nil
+}
+
+func uploadToSupabaseStorage(data []byte, bucket, path, mimeType string) error {
+	url := fmt.Sprintf("%s/storage/v1/object/%s/%s", supabaseURL, bucket, path)
+	req, err := http.NewRequest("POST", url, bytes.NewReader(data))
+	if err != nil {
+		return fmt.Errorf("creating request: %w", err)
+	}
+	req.Header.Set("Authorization", "Bearer "+supabaseServiceKey)
+	req.Header.Set("Content-Type", mimeType)
+	req.Header.Set("x-upsert", "true")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("uploading: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		body, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("storage returned %d: %s", resp.StatusCode, string(body))
+	}
+	return nil
+}
+
+func updateMediaPath(messageID, chatID, mediaPath string) error {
+	_, err := bridgeDB.ExecContext(context.Background(),
+		`UPDATE wa_bridge.messages SET media_path = $1 WHERE message_id = $2 AND chat_id = $3`,
+		mediaPath, messageID, chatID)
+	return err
+}
+
+func handleMediaUpload(msg *events.Message, payload MessagePayload) {
+	info := getMediaInfo(msg)
+	if info == nil {
+		return
+	}
+
+	data, err := waClient.Download(context.Background(), info.downloadable)
+	if err != nil {
+		fmt.Printf("Error downloading media %s: %v\n", payload.MessageID, err)
+		return
+	}
+
+	// Forward audio to voice webhook
+	if payload.MediaType == "audio" && voiceWebhookURL != "" {
+		go sendToWebhookVoice(payload.SenderID, payload.SenderName, payload.ChatID, payload.MessageID, payload.IsGroup, data)
+	}
+
+	ext := mimeToExt(info.mimeType)
+	mediaPath := fmt.Sprintf("%s/%s.%s", payload.ChatID, payload.MessageID, ext)
+
+	if err := uploadToSupabaseStorage(data, "wa-media", mediaPath, info.mimeType); err != nil {
+		fmt.Printf("Error uploading media %s: %v\n", payload.MessageID, err)
+		return
+	}
+
+	if err := updateMediaPath(payload.MessageID, payload.ChatID, mediaPath); err != nil {
+		fmt.Printf("Error updating media_path %s: %v\n", payload.MessageID, err)
+		return
+	}
+
+	fmt.Printf("Media stored: %s\n", mediaPath)
+}
+
 func registerMessageHandler(client *whatsmeow.Client) {
 	client.AddEventHandler(func(evt interface{}) {
 		switch v := evt.(type) {
@@ -248,14 +373,6 @@ func handleMessage(msg *events.Message) {
 	} else if msg.Message.AudioMessage != nil {
 		payload.MessageType = "media"
 		payload.MediaType = "audio"
-		if voiceWebhookURL != "" {
-			audioData, err := waClient.Download(context.Background(), msg.Message.AudioMessage)
-			if err != nil {
-				fmt.Printf("Error downloading audio: %v\n", err)
-			} else {
-				go sendToWebhookVoice(payload.SenderID, payload.SenderName, payload.ChatID, payload.MessageID, payload.IsGroup, audioData)
-			}
-		}
 	} else if msg.Message.DocumentMessage != nil {
 		payload.MessageType = "media"
 		payload.MediaType = "document"
@@ -265,6 +382,18 @@ func handleMessage(msg *events.Message) {
 	}
 
 	go saveMessageToDB(payload)
+
+	if payload.MessageType == "media" && storageConfigured() {
+		go handleMediaUpload(msg, payload)
+	} else if payload.MediaType == "audio" && voiceWebhookURL != "" {
+		// Backward compat: forward audio to voice webhook when storage is not configured
+		audioData, err := waClient.Download(context.Background(), msg.Message.AudioMessage)
+		if err != nil {
+			fmt.Printf("Error downloading audio: %v\n", err)
+		} else {
+			go sendToWebhookVoice(payload.SenderID, payload.SenderName, payload.ChatID, payload.MessageID, payload.IsGroup, audioData)
+		}
+	}
 
 	if webhookURL != "" {
 		go sendToWebhook(payload)

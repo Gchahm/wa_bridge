@@ -1,6 +1,8 @@
 create schema if not exists "wa_bridge";
+create schema if not exists "whatsapp";
 
 grant usage on schema "wa_bridge" to "authenticated";
+grant usage on schema "whatsapp" to "authenticated";
 
 
   create table "wa_bridge"."chats" (

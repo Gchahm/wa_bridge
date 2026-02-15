@@ -6,6 +6,7 @@ WhatsApp bridge that stores messages in a Supabase database. Designed as a plugg
 
 - Connects to WhatsApp via linked device (QR code)
 - Stores all incoming/outgoing messages in an isolated `wa_bridge` schema (contacts, chats, messages)
+- Optionally downloads and stores media files (images, videos, audio, documents) in Supabase Storage
 - Optionally forwards messages to webhook URLs (e.g., n8n, custom backend)
 - Exposes an HTTP API for sending messages
 - Uses a dedicated database role (`wa_bridge_app`) that cannot access your application's tables
@@ -107,6 +108,8 @@ curl -X POST http://localhost:8080/send \
 | `DB_POSTGRESDB_SSL_ENABLED` | false | Enable SSL (set to `true` for Supabase hosted) |
 | `MESSAGE_WEBHOOK_URL` | | Optional webhook for incoming messages |
 | `VOICE_WEBHOOK_URL` | | Optional webhook for audio messages |
+| `SUPABASE_URL` | | Supabase project URL (enables media storage) |
+| `SUPABASE_SERVICE_KEY` | | Supabase service role key (enables media storage) |
 
 ## Integrating with your app
 
@@ -133,6 +136,16 @@ REFERENCES wa_bridge.contacts(phone_number);
 ```
 
 To expose `wa_bridge` tables via Supabase REST API, add `wa_bridge` to the exposed schemas in **Project Settings > API > Extra schemas**.
+
+## Media storage
+
+When `SUPABASE_URL` and `SUPABASE_SERVICE_KEY` are set, the bridge downloads media from WhatsApp and stores it in a private Supabase Storage bucket (`wa-media`). Supported media types: images, videos, audio, and documents.
+
+Files are stored at `wa-media/{chat_id}/{message_id}.{ext}` and the path is saved in `wa_bridge.messages.media_path`.
+
+The message row is inserted first (without `media_path`), then updated asynchronously after upload completes. If a download or upload fails, the message is still saved — only `media_path` will be null.
+
+When media storage is not configured, the bridge works exactly as before (audio is still forwarded to the voice webhook if configured).
 
 ## Security
 
