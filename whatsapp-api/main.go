@@ -55,13 +55,7 @@ var (
 	supabaseURL        string
 	supabaseServiceKey string
 	listenAddr         string
-	dbHost          string
-	dbPort          string
-	dbName          string
-	dbUser          string
-	dbPassword      string
-	dbSSL           string
-	dbSchema        string
+	databaseURL     string
 	currentQRCode   string
 	qrMutex         sync.RWMutex
 	waClient        *whatsmeow.Client
@@ -94,31 +88,11 @@ func loadConfig() {
 	supabaseServiceKey = os.Getenv("SUPABASE_SERVICE_KEY")
 	listenAddr = os.Getenv("LISTEN_ADDR")
 
-	dbHost = os.Getenv("DB_POSTGRESDB_HOST")
-	dbPort = os.Getenv("DB_POSTGRESDB_PORT")
-	dbName = os.Getenv("DB_POSTGRESDB_DATABASE")
-	dbUser = os.Getenv("DB_POSTGRESDB_USER")
-	dbPassword = os.Getenv("DB_POSTGRESDB_PASSWORD")
-	dbSSL = os.Getenv("DB_POSTGRESDB_SSL_ENABLED")
-	dbSchema = os.Getenv("DB_POSTGRESDB_SCHEMA")
+	databaseURL = os.Getenv("DATABASE_URL")
+	if databaseURL == "" {
+		panic("DATABASE_URL is required")
+	}
 
-	if dbHost == "" {
-		dbHost = "localhost"
-	}
-	if dbPort == "" {
-		dbPort = "5432"
-	}
-	if dbName == "" {
-		dbName = "postgres"
-	}
-	if dbUser == "" {
-		dbUser = "postgres"
-	}
-	if dbSSL == "true" {
-		dbSSL = "require"
-	} else {
-		dbSSL = "disable"
-	}
 	if listenAddr == "" {
 		listenAddr = ":8080"
 	}
@@ -131,12 +105,8 @@ func loadConfig() {
 }
 
 func newClient(ctx context.Context) *whatsmeow.Client {
-	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s", dbHost, dbPort, dbUser, dbPassword, dbName, dbSSL)
-	if dbSchema != "" {
-		dsn += fmt.Sprintf(" search_path=%s", dbSchema)
-	}
 	dbLog := waLog.Stdout("Database", "WARN", true)
-	container, err := sqlstore.New(ctx, "postgres", dsn, dbLog)
+	container, err := sqlstore.New(ctx, "postgres", databaseURL, dbLog)
 	if err != nil {
 		panic(err)
 	}
@@ -149,8 +119,7 @@ func newClient(ctx context.Context) *whatsmeow.Client {
 }
 
 func newBridgeDB() *sql.DB {
-	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s", dbHost, dbPort, dbUser, dbPassword, dbName, dbSSL)
-	db, err := sql.Open("postgres", dsn)
+	db, err := sql.Open("postgres", databaseURL)
 	if err != nil {
 		panic(fmt.Sprintf("Failed to connect to bridge DB: %v", err))
 	}

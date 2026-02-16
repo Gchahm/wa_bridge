@@ -2,26 +2,13 @@ services:
   whatsapp:
     build: ./whatsapp-api
     restart: unless-stopped
-    ports:
-      - "8080:8080"
+    network_mode: host
     environment:
       - MESSAGE_WEBHOOK_URL=${MESSAGE_WEBHOOK_URL}
       - VOICE_WEBHOOK_URL=${VOICE_WEBHOOK_URL}
       - LISTEN_ADDR=:8080
-      - DB_POSTGRESDB_HOST=${DB_POSTGRESDB_HOST}
-      - DB_POSTGRESDB_PORT=${DB_POSTGRESDB_PORT}
-      - DB_POSTGRESDB_DATABASE=${DB_POSTGRESDB_DATABASE}
-      - DB_POSTGRESDB_USER=${DB_POSTGRESDB_USER}
-      - DB_POSTGRESDB_PASSWORD=${DB_POSTGRESDB_PASSWORD}
-      - DB_POSTGRESDB_SSL_ENABLED=${DB_POSTGRESDB_SSL_ENABLED}
-      - DB_POSTGRESDB_SCHEMA=${DB_POSTGRESDB_SCHEMA}
+      - DATABASE_URL=${DATABASE_URL}
       - SUPABASE_URL=${SUPABASE_URL}
       - SUPABASE_SERVICE_KEY=${SUPABASE_SERVICE_KEY}
-    networks:
-      - supabase_network_n8n
     tty: true
     stdin_open: true
-
-networks:
-  supabase_network_n8n:
-    external: true

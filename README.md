@@ -57,15 +57,10 @@ The script will prompt for the `wa_bridge_app` password (or set `WA_BRIDGE_APP_P
 cp .env.example .env
 ```
 
-Set your Supabase database credentials:
+Set your database connection string:
 
 ```env
-DB_POSTGRESDB_HOST=db.your-project-ref.supabase.co
-DB_POSTGRESDB_PORT=5432
-DB_POSTGRESDB_DATABASE=postgres
-DB_POSTGRESDB_USER=wa_bridge_app
-DB_POSTGRESDB_PASSWORD=your-secure-password
-DB_POSTGRESDB_SSL_ENABLED=true
+DATABASE_URL=postgresql://wa_bridge_app:your-password@db.your-project-ref.supabase.co:5432/postgres?search_path=whatsapp
 ```
 
 ### 4. Start the bridge
@@ -100,12 +95,7 @@ curl -X POST http://localhost:8080/send \
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `DB_POSTGRESDB_HOST` | localhost | Supabase/Postgres host |
-| `DB_POSTGRESDB_PORT` | 5432 | Postgres port |
-| `DB_POSTGRESDB_DATABASE` | postgres | Database name |
-| `DB_POSTGRESDB_USER` | wa_bridge_app | Database role |
-| `DB_POSTGRESDB_PASSWORD` | | Database password |
-| `DB_POSTGRESDB_SSL_ENABLED` | false | Enable SSL (set to `true` for Supabase hosted) |
+| `DATABASE_URL` | | Postgres connection string (required) |
 | `MESSAGE_WEBHOOK_URL` | | Optional webhook for incoming messages |
 | `VOICE_WEBHOOK_URL` | | Optional webhook for audio messages |
 | `SUPABASE_URL` | | Supabase project URL (enables media storage) |
