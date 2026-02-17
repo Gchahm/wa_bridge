@@ -60,7 +60,7 @@ cp .env.example .env
 Set your database connection string:
 
 ```env
-DATABASE_URL=postgresql://wa_bridge_app:your-password@db.your-project-ref.supabase.co:5432/postgres?search_path=whatsapp
+DATABASE_URL=postgresql://wa_bridge_app:your-password@db.your-project-ref.supabase.co:5432/postgres
 ```
 
 ### 4. Start the bridge

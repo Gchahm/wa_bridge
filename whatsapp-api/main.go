@@ -296,6 +296,7 @@ func handleMediaUpload(msg *events.Message, payload MessagePayload) {
 
 func registerMessageHandler(client *whatsmeow.Client) {
 	client.AddEventHandler(func(evt interface{}) {
+		fmt.Printf("Event received: %T\n", evt)
 		switch v := evt.(type) {
 		case *events.Message:
 			handleMessage(v)

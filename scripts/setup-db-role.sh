@@ -50,6 +50,7 @@ END
 \$\$;
 
 ALTER ROLE wa_bridge_app PASSWORD '${WA_BRIDGE_APP_PASSWORD}';
+ALTER ROLE wa_bridge_app SET search_path TO whatsapp;
 
 -- wa_bridge schema: read/write contacts, chats, messages
 GRANT USAGE ON SCHEMA wa_bridge TO wa_bridge_app;
