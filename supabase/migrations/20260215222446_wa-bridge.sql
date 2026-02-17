@@ -1,8 +1,8 @@
 create schema if not exists "wa_bridge";
 create schema if not exists "whatsapp";
 
-grant usage on schema "wa_bridge" to "authenticated";
-grant usage on schema "whatsapp" to "authenticated";
+grant usage on schema "wa_bridge" to "wa_bridge_app";
+grant usage on schema "whatsapp" to "wa_bridge_app";
 
 
   create table "wa_bridge"."chats" (
@@ -65,58 +65,30 @@ alter table "wa_bridge"."messages" add constraint "fk_messages_sender" FOREIGN K
 
 alter table "wa_bridge"."messages" validate constraint "fk_messages_sender";
 
-grant delete on table "wa_bridge"."chats" to "authenticated";
+grant select, insert, update on table "wa_bridge"."chats" to "wa_bridge_app";
+grant select, insert, update on table "wa_bridge"."contacts" to "wa_bridge_app";
+grant select, insert, update on table "wa_bridge"."messages" to "wa_bridge_app";
 
-grant insert on table "wa_bridge"."chats" to "authenticated";
-
-grant select on table "wa_bridge"."chats" to "authenticated";
-
-grant update on table "wa_bridge"."chats" to "authenticated";
-
-grant delete on table "wa_bridge"."contacts" to "authenticated";
-
-grant insert on table "wa_bridge"."contacts" to "authenticated";
-
-grant select on table "wa_bridge"."contacts" to "authenticated";
-
-grant update on table "wa_bridge"."contacts" to "authenticated";
-
-grant delete on table "wa_bridge"."messages" to "authenticated";
-
-grant insert on table "wa_bridge"."messages" to "authenticated";
-
-grant select on table "wa_bridge"."messages" to "authenticated";
-
-grant update on table "wa_bridge"."messages" to "authenticated";
-
-
-  create policy "auth_users_chats"
-  on "wa_bridge"."chats"
-  as permissive
-  for all
-  to authenticated
+create policy "wa_bridge_app_chats"
+on "wa_bridge"."chats"
+as permissive
+for all
+to wa_bridge_app
 using (true)
 with check (true);
 
-
-
-  create policy "auth_users_contacts"
-  on "wa_bridge"."contacts"
-  as permissive
-  for all
-  to authenticated
+create policy "wa_bridge_app_contacts"
+on "wa_bridge"."contacts"
+as permissive
+for all
+to wa_bridge_app
 using (true)
 with check (true);
 
-
-
-  create policy "auth_users_messages"
-  on "wa_bridge"."messages"
-  as permissive
-  for all
-  to authenticated
+create policy "wa_bridge_app_messages"
+on "wa_bridge"."messages"
+as permissive
+for all
+to wa_bridge_app
 using (true)
 with check (true);
-
-
-
