@@ -40,6 +40,7 @@ type MessagePayload struct {
 	Timestamp   time.Time `json:"timestamp"`
 	MessageID   string    `json:"message_id"`
 	ChatID      string    `json:"chat_id"`
+	ChatName    string    `json:"chat_name,omitempty"`
 	SenderID    string    `json:"sender_id"`
 	SenderName  string    `json:"sender_name,omitempty"`
 	MessageType string    `json:"message_type"`
@@ -68,11 +69,12 @@ func (s *Store) SaveMessage(payload MessagePayload) {
 	}
 
 	_, err := s.db.ExecContext(ctx,
-		`INSERT INTO wa_bridge.chats (chat_id, is_group, last_message_at)
-		 VALUES ($1, $2, $3)
+		`INSERT INTO wa_bridge.chats (chat_id, is_group, name, last_message_at)
+		 VALUES ($1, $2, NULLIF($3, ''), $4)
 		 ON CONFLICT (chat_id) DO UPDATE SET
-		   last_message_at = $3`,
-		payload.ChatID, payload.IsGroup, payload.Timestamp)
+		   name = COALESCE(NULLIF($3, ''), wa_bridge.chats.name),
+		   last_message_at = $4`,
+		payload.ChatID, payload.IsGroup, payload.ChatName, payload.Timestamp)
 	if err != nil {
 		fmt.Printf("Error upserting chat: %v\n", err)
 		return

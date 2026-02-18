@@ -31,6 +31,7 @@ func RegisterHandler(client *whatsmeow.Client, cfg config.Config, db *store.Stor
 
 func handleMessage(client *whatsmeow.Client, cfg config.Config, db *store.Store, msg *events.Message) {
 	payload := buildPayload(msg)
+	payload.ChatName = resolveChatName(client, msg)
 
 	go db.SaveMessage(payload)
 
@@ -52,6 +53,25 @@ func handleMessage(client *whatsmeow.Client, cfg config.Config, db *store.Store,
 	if cfg.WebhookURL != "" {
 		go webhook.SendText(cfg.WebhookURL, payload)
 	}
+}
+
+// resolveChatName returns a human-friendly name for the chat. For groups it
+// fetches the group subject via the WhatsApp API; for DMs it uses the other
+// party's push name.
+func resolveChatName(client *whatsmeow.Client, msg *events.Message) string {
+	if msg.Info.IsGroup {
+		info, err := client.GetGroupInfo(context.Background(), msg.Info.Chat)
+		if err != nil {
+			fmt.Printf("Error fetching group info for %s: %v\n", msg.Info.Chat, err)
+			return ""
+		}
+		return info.Name
+	}
+	// For DMs, use the sender's push name (only meaningful for incoming messages).
+	if !msg.Info.IsFromMe {
+		return msg.Info.PushName
+	}
+	return ""
 }
 
 // buildPayload derives a MessagePayload from the raw whatsmeow event.
