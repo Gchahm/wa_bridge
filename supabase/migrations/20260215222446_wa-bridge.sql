@@ -1,3 +1,6 @@
+create role "wa_bridge_app" with login noinherit;
+grant usage on schema "public" to "wa_bridge_app";
+
 create schema if not exists "wa_bridge";
 create schema if not exists "whatsapp";
 
