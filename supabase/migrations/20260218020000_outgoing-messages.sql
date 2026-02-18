@@ -97,7 +97,7 @@ GRANT SELECT, INSERT         ON wa_bridge.outgoing_messages TO authenticated;
 -- Public view (exposes the table through the default API schema)
 -- ---------------------------------------------------------------------------
 
-CREATE OR REPLACE VIEW public.outgoing_messages AS
+CREATE OR REPLACE VIEW public.outgoing_messages WITH (security_invoker = on) AS
     SELECT * FROM wa_bridge.outgoing_messages;
 
 -- authenticated can read and insert through the public view

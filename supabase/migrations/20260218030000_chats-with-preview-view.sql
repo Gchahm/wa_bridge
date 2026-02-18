@@ -15,7 +15,7 @@
 -- rows where timestamp is NULL.
 -- ---------------------------------------------------------------------------
 
-CREATE OR REPLACE VIEW public.chats_with_preview AS
+CREATE OR REPLACE VIEW public.chats_with_preview WITH (security_invoker = on) AS
 SELECT
     c.chat_id,
     c.is_group,
