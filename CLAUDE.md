@@ -88,10 +88,28 @@ import { Pencil, Lock, RefreshCw } from 'lucide-react'
 <Pencil className="size-4" />
 ```
 
+## Code Style & Quality (REQUIRED)
+
+**After writing or modifying any code, you MUST run:**
+```bash
+cd wa-sales && pnpm check
+```
+This runs `prettier --write . && eslint --fix` to auto-format and fix lint issues.
+
+**Prettier config** (no semicolons, single quotes, trailing commas):
+- No semicolons
+- Single quotes
+- Trailing commas everywhere
+
+**If `pnpm check` reports remaining errors, fix them manually before considering the task done.**
+
 ## Scripts
 
 ```bash
 pnpm dev              # Start dev server (port 3000)
+pnpm check            # Format + lint fix (ALWAYS run after code changes)
+pnpm lint             # ESLint check only
+pnpm format           # Prettier check only
 pnpm supabase:types   # Regenerate database types
 pnpm lingui:extract   # Extract translation strings
 pnpm lingui:compile   # Compile translations

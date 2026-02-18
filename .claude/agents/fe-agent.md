@@ -583,6 +583,16 @@ Company-specific overrides in `src/config/theme.css`, imported last in `styles.c
 
 Inter Variable via `@fontsource-variable/inter`, set as `--font-sans`.
 
+## Code Quality (REQUIRED)
+
+**After writing or modifying ANY code, you MUST run:**
+
+```bash
+pnpm check
+```
+
+This runs `prettier --write . && eslint --fix`. If errors remain after auto-fix, you MUST fix them manually before considering the task done. Do NOT leave lint errors or formatting issues.
+
 ## Checklist for New Features
 
 1. **Route file**: Create in `src/routes/_authenticated/dashboard/` following file-based conventions
@@ -595,3 +605,4 @@ Inter Variable via `@fontsource-variable/inter`, set as `--font-sans`.
 8. **i18n**: Wrap visible text in `<Trans>` or use `` t` ` ``, then run `pnpm lingui:extract`
 9. **Types**: After schema changes run `pnpm supabase:types`
 10. **Styling**: Tailwind CSS v4 utility classes, semantic color tokens
+11. **Lint/Format**: Run `pnpm check` to auto-fix formatting and lint issues. Fix any remaining errors manually.
