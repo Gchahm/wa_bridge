@@ -7,10 +7,30 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: "14.1"
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
   }
   public: {
     Tables: {
@@ -105,8 +125,226 @@ export type Database = {
           sender_name?: string | null
           timestamp?: string | null
         }
+        Relationships: [
+          {
+            foreignKeyName: "fk_messages_chat"
+            columns: ["chat_id"]
+            isOneToOne: false
+            referencedRelation: "chats"
+            referencedColumns: ["chat_id"]
+          },
+          {
+            foreignKeyName: "fk_messages_sender"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["phone_number"]
+          },
+        ]
+      }
+      outgoing_messages: {
+        Row: {
+          chat_id: string | null
+          content: string | null
+          created_at: string | null
+          error_message: string | null
+          id: number | null
+          sent_at: string | null
+          sent_message_id: string | null
+          status: string | null
+        }
+        Insert: {
+          chat_id?: string | null
+          content?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          id?: number | null
+          sent_at?: string | null
+          sent_message_id?: string | null
+          status?: string | null
+        }
+        Update: {
+          chat_id?: string | null
+          content?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          id?: number | null
+          sent_at?: string | null
+          sent_message_id?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_outgoing_messages_chat"
+            columns: ["chat_id"]
+            isOneToOne: false
+            referencedRelation: "chats"
+            referencedColumns: ["chat_id"]
+          },
+        ]
+      }
+    }
+    Functions: {
+      [_ in never]: never
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
+  wa_bridge: {
+    Tables: {
+      chats: {
+        Row: {
+          chat_id: string
+          created_at: string | null
+          is_group: boolean
+          last_message_at: string | null
+          name: string | null
+        }
+        Insert: {
+          chat_id: string
+          created_at?: string | null
+          is_group?: boolean
+          last_message_at?: string | null
+          name?: string | null
+        }
+        Update: {
+          chat_id?: string
+          created_at?: string | null
+          is_group?: boolean
+          last_message_at?: string | null
+          name?: string | null
+        }
         Relationships: []
       }
+      contacts: {
+        Row: {
+          first_seen_at: string | null
+          last_seen_at: string | null
+          phone_number: string
+          push_name: string | null
+        }
+        Insert: {
+          first_seen_at?: string | null
+          last_seen_at?: string | null
+          phone_number: string
+          push_name?: string | null
+        }
+        Update: {
+          first_seen_at?: string | null
+          last_seen_at?: string | null
+          phone_number?: string
+          push_name?: string | null
+        }
+        Relationships: []
+      }
+      messages: {
+        Row: {
+          chat_id: string
+          content: string | null
+          created_at: string | null
+          is_agent: boolean
+          is_from_me: boolean
+          media_path: string | null
+          media_type: string | null
+          message_id: string
+          message_type: string
+          sender_id: string | null
+          sender_name: string | null
+          timestamp: string | null
+        }
+        Insert: {
+          chat_id: string
+          content?: string | null
+          created_at?: string | null
+          is_agent?: boolean
+          is_from_me?: boolean
+          media_path?: string | null
+          media_type?: string | null
+          message_id: string
+          message_type?: string
+          sender_id?: string | null
+          sender_name?: string | null
+          timestamp?: string | null
+        }
+        Update: {
+          chat_id?: string
+          content?: string | null
+          created_at?: string | null
+          is_agent?: boolean
+          is_from_me?: boolean
+          media_path?: string | null
+          media_type?: string | null
+          message_id?: string
+          message_type?: string
+          sender_id?: string | null
+          sender_name?: string | null
+          timestamp?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_messages_chat"
+            columns: ["chat_id"]
+            isOneToOne: false
+            referencedRelation: "chats"
+            referencedColumns: ["chat_id"]
+          },
+          {
+            foreignKeyName: "fk_messages_sender"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["phone_number"]
+          },
+        ]
+      }
+      outgoing_messages: {
+        Row: {
+          chat_id: string
+          content: string
+          created_at: string
+          error_message: string | null
+          id: number
+          sent_at: string | null
+          sent_message_id: string | null
+          status: string
+        }
+        Insert: {
+          chat_id: string
+          content: string
+          created_at?: string
+          error_message?: string | null
+          id?: never
+          sent_at?: string | null
+          sent_message_id?: string | null
+          status?: string
+        }
+        Update: {
+          chat_id?: string
+          content?: string
+          created_at?: string
+          error_message?: string | null
+          id?: never
+          sent_at?: string | null
+          sent_message_id?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_outgoing_messages_chat"
+            columns: ["chat_id"]
+            isOneToOne: false
+            referencedRelation: "chats"
+            referencedColumns: ["chat_id"]
+          },
+        ]
+      }
+    }
+    Views: {
+      [_ in never]: never
     }
     Functions: {
       [_ in never]: never
@@ -238,7 +476,14 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {},
   },
+  wa_bridge: {
+    Enums: {},
+  },
 } as const
+

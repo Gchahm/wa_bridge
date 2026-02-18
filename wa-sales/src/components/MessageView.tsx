@@ -1,6 +1,7 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { MessageSquare, Send } from 'lucide-react'
 import { MessageBubble, getMessageDateKey } from './MessageBubble'
+import { supabase } from '@/lib/supabase'
 import type { Database } from '@/lib/database.types'
 
 type Chat = Database['public']['Views']['chats']['Row']
@@ -107,25 +108,63 @@ export function MessageView({ chat, messages }: MessageViewProps) {
         )}
       </div>
 
-      {/* Disabled message input */}
-      <div
-        className="flex items-center gap-3 px-4 py-3 flex-shrink-0"
-        style={{ backgroundColor: '#f0f2f5' }}
+      {/* Message input */}
+      <MessageInput chatId={chat.chat_id!} />
+    </div>
+  )
+}
+
+function MessageInput({ chatId }: { chatId: string }) {
+  const [text, setText] = useState('')
+  const [sending, setSending] = useState(false)
+
+  async function handleSend() {
+    const trimmed = text.trim()
+    if (!trimmed || sending) return
+
+    setSending(true)
+    const { error } = await supabase
+      .from('outgoing_messages')
+      .insert({ chat_id: chatId, content: trimmed })
+
+    if (error) {
+      console.error('Failed to send message:', error)
+    } else {
+      setText('')
+    }
+    setSending(false)
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      handleSend()
+    }
+  }
+
+  return (
+    <div
+      className="flex items-center gap-3 px-4 py-3 flex-shrink-0"
+      style={{ backgroundColor: '#f0f2f5' }}
+    >
+      <input
+        type="text"
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        onKeyDown={handleKeyDown}
+        placeholder="Type a message"
+        disabled={sending}
+        className="flex-1 bg-white rounded-full px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:ring-1 focus:ring-[#00a884]"
+      />
+      <button
+        type="button"
+        onClick={handleSend}
+        disabled={!text.trim() || sending}
+        className="w-10 h-10 rounded-full flex items-center justify-center text-white flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
+        style={{ backgroundColor: '#00a884' }}
       >
-        <div className="flex-1 bg-white rounded-full px-4 py-2.5 flex items-center">
-          <span className="text-sm text-gray-400 select-none">
-            Message sending is not available yet
-          </span>
-        </div>
-        <button
-          type="button"
-          disabled
-          className="w-10 h-10 rounded-full flex items-center justify-center text-white cursor-not-allowed opacity-50 flex-shrink-0"
-          style={{ backgroundColor: '#00a884' }}
-        >
-          <Send className="w-4 h-4" />
-        </button>
-      </div>
+        <Send className="w-4 h-4" />
+      </button>
     </div>
   )
 }

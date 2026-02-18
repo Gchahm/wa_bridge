@@ -18,7 +18,7 @@ import (
 	"syscall"
 	"time"
 
-	_ "github.com/lib/pq"
+	"github.com/lib/pq"
 	"github.com/mdp/qrterminal/v3"
 	"github.com/skip2/go-qrcode"
 	"go.mau.fi/whatsmeow"
@@ -72,6 +72,7 @@ func main() {
 	registerMessageHandler(waClient)
 	startHTTPServer(ctx, waClient)
 	go startClient(ctx, waClient)
+	go startOutboxListener(ctx, waClient)
 
 	fmt.Println("WhatsApp bridge running. Press Ctrl+C to quit.")
 	c := make(chan os.Signal, 1)
@@ -629,4 +630,154 @@ func startClient(ctx context.Context, client *whatsmeow.Client) {
 		}
 		fmt.Println("WhatsApp connected with existing session")
 	}
+}
+
+// --- Outbox listener (LISTEN/NOTIFY) ---
+
+func startOutboxListener(ctx context.Context, client *whatsmeow.Client) {
+	reportProblem := func(ev pq.ListenerEventType, err error) {
+		if err != nil {
+			fmt.Printf("Outbox listener error: %v\n", err)
+		}
+	}
+
+	listener := pq.NewListener(databaseURL, 10*time.Second, time.Minute, reportProblem)
+	if err := listener.Listen("new_outgoing_message"); err != nil {
+		fmt.Printf("Failed to LISTEN on new_outgoing_message: %v\n", err)
+		return
+	}
+	fmt.Println("Listening for outgoing messages on new_outgoing_message channel")
+
+	// Process any pending messages from before we started listening
+	processPendingOutbox(ctx, client)
+
+	for {
+		select {
+		case <-ctx.Done():
+			listener.Close()
+			return
+		case n := <-listener.Notify:
+			if n == nil {
+				// Reconnect event — re-process pending messages
+				fmt.Println("Outbox listener reconnected, checking pending messages")
+				processPendingOutbox(ctx, client)
+				continue
+			}
+			var payload struct {
+				ID int64 `json:"id"`
+			}
+			if err := json.Unmarshal([]byte(n.Extra), &payload); err != nil {
+				fmt.Printf("Error parsing outbox notification: %v\n", err)
+				continue
+			}
+			go processOutgoingMessage(ctx, client, payload.ID)
+		}
+	}
+}
+
+func processPendingOutbox(ctx context.Context, client *whatsmeow.Client) {
+	rows, err := bridgeDB.QueryContext(ctx,
+		`SELECT id FROM wa_bridge.outgoing_messages WHERE status = 'pending' ORDER BY id`)
+	if err != nil {
+		fmt.Printf("Error querying pending outbox: %v\n", err)
+		return
+	}
+	defer rows.Close()
+
+	var ids []int64
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			fmt.Printf("Error scanning outbox row: %v\n", err)
+			continue
+		}
+		ids = append(ids, id)
+	}
+
+	for _, id := range ids {
+		processOutgoingMessage(ctx, client, id)
+	}
+
+	if len(ids) > 0 {
+		fmt.Printf("Processed %d pending outbox messages\n", len(ids))
+	}
+}
+
+func processOutgoingMessage(ctx context.Context, client *whatsmeow.Client, id int64) {
+	// Atomically claim the message
+	var chatID, content string
+	err := bridgeDB.QueryRowContext(ctx,
+		`UPDATE wa_bridge.outgoing_messages
+		 SET status = 'sending'
+		 WHERE id = $1 AND status = 'pending'
+		 RETURNING chat_id, content`,
+		id).Scan(&chatID, &content)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			// Already claimed by another instance or no longer pending
+			return
+		}
+		fmt.Printf("Error claiming outbox message %d: %v\n", id, err)
+		return
+	}
+
+	// Parse the JID
+	jid, err := types.ParseJID(chatID)
+	if err != nil {
+		markOutboxFailed(ctx, id, fmt.Sprintf("invalid chat_id JID: %v", err))
+		return
+	}
+
+	// Send via WhatsApp
+	msg := &waProto.Message{
+		Conversation: proto.String(content),
+	}
+	resp, err := client.SendMessage(ctx, jid, msg)
+	if err != nil {
+		markOutboxFailed(ctx, id, fmt.Sprintf("send failed: %v", err))
+		return
+	}
+
+	// Mark as sent
+	_, err = bridgeDB.ExecContext(ctx,
+		`UPDATE wa_bridge.outgoing_messages
+		 SET status = 'sent', sent_message_id = $1, sent_at = now()
+		 WHERE id = $2`,
+		resp.ID, id)
+	if err != nil {
+		fmt.Printf("Error marking outbox message %d as sent: %v\n", id, err)
+	}
+
+	// Insert the sent message into wa_bridge.messages so it appears in the chat
+	now := time.Now()
+	_, err = bridgeDB.ExecContext(ctx,
+		`INSERT INTO wa_bridge.messages (message_id, chat_id, sender_id, sender_name, message_type, content, is_from_me, timestamp)
+		 VALUES ($1, $2, '', '', 'text', $3, true, $4)
+		 ON CONFLICT (message_id, chat_id) DO NOTHING`,
+		resp.ID, chatID, content, now)
+	if err != nil {
+		fmt.Printf("Error inserting sent message %s: %v\n", resp.ID, err)
+	}
+
+	// Update chat last_message_at
+	_, err = bridgeDB.ExecContext(ctx,
+		`UPDATE wa_bridge.chats SET last_message_at = $1 WHERE chat_id = $2`,
+		now, chatID)
+	if err != nil {
+		fmt.Printf("Error updating chat last_message_at for %s: %v\n", chatID, err)
+	}
+
+	fmt.Printf("Outbox message %d sent as %s to %s\n", id, resp.ID, chatID)
+}
+
+func markOutboxFailed(ctx context.Context, id int64, errMsg string) {
+	_, err := bridgeDB.ExecContext(ctx,
+		`UPDATE wa_bridge.outgoing_messages
+		 SET status = 'failed', error_message = $1
+		 WHERE id = $2`,
+		errMsg, id)
+	if err != nil {
+		fmt.Printf("Error marking outbox message %d as failed: %v\n", id, err)
+	}
+	fmt.Printf("Outbox message %d failed: %s\n", id, errMsg)
 }

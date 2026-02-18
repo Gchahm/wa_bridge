@@ -1,3 +1,4 @@
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useStore } from '@tanstack/react-store'
 import { z } from 'zod'
@@ -43,15 +44,57 @@ export const Route = createFileRoute('/_authenticated/chat/')({
 
 function MessengerPage() {
   const chats = useStore(chatStore, (s) => s.chats)
-  const { messages } = Route.useLoaderData()
+  const { messages: loaderMessages } = Route.useLoaderData()
   const { chatId } = Route.useSearch()
   const navigate = useNavigate({ from: '/chat' })
+  const [realtimeMessages, setRealtimeMessages] = useState<Message[]>([])
+
+  // Reset realtime messages when chatId changes or loader re-runs
+  useEffect(() => {
+    setRealtimeMessages([])
+  }, [chatId, loaderMessages])
+
+  // Subscribe to realtime message broadcasts for the selected chat
+  useEffect(() => {
+    if (!chatId) return
+
+    const channel = supabase
+      .channel(`chat:${chatId}`, { config: { private: true } })
+      .on('broadcast', { event: 'INSERT' }, (payload) => {
+        const record = payload.payload?.new as Message | undefined
+        if (!record) return
+        setRealtimeMessages((prev) => [...prev, record])
+      })
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [chatId])
+
+  // Merge loader + realtime messages, deduplicated by message_id+chat_id
+  const messages = useMemo(() => {
+    const all = [...loaderMessages, ...realtimeMessages]
+    const seen = new Set<string>()
+    const deduped: Message[] = []
+    for (const msg of all) {
+      const key = `${msg.message_id}:${msg.chat_id}`
+      if (!seen.has(key)) {
+        seen.add(key)
+        deduped.push(msg)
+      }
+    }
+    return deduped
+  }, [loaderMessages, realtimeMessages])
 
   const selectedChat = chatId ? (chats.find((c) => c.chat_id === chatId) ?? null) : null
 
-  function handleSelectChat(id: string) {
-    navigate({ search: { chatId: id } })
-  }
+  const handleSelectChat = useCallback(
+    (id: string) => {
+      navigate({ search: { chatId: id } })
+    },
+    [navigate],
+  )
 
   return (
     <div className="flex h-full overflow-hidden">
