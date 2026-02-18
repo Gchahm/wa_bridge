@@ -750,11 +750,24 @@ func processOutgoingMessage(ctx context.Context, client *whatsmeow.Client, id in
 
 	// Insert the sent message into wa_bridge.messages so it appears in the chat
 	now := time.Now()
+	senderID := ""
+	if client.Store.ID != nil {
+		senderID = client.Store.ID.User
+	}
+
+	// Upsert own contact so FK constraint is satisfied
+	if senderID != "" {
+		_, _ = bridgeDB.ExecContext(ctx,
+			`INSERT INTO wa_bridge.contacts (phone_number, last_seen_at)
+			 VALUES ($1, now())
+			 ON CONFLICT (phone_number) DO UPDATE SET last_seen_at = now()`,
+			senderID)
+	}
 	_, err = bridgeDB.ExecContext(ctx,
 		`INSERT INTO wa_bridge.messages (message_id, chat_id, sender_id, sender_name, message_type, content, is_from_me, timestamp)
-		 VALUES ($1, $2, '', '', 'text', $3, true, $4)
+		 VALUES ($1, $2, $3, '', 'text', $4, true, $5)
 		 ON CONFLICT (message_id, chat_id) DO NOTHING`,
-		resp.ID, chatID, content, now)
+		resp.ID, chatID, senderID, content, now)
 	if err != nil {
 		fmt.Printf("Error inserting sent message %s: %v\n", resp.ID, err)
 	}
