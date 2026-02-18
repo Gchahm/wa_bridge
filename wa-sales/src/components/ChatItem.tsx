@@ -1,11 +1,7 @@
 import type { Database } from '@/lib/database.types'
 
-type Chat = Database['public']['Views']['chats']['Row']
-
-export type ChatWithPreview = Chat & {
-  lastMessage: string | null
-  lastMessageAt: string | null
-}
+export type ChatWithPreview =
+  Database['public']['Views']['chats_with_preview']['Row']
 
 function formatRelativeTime(dateStr: string | null): string {
   if (!dateStr) return ''
@@ -66,7 +62,7 @@ export function ChatItem({ chat, isActive, onClick }: ChatItemProps) {
   const initials = getInitials(chat.name, chatId)
   const avatarColor = getAvatarColor(chatId)
   const relativeTime = formatRelativeTime(
-    chat.lastMessageAt || chat.last_message_at,
+    chat.last_message_timestamp || chat.last_message_at,
   )
 
   return (
@@ -98,7 +94,7 @@ export function ChatItem({ chat, isActive, onClick }: ChatItemProps) {
         </div>
         <div className="flex items-center gap-1 mt-0.5">
           <p className="text-sm text-gray-500 truncate">
-            {chat.lastMessage || 'No messages yet'}
+            {chat.last_message_content || 'No messages yet'}
           </p>
         </div>
       </div>

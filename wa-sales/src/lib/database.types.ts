@@ -61,6 +61,42 @@ export type Database = {
         }
         Relationships: []
       }
+      chats_with_preview: {
+        Row: {
+          chat_id: string | null
+          created_at: string | null
+          is_group: boolean | null
+          last_message_at: string | null
+          last_message_content: string | null
+          last_message_is_from_me: boolean | null
+          last_message_timestamp: string | null
+          last_message_type: string | null
+          name: string | null
+        }
+        Insert: {
+          chat_id?: string | null
+          created_at?: string | null
+          is_group?: boolean | null
+          last_message_at?: string | null
+          last_message_content?: string | null
+          last_message_is_from_me?: boolean | null
+          last_message_timestamp?: string | null
+          last_message_type?: string | null
+          name?: string | null
+        }
+        Update: {
+          chat_id?: string | null
+          created_at?: string | null
+          is_group?: boolean | null
+          last_message_at?: string | null
+          last_message_content?: string | null
+          last_message_is_from_me?: boolean | null
+          last_message_timestamp?: string | null
+          last_message_type?: string | null
+          name?: string | null
+        }
+        Relationships: []
+      }
       contacts: {
         Row: {
           first_seen_at: string | null
