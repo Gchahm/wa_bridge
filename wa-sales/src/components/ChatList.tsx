@@ -1,5 +1,4 @@
-import { Search, LogOut } from 'lucide-react'
-import { supabase } from '@/lib/supabase'
+import { Search } from 'lucide-react'
 import { ChatItem } from './ChatItem'
 import type { ChatWithPreview } from './ChatItem'
 
@@ -18,13 +17,6 @@ export function ChatList({ chats, selectedChatId, onSelectChat }: ChatListProps)
         style={{ backgroundColor: '#f0f2f5' }}
       >
         <h1 className="text-xl font-semibold text-gray-800">Chats</h1>
-        <button
-          onClick={() => supabase.auth.signOut()}
-          className="rounded-full p-2 text-gray-500 hover:bg-gray-200 transition-colors"
-          title="Sign out"
-        >
-          <LogOut className="size-4" />
-        </button>
       </div>
 
       {/* Search box */}
