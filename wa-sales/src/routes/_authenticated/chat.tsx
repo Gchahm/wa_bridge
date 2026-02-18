@@ -1,12 +1,11 @@
 import { useEffect } from 'react'
 import { createFileRoute, Outlet } from '@tanstack/react-router'
 import { supabase } from '@/lib/supabase'
-import type { ChatWithPreview } from '@/components/ChatItem'
 import {
-  initChatStore,
+  handleChatDelete,
   handleChatInsert,
   handleChatUpdate,
-  handleChatDelete,
+  initChatStore,
 } from './chat/-store/chatStore'
 
 export const Route = createFileRoute('/_authenticated/chat')({

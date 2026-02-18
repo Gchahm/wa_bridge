@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
-import { MessageSquare, Send } from 'lucide-react'
+import { Loader2, MessageSquare, Send } from 'lucide-react'
 import { MessageBubble, getMessageDateKey } from './MessageBubble'
 import { supabase } from '@/lib/supabase'
 import type { Database } from '@/lib/database.types'
@@ -11,14 +11,68 @@ type Message = Database['public']['Views']['messages']['Row']
 type MessageViewProps = {
   chat: Chat | null
   messages: Message[]
+  fetchNextPage: () => void
+  hasNextPage: boolean
+  isFetchingNextPage: boolean
 }
 
-export function MessageView({ chat, messages }: MessageViewProps) {
+export function MessageView({
+  chat,
+  messages,
+  fetchNextPage,
+  hasNextPage,
+  isFetchingNextPage,
+}: MessageViewProps) {
+  const scrollRef = useRef<HTMLDivElement>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const isNearBottomRef = useRef(true)
+  const loadingOlderRef = useRef(false)
+  const savedScrollRef = useRef<{ height: number; top: number } | null>(null)
 
+  // Reset scroll anchor when chat changes
+  const prevChatId = useRef(chat?.chat_id)
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    if (chat?.chat_id !== prevChatId.current) {
+      prevChatId.current = chat?.chat_id
+      isNearBottomRef.current = true
+      loadingOlderRef.current = false
+      savedScrollRef.current = null
+    }
+  }, [chat?.chat_id])
+
+  // After render: restore scroll position or scroll to bottom
+  useLayoutEffect(() => {
+    const el = scrollRef.current
+    if (!el || messages.length === 0) return
+
+    if (loadingOlderRef.current && savedScrollRef.current) {
+      const { height, top } = savedScrollRef.current
+      el.scrollTop = top + (el.scrollHeight - height)
+      savedScrollRef.current = null
+      loadingOlderRef.current = false
+    } else if (isNearBottomRef.current) {
+      el.scrollTop = el.scrollHeight
+    }
   }, [messages])
+
+  function handleScroll() {
+    const el = scrollRef.current
+    if (!el) return
+
+    const { scrollTop, scrollHeight, clientHeight } = el
+    isNearBottomRef.current = scrollHeight - scrollTop - clientHeight < 100
+
+    if (
+      scrollTop < 200 &&
+      hasNextPage &&
+      !isFetchingNextPage &&
+      !loadingOlderRef.current
+    ) {
+      savedScrollRef.current = { height: scrollHeight, top: scrollTop }
+      loadingOlderRef.current = true
+      fetchNextPage()
+    }
+  }
 
   if (!chat) {
     return (
@@ -74,9 +128,16 @@ export function MessageView({ chat, messages }: MessageViewProps) {
 
       {/* Messages area */}
       <div
+        ref={scrollRef}
+        onScroll={handleScroll}
         className="flex-1 overflow-y-auto px-4 py-4"
         style={{ backgroundColor: '#efeae2' }}
       >
+        {isFetchingNextPage && (
+          <div className="flex justify-center py-2">
+            <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
+          </div>
+        )}
         {messages.length === 0 ? (
           <div className="flex items-center justify-center h-full">
             <p className="text-sm text-gray-500 bg-white px-4 py-2 rounded-full shadow-sm">
@@ -121,13 +182,12 @@ function MessageInput({ chatId }: { chatId: string }) {
   const [text, setText] = useState('')
 
   const sendMutation = useMutation({
-    mutationFn: (content: string) =>
-      supabase
+    mutationFn: async (content: string) => {
+      const { error } = await supabase
         .from('outgoing_messages')
         .insert({ chat_id: chatId, content })
-        .then(({ error }) => {
-          if (error) throw error
-        }),
+      if (error) throw error
+    },
     onSuccess: () => setText(''),
   })
 

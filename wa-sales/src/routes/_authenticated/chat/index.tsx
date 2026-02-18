@@ -20,7 +20,7 @@ function MessengerPage() {
   const chats = useStore(chatStore, (s) => s.chats)
   const { chatId } = Route.useSearch()
   const navigate = useNavigate({ from: '/chat' })
-  const messages = useMessages(chatId)
+  const { messages, ...pagination } = useMessages(chatId)
 
   const selectedChat = chatId
     ? (chats.find((c) => c.chat_id === chatId) ?? null)
@@ -55,7 +55,7 @@ function MessengerPage() {
           chatId ? 'flex' : 'hidden md:flex'
         }`}
       >
-        <MessageView chat={selectedChat} messages={messages} />
+        <MessageView chat={selectedChat} messages={messages} {...pagination} />
       </div>
     </div>
   )
