@@ -5,8 +5,8 @@ import type { Database } from '@/lib/database.types'
 type Chat = Database['public']['Views']['chats']['Row']
 
 type BroadcastPayload = {
-  new: Chat
-  old: Chat
+  record: Chat
+  old_record: Chat
 }
 
 export const chatStore = new Store<{ chats: ChatWithPreview[] }>({ chats: [] })
@@ -16,7 +16,8 @@ export function initChatStore(chats: ChatWithPreview[]) {
 }
 
 export function handleChatInsert(payload: BroadcastPayload) {
-  const record = payload.new
+  console.log('handleChatInsert', payload)
+  const record = payload.record
   const chat: ChatWithPreview = {
     ...record,
     lastMessage: null,
@@ -26,7 +27,8 @@ export function handleChatInsert(payload: BroadcastPayload) {
 }
 
 export function handleChatUpdate(payload: BroadcastPayload) {
-  const record = payload.new
+  console.log('handleChatUpdate', payload)
+  const record = payload.record
   if (!record.chat_id) return
 
   chatStore.setState((prev) => {
@@ -50,7 +52,7 @@ export function handleChatUpdate(payload: BroadcastPayload) {
 }
 
 export function handleChatDelete(payload: BroadcastPayload) {
-  const chatId = payload.old.chat_id
+  const chatId = payload.old_record.chat_id
   if (!chatId) return
   chatStore.setState((prev) => ({
     chats: prev.chats.filter((c) => c.chat_id !== chatId),

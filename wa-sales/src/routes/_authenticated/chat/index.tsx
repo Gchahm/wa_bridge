@@ -61,7 +61,7 @@ function MessengerPage() {
     const channel = supabase
       .channel(`chat:${chatId}`, { config: { private: true } })
       .on('broadcast', { event: 'INSERT' }, (payload) => {
-        const record = payload.payload?.new as Message | undefined
+        const record = payload.payload?.record as Message | undefined
         if (!record) return
         setRealtimeMessages((prev) => [...prev, record])
       })
