@@ -1,6 +1,13 @@
+import { useEffect } from 'react'
 import { createFileRoute, Outlet, redirect } from '@tanstack/react-router'
 import { supabase } from '@/lib/supabase'
 import type { ChatWithPreview } from '@/components/ChatItem'
+import {
+  initChatStore,
+  handleChatInsert,
+  handleChatUpdate,
+  handleChatDelete,
+} from './_authenticated/-store/chatStore'
 
 export const Route = createFileRoute('/_authenticated')({
   beforeLoad: ({ context }) => {
@@ -63,5 +70,28 @@ export const Route = createFileRoute('/_authenticated')({
     return { chats: chatsWithPreview }
   },
 
-  component: () => <Outlet />,
+  component: AuthenticatedLayout,
 })
+
+function AuthenticatedLayout() {
+  const { chats } = Route.useLoaderData()
+
+  useEffect(() => {
+    initChatStore(chats)
+  }, [chats])
+
+  useEffect(() => {
+    const channel = supabase
+      .channel('chats', { config: { private: true } })
+      .on('broadcast', { event: 'INSERT' }, (payload) => handleChatInsert(payload.payload))
+      .on('broadcast', { event: 'UPDATE' }, (payload) => handleChatUpdate(payload.payload))
+      .on('broadcast', { event: 'DELETE' }, (payload) => handleChatDelete(payload.payload))
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [])
+
+  return <Outlet />
+}

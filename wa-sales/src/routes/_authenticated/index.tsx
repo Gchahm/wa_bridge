@@ -1,13 +1,13 @@
-import { createFileRoute, getRouteApi, useNavigate } from '@tanstack/react-router'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { useStore } from '@tanstack/react-store'
 import { z } from 'zod'
 import { supabase } from '@/lib/supabase'
 import { ChatList } from '@/components/ChatList'
 import { MessageView } from '@/components/MessageView'
+import { chatStore } from './-store/chatStore'
 import type { Database } from '@/lib/database.types'
 
 type Message = Database['public']['Views']['messages']['Row']
-
-const parentRoute = getRouteApi('/_authenticated')
 
 const searchSchema = z.object({
   chatId: z.string().optional(),
@@ -42,7 +42,7 @@ export const Route = createFileRoute('/_authenticated/')({
 })
 
 function MessengerPage() {
-  const { chats } = parentRoute.useLoaderData()
+  const chats = useStore(chatStore, (s) => s.chats)
   const { messages } = Route.useLoaderData()
   const { chatId } = Route.useSearch()
   const navigate = useNavigate({ from: '/' })
