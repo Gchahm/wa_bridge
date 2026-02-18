@@ -26,7 +26,10 @@ function LoginPage() {
     setError(null)
     setLoading(true)
 
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    })
 
     if (error) {
       setError(error.message)
@@ -41,7 +44,9 @@ function LoginPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-100">
       <div className="w-full max-w-sm space-y-6 rounded-lg bg-white p-8 shadow">
-        <h1 className="text-center text-2xl font-semibold text-gray-800">WA Sales</h1>
+        <h1 className="text-center text-2xl font-semibold text-gray-800">
+          WA Sales
+        </h1>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">

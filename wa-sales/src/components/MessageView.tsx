@@ -62,7 +62,9 @@ export function MessageView({ chat, messages }: MessageViewProps) {
           {displayName.slice(0, 2).toUpperCase()}
         </div>
         <div className="flex-1 min-w-0">
-          <h2 className="font-semibold text-gray-900 text-sm truncate">{displayName}</h2>
+          <h2 className="font-semibold text-gray-900 text-sm truncate">
+            {displayName}
+          </h2>
           <p className="text-xs text-gray-500">
             {chat.is_group ? 'Group chat' : 'Private chat'}
           </p>

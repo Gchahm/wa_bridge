@@ -26,7 +26,10 @@ export const Route = createFileRoute('/_authenticated/chat')({
 
     const chatIds = chatList.map((c) => c.chat_id).filter(Boolean) as string[]
 
-    let lastMessages: Record<string, { content: string | null; timestamp: string | null }> = {}
+    const lastMessages = new Map<
+      string,
+      { content: string | null; timestamp: string | null }
+    >()
 
     if (chatIds.length > 0) {
       const { data: previewMessages } = await supabase
@@ -39,27 +42,29 @@ export const Route = createFileRoute('/_authenticated/chat')({
       if (previewMessages) {
         for (const msg of previewMessages) {
           const cid = msg.chat_id
-          if (cid && !lastMessages[cid]) {
+          if (cid && !lastMessages.has(cid)) {
             const content =
               msg.content ||
               (msg.message_type !== 'text' && msg.message_type !== 'chat'
                 ? `[${msg.media_type || msg.message_type}]`
                 : null)
-            lastMessages[cid] = {
+            lastMessages.set(cid, {
               content,
               timestamp: msg.timestamp,
-            }
+            })
           }
         }
       }
     }
 
-    const chatsWithPreview: ChatWithPreview[] = chatList.map((chat) => ({
-      ...chat,
-      lastMessage: (chat.chat_id && lastMessages[chat.chat_id]?.content) ?? null,
-      lastMessageAt:
-        (chat.chat_id && lastMessages[chat.chat_id]?.timestamp) ?? chat.last_message_at,
-    }))
+    const chatsWithPreview: ChatWithPreview[] = chatList.map((chat) => {
+      const preview = lastMessages.get(chat.chat_id)
+      return {
+        ...chat,
+        lastMessage: preview?.content ?? null,
+        lastMessageAt: preview?.timestamp ?? chat.last_message_at,
+      }
+    })
 
     return { chats: chatsWithPreview }
   },
@@ -77,9 +82,15 @@ function ChatLayout() {
   useEffect(() => {
     const channel = supabase
       .channel('chats', { config: { private: true } })
-      .on('broadcast', { event: 'INSERT' }, (payload) => handleChatInsert(payload.payload))
-      .on('broadcast', { event: 'UPDATE' }, (payload) => handleChatUpdate(payload.payload))
-      .on('broadcast', { event: 'DELETE' }, (payload) => handleChatDelete(payload.payload))
+      .on('broadcast', { event: 'INSERT' }, (payload) =>
+        handleChatInsert(payload.payload),
+      )
+      .on('broadcast', { event: 'UPDATE' }, (payload) =>
+        handleChatUpdate(payload.payload),
+      )
+      .on('broadcast', { event: 'DELETE' }, (payload) =>
+        handleChatDelete(payload.payload),
+      )
       .subscribe()
 
     return () => {

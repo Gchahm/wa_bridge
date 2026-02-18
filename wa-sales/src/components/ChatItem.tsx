@@ -65,7 +65,9 @@ export function ChatItem({ chat, isActive, onClick }: ChatItemProps) {
   const displayName = chat.name || chatId
   const initials = getInitials(chat.name, chatId)
   const avatarColor = getAvatarColor(chatId)
-  const relativeTime = formatRelativeTime(chat.lastMessageAt || chat.last_message_at)
+  const relativeTime = formatRelativeTime(
+    chat.lastMessageAt || chat.last_message_at,
+  )
 
   return (
     <button
@@ -85,9 +87,13 @@ export function ChatItem({ chat, isActive, onClick }: ChatItemProps) {
       {/* Content */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between gap-2">
-          <span className="font-medium text-gray-900 text-sm truncate">{displayName}</span>
+          <span className="font-medium text-gray-900 text-sm truncate">
+            {displayName}
+          </span>
           {relativeTime && (
-            <span className="flex-shrink-0 text-xs text-gray-500">{relativeTime}</span>
+            <span className="flex-shrink-0 text-xs text-gray-500">
+              {relativeTime}
+            </span>
           )}
         </div>
         <div className="flex items-center gap-1 mt-0.5">

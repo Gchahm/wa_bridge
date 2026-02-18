@@ -87,7 +87,9 @@ function MessengerPage() {
     return deduped
   }, [loaderMessages, realtimeMessages])
 
-  const selectedChat = chatId ? (chats.find((c) => c.chat_id === chatId) ?? null) : null
+  const selectedChat = chatId
+    ? (chats.find((c) => c.chat_id === chatId) ?? null)
+    : null
 
   const handleSelectChat = useCallback(
     (id: string) => {

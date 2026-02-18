@@ -8,9 +8,16 @@ type ChatListProps = {
   onSelectChat: (chatId: string) => void
 }
 
-export function ChatList({ chats, selectedChatId, onSelectChat }: ChatListProps) {
+export function ChatList({
+  chats,
+  selectedChatId,
+  onSelectChat,
+}: ChatListProps) {
   return (
-    <div className="flex flex-col h-full" style={{ backgroundColor: '#ffffff' }}>
+    <div
+      className="flex flex-col h-full"
+      style={{ backgroundColor: '#ffffff' }}
+    >
       {/* Header */}
       <div
         className="flex items-center justify-between px-4 py-3 flex-shrink-0"
@@ -20,7 +27,10 @@ export function ChatList({ chats, selectedChatId, onSelectChat }: ChatListProps)
       </div>
 
       {/* Search box */}
-      <div className="px-3 py-2 flex-shrink-0" style={{ backgroundColor: '#f0f2f5' }}>
+      <div
+        className="px-3 py-2 flex-shrink-0"
+        style={{ backgroundColor: '#f0f2f5' }}
+      >
         <div className="flex items-center gap-2 bg-white rounded-full px-4 py-2">
           <Search className="w-4 h-4 text-gray-400 flex-shrink-0" />
           <input

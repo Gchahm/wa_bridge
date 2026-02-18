@@ -4,25 +4,25 @@ This document describes the architecture, libraries, and patterns used in this p
 
 ## Tech Stack
 
-| Layer | Library | Version |
-|---|---|---|
-| Framework | React | 19 |
-| Build tool | Vite | 7 |
-| Meta-framework | TanStack Start (file-based SSR) | 1.132+ |
-| Routing | TanStack Router | 1.132+ |
-| Tables | TanStack React Table | 8 |
-| State management | TanStack Store + React Store | 0.8 |
-| Forms | TanStack React Form | 1 |
-| Database / Auth | Supabase (supabase-js) | 2 |
-| Styling | Tailwind CSS | 4 |
-| UI primitives | Radix UI + shadcn/ui components | latest |
-| Component variants | class-variance-authority (CVA) | 0.7 |
-| Class merging | clsx + tailwind-merge (`cn()` helper) | latest |
-| Icons | lucide-react | latest |
-| i18n | Lingui (core + react + macros) | 5.9 |
-| Validation | Zod | 4 |
-| Testing | Vitest + Testing Library | latest |
-| Language | TypeScript (strict mode) | 5.7 |
+| Layer              | Library                               | Version |
+| ------------------ | ------------------------------------- | ------- |
+| Framework          | React                                 | 19      |
+| Build tool         | Vite                                  | 7       |
+| Meta-framework     | TanStack Start (file-based SSR)       | 1.132+  |
+| Routing            | TanStack Router                       | 1.132+  |
+| Tables             | TanStack React Table                  | 8       |
+| State management   | TanStack Store + React Store          | 0.8     |
+| Forms              | TanStack React Form                   | 1       |
+| Database / Auth    | Supabase (supabase-js)                | 2       |
+| Styling            | Tailwind CSS                          | 4       |
+| UI primitives      | Radix UI + shadcn/ui components       | latest  |
+| Component variants | class-variance-authority (CVA)        | 0.7     |
+| Class merging      | clsx + tailwind-merge (`cn()` helper) | latest  |
+| Icons              | lucide-react                          | latest  |
+| i18n               | Lingui (core + react + macros)        | 5.9     |
+| Validation         | Zod                                   | 4       |
+| Testing            | Vitest + Testing Library              | latest  |
+| Language           | TypeScript (strict mode)              | 5.7     |
 
 ## Scripts
 
@@ -117,14 +117,14 @@ src/
 
 ### TanStack Router File-Based Conventions
 
-| Pattern | Meaning |
-|---|---|
-| `__root.tsx` | Root layout (i18n provider, head, devtools) |
-| `_authenticated.tsx` | Layout route (no URL segment, used for auth guard) |
-| `_authenticated/dashboard/schedule.tsx` | Layout with loader + `<Outlet />` |
-| `schedule/status.tsx` | Child route rendered in parent's Outlet |
-| `$employeeId.tsx` | Dynamic URL segment |
-| `-components/`, `-store/` | Ignored by router (private directories) |
+| Pattern                                 | Meaning                                            |
+| --------------------------------------- | -------------------------------------------------- |
+| `__root.tsx`                            | Root layout (i18n provider, head, devtools)        |
+| `_authenticated.tsx`                    | Layout route (no URL segment, used for auth guard) |
+| `_authenticated/dashboard/schedule.tsx` | Layout with loader + `<Outlet />`                  |
+| `schedule/status.tsx`                   | Child route rendered in parent's Outlet            |
+| `$employeeId.tsx`                       | Dynamic URL segment                                |
+| `-components/`, `-store/`               | Ignored by router (private directories)            |
 
 ### Route with Loader
 
@@ -190,7 +190,9 @@ export const Route = createFileRoute('/_authenticated')({
   beforeLoad: async () => {
     if (typeof window === 'undefined') return { session: null }
 
-    const { data: { session } } = await supabase.auth.getSession()
+    const {
+      data: { session },
+    } = await supabase.auth.getSession()
     if (!session) throw redirect({ to: '/login' })
 
     return { session }
@@ -212,11 +214,13 @@ export const Route = createFileRoute('/_authenticated')({
 ### Philosophy
 
 Use **TanStack Router loaders** for:
+
 - Server data fetched on route entry
 - Static/reference data (employees, projects, lookups)
 - Data that benefits from route-based caching
 
 Use **TanStack Store** for:
+
 - Ephemeral UI state not in the URL
 - Frequently changing state shared across child routes
 - Optimistic updates
@@ -234,8 +238,8 @@ routes/dashboard/schedule/status.tsx # Child combines both sources
 // Child route combining router + TanStack Store
 import { useStore } from '@tanstack/react-store'
 
-const { employees } = parentRoute.useLoaderData()        // Static from router
-const shifts = useStore(scheduleStore, (s) => s.shifts)  // Dynamic from store
+const { employees } = parentRoute.useLoaderData() // Static from router
+const shifts = useStore(scheduleStore, (s) => s.shifts) // Dynamic from store
 ```
 
 ### TanStack Store Pattern
@@ -296,6 +300,7 @@ function ScheduleView() {
 ### shadcn/ui Pattern
 
 Components live in `src/components/ui/` and follow shadcn conventions:
+
 - Built on Radix UI primitives
 - Styled with Tailwind CSS
 - Variants via CVA (class-variance-authority)
@@ -348,10 +353,13 @@ Used for create/edit forms:
 
 ```tsx
 import {
-  Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetFooter,
 } from '@/components/ui/sheet'
-
-<Sheet open={open} onOpenChange={setOpen}>
+;<Sheet open={open} onOpenChange={setOpen}>
   <SheetContent>
     <SheetHeader>
       <SheetTitle>Create Employee</SheetTitle>
@@ -414,7 +422,12 @@ export const { fieldContext, useFieldContext, formContext, useFormContext } =
 // src/hooks/form.ts
 import { createFormHook } from '@tanstack/react-form'
 import { fieldContext, formContext } from './form-context'
-import { TextField, Select, TextArea, SubscribeButton } from '@/components/form-components'
+import {
+  TextField,
+  Select,
+  TextArea,
+  SubscribeButton,
+} from '@/components/form-components'
 
 export const { useAppForm } = createFormHook({
   fieldComponents: { TextField, Select, TextArea },
@@ -431,7 +444,13 @@ export const { useAppForm } = createFormHook({
 import { useStore } from '@tanstack/react-form'
 import { useFieldContext, useFormContext } from '@/hooks/form-context'
 
-export function TextField({ label, placeholder }: { label: string; placeholder?: string }) {
+export function TextField({
+  label,
+  placeholder,
+}: {
+  label: string
+  placeholder?: string
+}) {
   const field = useFieldContext<string>()
   const errors = useStore(field.store, (state) => state.meta.errors)
 
@@ -456,7 +475,9 @@ export function SubscribeButton({ label }: { label: string }) {
   return (
     <form.Subscribe selector={(state) => state.isSubmitting}>
       {(isSubmitting) => (
-        <Button type="submit" disabled={isSubmitting}>{label}</Button>
+        <Button type="submit" disabled={isSubmitting}>
+          {label}
+        </Button>
       )}
     </form.Subscribe>
   )
@@ -490,7 +511,12 @@ function CreateEmployeeForm() {
   })
 
   return (
-    <form onSubmit={(e) => { e.preventDefault(); form.handleSubmit() }}>
+    <form
+      onSubmit={(e) => {
+        e.preventDefault()
+        form.handleSubmit()
+      }}
+    >
       <form.AppField name="name">
         {(field) => <field.TextField label="Name" />}
       </form.AppField>
@@ -515,7 +541,7 @@ import { useLingui } from '@lingui/react/macro'
 import { msg } from '@lingui/core/macro'
 
 // JSX content
-<Trans>Hello World</Trans>
+;<Trans>Hello World</Trans>
 
 // Dynamic strings (attributes, variables)
 const { t } = useLingui()
@@ -537,10 +563,10 @@ const label = msg`Dashboard`
 ### Global Styles
 
 ```css
-@import "tailwindcss";
-@import "tw-animate-css";
-@import "shadcn/tailwind.css";
-@import "@fontsource-variable/inter";
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import 'shadcn/tailwind.css';
+@import '@fontsource-variable/inter';
 
 @custom-variant dark (&:is(.dark *));
 ```
