@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useMutation } from '@tanstack/react-query'
 import { MessageSquare, Send } from 'lucide-react'
 import { MessageBubble, getMessageDateKey } from './MessageBubble'
 import { supabase } from '@/lib/supabase'
@@ -118,23 +119,22 @@ export function MessageView({ chat, messages }: MessageViewProps) {
 
 function MessageInput({ chatId }: { chatId: string }) {
   const [text, setText] = useState('')
-  const [sending, setSending] = useState(false)
 
-  async function handleSend() {
+  const sendMutation = useMutation({
+    mutationFn: (content: string) =>
+      supabase
+        .from('outgoing_messages')
+        .insert({ chat_id: chatId, content })
+        .then(({ error }) => {
+          if (error) throw error
+        }),
+    onSuccess: () => setText(''),
+  })
+
+  function handleSend() {
     const trimmed = text.trim()
-    if (!trimmed || sending) return
-
-    setSending(true)
-    const { error } = await supabase
-      .from('outgoing_messages')
-      .insert({ chat_id: chatId, content: trimmed })
-
-    if (error) {
-      console.error('Failed to send message:', error)
-    } else {
-      setText('')
-    }
-    setSending(false)
+    if (!trimmed || sendMutation.isPending) return
+    sendMutation.mutate(trimmed)
   }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
@@ -155,13 +155,13 @@ function MessageInput({ chatId }: { chatId: string }) {
         onChange={(e) => setText(e.target.value)}
         onKeyDown={handleKeyDown}
         placeholder="Type a message"
-        disabled={sending}
+        disabled={sendMutation.isPending}
         className="flex-1 bg-white rounded-full px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:ring-1 focus:ring-[#00a884]"
       />
       <button
         type="button"
         onClick={handleSend}
-        disabled={!text.trim() || sending}
+        disabled={!text.trim() || sendMutation.isPending}
         className="w-10 h-10 rounded-full flex items-center justify-center text-white flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
         style={{ backgroundColor: '#00a884' }}
       >

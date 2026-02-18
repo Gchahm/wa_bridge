@@ -7,6 +7,7 @@ import {
   useRouter,
 } from '@tanstack/react-router'
 import { TanStackRouterDevtools } from '@tanstack/react-router-devtools'
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { supabase } from '@/lib/supabase'
 import type { RouterContext } from '@/router'
 
@@ -78,5 +79,10 @@ function RootComponent() {
     }
   }, [router])
 
-  return <Outlet />
+  return (
+    <>
+      <Outlet />
+      <ReactQueryDevtools buttonPosition="bottom-left" />
+    </>
+  )
 }

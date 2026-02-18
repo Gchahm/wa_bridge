@@ -1,4 +1,6 @@
 import { createRouter as createTanStackRouter } from '@tanstack/react-router'
+import { QueryClient } from '@tanstack/react-query'
+import { setupRouterSsrQueryIntegration } from '@tanstack/react-router-ssr-query'
 import { routeTree } from './routeTree.gen'
 import type { Session, User } from '@supabase/supabase-js'
 
@@ -8,6 +10,8 @@ export interface RouterContext {
 }
 
 export function getRouter() {
+  const queryClient = new QueryClient()
+
   const router = createTanStackRouter({
     routeTree,
     context: {
@@ -19,6 +23,8 @@ export function getRouter() {
     defaultPreload: 'intent',
     defaultPreloadStaleTime: 30_000,
   })
+
+  setupRouterSsrQueryIntegration({ router, queryClient })
 
   return router
 }
