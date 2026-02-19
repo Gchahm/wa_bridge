@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { Loader2, MessageSquare, Send } from 'lucide-react'
 import { MessageBubble, getMessageDateKey } from './MessageBubble'
@@ -100,6 +100,12 @@ export function MessageView({
 
   const displayName = chat.name || chat.chat_id || ''
 
+  // Build a lookup map for quoted message resolution
+  const messageMap = useMemo(
+    () => new Map(messages.map((m) => [m.message_id, m])),
+    [messages],
+  )
+
   // Track date separators
   const seenDates = new Set<string>()
 
@@ -158,10 +164,15 @@ export function MessageView({
                 }
               }
 
+              const quoted = message.reply_to_message_id
+                ? messageMap.get(message.reply_to_message_id)
+                : undefined
+
               return (
                 <MessageBubble
                   key={`${message.message_id}-${message.chat_id}`}
                   message={message}
+                  quotedMessage={quoted}
                   isGroup={chat.is_group ?? false}
                   showDateSeparator={showDateSeparator}
                 />

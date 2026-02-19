@@ -12,7 +12,8 @@
     "test": "vitest run",
     "lint": "eslint",
     "format": "prettier --check .",
-    "check": "prettier --write . && eslint --fix"
+    "check": "prettier --write . && eslint --fix",
+    "supabase:types": "supabase gen types typescript --local > src/lib/database.types.ts"
   },
   "dependencies": {
     "@cloudflare/vite-plugin": "^1.25.1",

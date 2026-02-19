@@ -37,17 +37,18 @@ func (s *Store) Close() error {
 // MessagePayload is the canonical representation of a WhatsApp message used
 // across the store, messaging, and webhook packages.
 type MessagePayload struct {
-	Timestamp   time.Time `json:"timestamp"`
-	MessageID   string    `json:"message_id"`
-	ChatID      string    `json:"chat_id"`
-	ChatName    string    `json:"chat_name,omitempty"`
-	SenderID    string    `json:"sender_id"`
-	SenderName  string    `json:"sender_name,omitempty"`
-	MessageType string    `json:"message_type"`
-	Text        string    `json:"text,omitempty"`
-	MediaType   string    `json:"media_type,omitempty"`
-	IsGroup     bool      `json:"is_group"`
-	IsFromMe    bool      `json:"is_from_me"`
+	Timestamp        time.Time `json:"timestamp"`
+	MessageID        string    `json:"message_id"`
+	ChatID           string    `json:"chat_id"`
+	ChatName         string    `json:"chat_name,omitempty"`
+	SenderID         string    `json:"sender_id"`
+	SenderName       string    `json:"sender_name,omitempty"`
+	MessageType      string    `json:"message_type"`
+	Text             string    `json:"text,omitempty"`
+	MediaType        string    `json:"media_type,omitempty"`
+	ReplyToMessageID string    `json:"reply_to_message_id,omitempty"`
+	IsGroup          bool      `json:"is_group"`
+	IsFromMe         bool      `json:"is_from_me"`
 }
 
 // SaveMessage persists a received message along with its contact and chat records.
@@ -81,11 +82,12 @@ func (s *Store) SaveMessage(payload MessagePayload) {
 	}
 
 	_, err = s.db.ExecContext(ctx,
-		`INSERT INTO wa_bridge.messages (message_id, chat_id, sender_id, sender_name, message_type, media_type, content, is_from_me, timestamp)
-		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+		`INSERT INTO wa_bridge.messages (message_id, chat_id, sender_id, sender_name, message_type, media_type, content, is_from_me, reply_to_message_id, timestamp)
+		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NULLIF($9, ''), $10)
 		 ON CONFLICT (message_id, chat_id) DO NOTHING`,
 		payload.MessageID, payload.ChatID, payload.SenderID, payload.SenderName,
-		payload.MessageType, payload.MediaType, payload.Text, payload.IsFromMe, payload.Timestamp)
+		payload.MessageType, payload.MediaType, payload.Text, payload.IsFromMe,
+		payload.ReplyToMessageID, payload.Timestamp)
 	if err != nil {
 		fmt.Printf("Error inserting message: %v\n", err)
 		return

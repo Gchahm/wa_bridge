@@ -9,6 +9,7 @@ CREATE TABLE wa_bridge.messages (
     media_path text,
     is_from_me boolean NOT NULL DEFAULT false,
     is_agent boolean NOT NULL DEFAULT false,
+    reply_to_message_id text,
     timestamp timestamp without time zone,
     created_at timestamp without time zone DEFAULT now(),
     CONSTRAINT messages_pkey PRIMARY KEY (message_id, chat_id),

@@ -73,28 +73,6 @@ export type Database = {
           last_message_type: string | null
           name: string | null
         }
-        Insert: {
-          chat_id?: string | null
-          created_at?: string | null
-          is_group?: boolean | null
-          last_message_at?: string | null
-          last_message_content?: string | null
-          last_message_is_from_me?: boolean | null
-          last_message_timestamp?: string | null
-          last_message_type?: string | null
-          name?: string | null
-        }
-        Update: {
-          chat_id?: string | null
-          created_at?: string | null
-          is_group?: boolean | null
-          last_message_at?: string | null
-          last_message_content?: string | null
-          last_message_is_from_me?: boolean | null
-          last_message_timestamp?: string | null
-          last_message_type?: string | null
-          name?: string | null
-        }
         Relationships: []
       }
       contacts: {
@@ -129,6 +107,7 @@ export type Database = {
           media_type: string | null
           message_id: string | null
           message_type: string | null
+          reply_to_message_id: string | null
           sender_id: string | null
           sender_name: string | null
           timestamp: string | null
@@ -143,6 +122,7 @@ export type Database = {
           media_type?: string | null
           message_id?: string | null
           message_type?: string | null
+          reply_to_message_id?: string | null
           sender_id?: string | null
           sender_name?: string | null
           timestamp?: string | null
@@ -157,6 +137,7 @@ export type Database = {
           media_type?: string | null
           message_id?: string | null
           message_type?: string | null
+          reply_to_message_id?: string | null
           sender_id?: string | null
           sender_name?: string | null
           timestamp?: string | null
@@ -167,6 +148,13 @@ export type Database = {
             columns: ['chat_id']
             isOneToOne: false
             referencedRelation: 'chats'
+            referencedColumns: ['chat_id']
+          },
+          {
+            foreignKeyName: 'fk_messages_chat'
+            columns: ['chat_id']
+            isOneToOne: false
+            referencedRelation: 'chats_with_preview'
             referencedColumns: ['chat_id']
           },
           {
@@ -215,6 +203,13 @@ export type Database = {
             columns: ['chat_id']
             isOneToOne: false
             referencedRelation: 'chats'
+            referencedColumns: ['chat_id']
+          },
+          {
+            foreignKeyName: 'fk_outgoing_messages_chat'
+            columns: ['chat_id']
+            isOneToOne: false
+            referencedRelation: 'chats_with_preview'
             referencedColumns: ['chat_id']
           },
         ]
@@ -288,6 +283,7 @@ export type Database = {
           media_type: string | null
           message_id: string
           message_type: string
+          reply_to_message_id: string | null
           sender_id: string | null
           sender_name: string | null
           timestamp: string | null
@@ -302,6 +298,7 @@ export type Database = {
           media_type?: string | null
           message_id: string
           message_type?: string
+          reply_to_message_id?: string | null
           sender_id?: string | null
           sender_name?: string | null
           timestamp?: string | null
@@ -316,6 +313,7 @@ export type Database = {
           media_type?: string | null
           message_id?: string
           message_type?: string
+          reply_to_message_id?: string | null
           sender_id?: string | null
           sender_name?: string | null
           timestamp?: string | null

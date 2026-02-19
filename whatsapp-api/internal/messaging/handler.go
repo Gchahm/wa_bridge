@@ -103,21 +103,26 @@ func buildPayload(msg *events.Message) store.MessagePayload {
 	case msg.Message.ExtendedTextMessage != nil:
 		payload.MessageType = "text"
 		payload.Text = msg.Message.ExtendedTextMessage.GetText()
+		payload.ReplyToMessageID = msg.Message.ExtendedTextMessage.GetContextInfo().GetStanzaID()
 	case msg.Message.ImageMessage != nil:
 		payload.MessageType = "media"
 		payload.MediaType = "image"
 		payload.Text = msg.Message.ImageMessage.GetCaption()
+		payload.ReplyToMessageID = msg.Message.ImageMessage.GetContextInfo().GetStanzaID()
 	case msg.Message.VideoMessage != nil:
 		payload.MessageType = "media"
 		payload.MediaType = "video"
 		payload.Text = msg.Message.VideoMessage.GetCaption()
+		payload.ReplyToMessageID = msg.Message.VideoMessage.GetContextInfo().GetStanzaID()
 	case msg.Message.AudioMessage != nil:
 		payload.MessageType = "media"
 		payload.MediaType = "audio"
+		payload.ReplyToMessageID = msg.Message.AudioMessage.GetContextInfo().GetStanzaID()
 	case msg.Message.DocumentMessage != nil:
 		payload.MessageType = "media"
 		payload.MediaType = "document"
 		payload.Text = msg.Message.DocumentMessage.GetCaption()
+		payload.ReplyToMessageID = msg.Message.DocumentMessage.GetContextInfo().GetStanzaID()
 	default:
 		payload.MessageType = "other"
 	}

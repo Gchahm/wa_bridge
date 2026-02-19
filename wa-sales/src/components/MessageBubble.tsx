@@ -41,12 +41,14 @@ function getMessageDateKey(timestamp: string): string {
 
 type MessageBubbleProps = {
   message: Message
+  quotedMessage?: Message | null
   isGroup: boolean
   showDateSeparator: boolean
 }
 
 export function MessageBubble({
   message,
+  quotedMessage,
   isGroup,
   showDateSeparator,
 }: MessageBubbleProps) {
@@ -95,6 +97,19 @@ export function MessageBubble({
                 {message.sender_name || message.sender_id}
               </p>
             )}
+
+          {/* Quoted message preview */}
+          {quotedMessage && (
+            <div className="mb-1 rounded bg-black/5 border-l-2 border-[#00a884] px-2 py-1">
+              <p className="text-xs font-semibold text-[#00a884] truncate">
+                {quotedMessage.sender_name || quotedMessage.sender_id || 'You'}
+              </p>
+              <p className="text-xs text-gray-600 truncate">
+                {quotedMessage.content ||
+                  `[${quotedMessage.media_type || quotedMessage.message_type}]`}
+              </p>
+            </div>
+          )}
 
           {/* Message content */}
           {contentText ? (
