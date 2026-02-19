@@ -1,0 +1,22 @@
+# Copy this file to docker-compose.override.yml to connect to local Supabase.
+# Replaces network_mode: host with the Supabase Docker network.
+#
+# Update SUPABASE_URL and DATABASE_URL in your .env to use internal hostnames:
+#   DATABASE_URL=postgresql://postgres:postgres@supabase_db_<project_id>:5432/postgres
+#   SUPABASE_URL=http://supabase_kong_<project_id>:8000
+#
+# Find your project_id in supabase/config.toml and the network name with:
+#   docker network ls | grep supabase
+
+services:
+  whatsapp:
+    network_mode: ""
+    ports:
+      - "8080:8080"
+    networks:
+      - supabase
+
+networks:
+  supabase:
+    external: true
+    name: supabase_network_n8n
