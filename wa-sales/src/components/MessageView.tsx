@@ -74,6 +74,12 @@ export function MessageView({
     }
   }
 
+  // Build a lookup map for quoted message resolution
+  const messageMap = useMemo(
+    () => new Map(messages.map((m) => [m.message_id, m])),
+    [messages],
+  )
+
   if (!chat) {
     return (
       <div
@@ -99,12 +105,6 @@ export function MessageView({
   }
 
   const displayName = chat.name || chat.chat_id || ''
-
-  // Build a lookup map for quoted message resolution
-  const messageMap = useMemo(
-    () => new Map(messages.map((m) => [m.message_id, m])),
-    [messages],
-  )
 
   // Track date separators
   const seenDates = new Set<string>()
