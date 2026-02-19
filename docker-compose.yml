@@ -12,3 +12,25 @@ services:
       - SUPABASE_SERVICE_KEY=${SUPABASE_SERVICE_KEY}
     tty: true
     stdin_open: true
+
+  n8n:
+    image: n8nio/n8n:latest
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      - DB_TYPE=postgresdb
+      - DB_POSTGRESDB_HOST=${N8N_DB_HOST}
+      - DB_POSTGRESDB_PORT=${N8N_DB_PORT}
+      - DB_POSTGRESDB_DATABASE=${N8N_DB_NAME}
+      - DB_POSTGRESDB_USER=${N8N_DB_USER}
+      - DB_POSTGRESDB_PASSWORD=${N8N_DB_PASSWORD}
+      - DB_POSTGRESDB_SCHEMA=n8n
+      - DB_POSTGRESDB_SSL_ENABLED=${N8N_DB_SSL_ENABLED}
+      - N8N_PORT=${N8N_PORT}
+      - N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY}
+      - WEBHOOK_URL=${N8N_WEBHOOK_URL}
+    volumes:
+      - n8n_data:/home/node/.n8n
+
+volumes:
+  n8n_data:

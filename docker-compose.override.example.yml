@@ -16,6 +16,13 @@ services:
     networks:
       - supabase
 
+  n8n:
+    network_mode: ""
+    ports:
+      - "5678:5678"
+    networks:
+      - supabase
+
 networks:
   supabase:
     external: true
