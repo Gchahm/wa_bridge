@@ -39,17 +39,17 @@ Or run the SQL manually in the Supabase SQL Editor — copy the contents of `sup
 
 This creates the `wa_bridge` schema with all tables, indexes, RLS policies, and grants. It does **not** touch your existing tables.
 
-### 2. Create the database role
+### 2. Set the database role password
 
-The bridge uses a dedicated `wa_bridge_app` role with access limited to `wa_bridge` and `whatsapp` schemas only.
+The migration creates the `wa_bridge_app` role automatically. You just need to set its password:
 
 ```bash
 cp scripts/.env.example scripts/.env
-# Edit scripts/.env with your admin credentials
+# Edit scripts/.env with your admin credentials and WA_BRIDGE_APP_PASSWORD
 ./scripts/setup-db-role.sh
 ```
 
-The script will prompt for the `wa_bridge_app` password (or set `WA_BRIDGE_APP_PASSWORD` in `scripts/.env`).
+For local development, `supabase db reset` sets the password to `postgres` automatically via the seed file.
 
 ### 3. Configure environment
 
@@ -141,6 +141,6 @@ When media storage is not configured, the bridge works exactly as before (audio 
 
 The `wa_bridge_app` role has access **only** to:
 - `wa_bridge` schema — SELECT, INSERT, UPDATE on contacts, chats, messages
-- `whatsapp` schema — full access (used by whatsmeow for session storage)
+- `wa_meow` schema — full access (used by whatsmeow for session storage)
 
 It **cannot** read, write, or modify any tables in your application's schemas.

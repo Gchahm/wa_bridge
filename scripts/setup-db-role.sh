@@ -1,11 +1,11 @@
 #!/bin/bash
 #
-# Creates the wa_bridge_app database role with restricted access.
-# Run this once after applying migrations.
+# Sets the password for the wa_bridge_app database role.
+# The role itself is created by the Supabase migration.
 #
 # Usage:
 #   cp scripts/.env.example scripts/.env
-#   # Edit scripts/.env with your admin credentials
+#   # Edit scripts/.env with your admin credentials and password
 #   ./scripts/setup-db-role.sh
 #
 
@@ -38,29 +38,8 @@ if [ -z "${WA_BRIDGE_APP_PASSWORD:-}" ]; then
   fi
 fi
 
-echo "Creating wa_bridge_app role..."
+echo "Setting wa_bridge_app password..."
 
-psql "$DATABASE_URL" <<SQL
-DO \$\$
-BEGIN
-  IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'wa_bridge_app') THEN
-    CREATE ROLE wa_bridge_app LOGIN;
-  END IF;
-END
-\$\$;
+psql "$DATABASE_URL" -c "ALTER ROLE wa_bridge_app PASSWORD '${WA_BRIDGE_APP_PASSWORD}';"
 
-ALTER ROLE wa_bridge_app PASSWORD '${WA_BRIDGE_APP_PASSWORD}';
-ALTER ROLE wa_bridge_app SET search_path TO whatsapp;
-
--- wa_bridge schema: read/write contacts, chats, messages
-GRANT USAGE ON SCHEMA wa_bridge TO wa_bridge_app;
-GRANT SELECT, INSERT, UPDATE ON ALL TABLES IN SCHEMA wa_bridge TO wa_bridge_app;
-ALTER DEFAULT PRIVILEGES IN SCHEMA wa_bridge GRANT SELECT, INSERT, UPDATE ON TABLES TO wa_bridge_app;
-
--- whatsapp schema: full access (whatsmeow session storage)
-GRANT ALL ON SCHEMA whatsapp TO wa_bridge_app;
-GRANT ALL ON ALL TABLES IN SCHEMA whatsapp TO wa_bridge_app;
-ALTER DEFAULT PRIVILEGES IN SCHEMA whatsapp GRANT ALL ON TABLES TO wa_bridge_app;
-SQL
-
-echo "Done. wa_bridge_app role is ready."
+echo "Done."
