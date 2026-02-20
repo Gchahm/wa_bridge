@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { ChevronDown, ChevronUp } from 'lucide-react'
 import type { Database } from '@/lib/database.types'
 import { AudioPlayer } from '@/components/AudioPlayer'
+import { MessageImage } from '@/components/MessageImage'
 
 type Message = Database['public']['Views']['messages']['Row']
 
@@ -63,9 +64,11 @@ export function MessageBubble({
       : null
 
   const isAudio = message.media_type === 'audio' && !!message.media_path
+  const isImage = message.media_type === 'image' && !!message.media_path
+  const hasInlineMedia = isAudio || isImage
   const isMedia =
     message.message_type !== 'text' && message.message_type !== 'chat'
-  const contentText = isAudio
+  const contentText = hasInlineMedia
     ? message.content || ''
     : message.content ||
       (isMedia ? `[${message.media_type || message.message_type}]` : '')
@@ -116,7 +119,8 @@ export function MessageBubble({
             </div>
           )}
 
-          {/* Audio player */}
+          {/* Inline media */}
+          {isImage && <MessageImage mediaPath={message.media_path!} />}
           {isAudio && <AudioPlayer mediaPath={message.media_path!} />}
 
           {/* Message content */}
@@ -124,7 +128,7 @@ export function MessageBubble({
             <p className="text-sm text-gray-800 whitespace-pre-wrap break-words leading-relaxed">
               {contentText}
             </p>
-          ) : !isAudio ? (
+          ) : !hasInlineMedia ? (
             <p className="text-sm text-gray-400 italic">
               [{message.message_type}]
             </p>
