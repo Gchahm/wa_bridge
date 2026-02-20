@@ -96,6 +96,14 @@ func (s *Store) SaveMessage(payload MessagePayload) {
 	fmt.Printf("Message saved to DB: %s from %s\n", payload.MessageID, payload.SenderID)
 }
 
+// UpdateDescription sets the description column on a previously saved message.
+func (s *Store) UpdateDescription(messageID, chatID, description string) error {
+	_, err := s.db.ExecContext(context.Background(),
+		`UPDATE wa_bridge.messages SET description = $1 WHERE message_id = $2 AND chat_id = $3`,
+		description, messageID, chatID)
+	return err
+}
+
 // UpdateMediaPath sets the media_path column on a previously saved message.
 func (s *Store) UpdateMediaPath(messageID, chatID, mediaPath string) error {
 	_, err := s.db.ExecContext(context.Background(),

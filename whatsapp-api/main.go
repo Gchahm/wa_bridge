@@ -28,7 +28,7 @@ func main() {
 	client := waclient.New(ctx, cfg.DatabaseURL)
 
 	messaging.RegisterHandler(client, cfg, db)
-	server.Start(ctx, client, qrStore, cfg.ListenAddr)
+	server.Start(ctx, client, qrStore, db, cfg.ListenAddr)
 	go waclient.Connect(ctx, client, qrStore)
 	go outbox.Listen(ctx, client, db, cfg.DatabaseURL)
 

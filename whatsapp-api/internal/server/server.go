@@ -14,6 +14,7 @@ import (
 
 	"go.mau.fi/whatsmeow"
 
+	"whatsapp-bridge/internal/store"
 	"whatsapp-bridge/internal/waclient"
 )
 
@@ -26,7 +27,7 @@ type SendRequest struct {
 
 // Start registers all HTTP routes and begins serving on listenAddr.
 // It runs the HTTP server in a goroutine and returns immediately.
-func Start(ctx context.Context, client *whatsmeow.Client, qrStore *waclient.QRStore, listenAddr string) {
+func Start(ctx context.Context, client *whatsmeow.Client, qrStore *waclient.QRStore, db *store.Store, listenAddr string) {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/send", makeSendHandler(ctx, client))
@@ -34,6 +35,7 @@ func Start(ctx context.Context, client *whatsmeow.Client, qrStore *waclient.QRSt
 	mux.HandleFunc("/connect", makeConnectHandler(client))
 	mux.HandleFunc("/qr", makeQRHandler(client, qrStore))
 	mux.HandleFunc("/qr.png", makeQRPNGHandler(qrStore))
+	mux.HandleFunc("/messages/description", makeUpdateDescriptionHandler(db))
 
 	go func() {
 		fmt.Printf("HTTP server listening on %s\n", listenAddr)
@@ -140,6 +142,43 @@ func makeQRPNGHandler(qrStore *waclient.QRStore) http.HandlerFunc {
 		w.Header().Set("Content-Type", "image/png")
 		w.Header().Set("Cache-Control", "no-cache")
 		w.Write(png)
+	}
+}
+
+// UpdateDescriptionRequest is the JSON body accepted by POST /messages/description.
+type UpdateDescriptionRequest struct {
+	MessageID   string `json:"message_id"`
+	ChatID      string `json:"chat_id"`
+	Description string `json:"description"`
+}
+
+func makeUpdateDescriptionHandler(db *store.Store) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+
+		var req UpdateDescriptionRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			http.Error(w, "invalid json", http.StatusBadRequest)
+			return
+		}
+
+		if req.MessageID == "" || req.ChatID == "" || req.Description == "" {
+			http.Error(w, "message_id, chat_id, and description are required", http.StatusBadRequest)
+			return
+		}
+
+		if err := db.UpdateDescription(req.MessageID, req.ChatID, req.Description); err != nil {
+			fmt.Printf("server: update description: %v\n", err)
+			http.Error(w, "failed to update description", http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"status":"ok"}`))
 	}
 }
 
