@@ -23,6 +23,22 @@ services:
     networks:
       - supabase
 
+  loki:
+    network_mode: ""
+    ports:
+      - "3100:3100"
+    networks:
+      - supabase
+
+  grafana:
+    network_mode: ""
+    environment:
+      - LOKI_URL=http://loki:3100
+    ports:
+      - "3200:3200"
+    networks:
+      - supabase
+
 networks:
   supabase:
     external: true
