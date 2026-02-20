@@ -45,6 +45,66 @@ func SendText(webhookURL string, payload store.MessagePayload) {
 	}
 }
 
+// SendImage uploads imageData as a multipart/form-data POST to imageWebhookURL.
+// The filename is derived from mimeType; mimeType is used as the part Content-Type.
+func SendImage(imageWebhookURL, senderID, senderName, chatID, messageID string, isGroup bool, imageData []byte, mimeType string) {
+	var body bytes.Buffer
+	writer := multipart.NewWriter(&body)
+
+	writer.WriteField("sender_id", senderID)
+	writer.WriteField("sender_name", senderName)
+	writer.WriteField("chat_id", chatID)
+	writer.WriteField("message_id", messageID)
+	writer.WriteField("is_group", strconv.FormatBool(isGroup))
+
+	var filename string
+	switch mimeType {
+	case "image/jpeg":
+		filename = "file.jpg"
+	case "image/png":
+		filename = "file.png"
+	case "image/webp":
+		filename = "file.webp"
+	case "image/gif":
+		filename = "file.gif"
+	default:
+		filename = "file.bin"
+	}
+
+	partHeader := make(textproto.MIMEHeader)
+	partHeader.Set("Content-Disposition", fmt.Sprintf(`form-data; name="data"; filename="%s"`, filename))
+	partHeader.Set("Content-Type", mimeType)
+	part, err := writer.CreatePart(partHeader)
+	if err != nil {
+		log.Error().Err(err).Str("message_id", messageID).Msg("failed to create multipart part")
+		return
+	}
+	if _, err := io.Copy(part, bytes.NewReader(imageData)); err != nil {
+		log.Error().Err(err).Str("message_id", messageID).Msg("failed to write image data")
+		return
+	}
+	writer.Close()
+
+	resp, err := http.Post(imageWebhookURL, writer.FormDataContentType(), &body)
+	if err != nil {
+		log.Error().Err(err).Str("message_id", messageID).Msg("failed to send to image webhook")
+		return
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode >= 200 && resp.StatusCode < 300 {
+		log.Debug().
+			Str("message_id", messageID).
+			Str("sender_id", senderID).
+			Msg("image forwarded")
+	} else {
+		log.Warn().
+			Int("status_code", resp.StatusCode).
+			Str("message_id", messageID).
+			Msg("image webhook returned non-2xx status")
+	}
+}
+
 // SendVoice uploads audioData as a multipart/form-data POST to voiceWebhookURL.
 // It sniffs the audio container format to choose the correct filename and
 // Content-Type.

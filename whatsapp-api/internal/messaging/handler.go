@@ -1,6 +1,6 @@
 // Package messaging registers the whatsmeow event handler and processes
-// incoming WhatsApp messages: parsing, persistence, media upload, and webhook
-// forwarding.
+// incoming WhatsApp messages: parsing, persistence, media download, storage
+// upload, and webhook forwarding.
 package messaging
 
 import (
@@ -38,19 +38,8 @@ func handleMessage(client *whatsmeow.Client, cfg config.Config, db *store.Store,
 
 	go db.SaveMessage(payload)
 
-	if payload.MessageType == "media" && cfg.StorageConfigured() {
-		go handleMediaUpload(client, cfg, db, msg, payload)
-	} else if payload.MediaType == "audio" && cfg.VoiceWebhookURL != "" {
-		// Backward compatibility: forward audio to voice webhook when storage is
-		// not configured.
-		audioData, err := client.Download(context.Background(), msg.Message.AudioMessage)
-		if err != nil {
-			log.Error().Err(err).Str("message_id", payload.MessageID).Msg("failed to download audio")
-		} else {
-			go webhook.SendVoice(cfg.VoiceWebhookURL,
-				payload.SenderID, payload.SenderName, payload.ChatID,
-				payload.MessageID, payload.IsGroup, audioData)
-		}
+	if payload.MessageType == "media" {
+		go handleMedia(client, cfg, db, msg, payload)
 	}
 
 	if cfg.WebhookURL != "" {
@@ -133,10 +122,10 @@ func buildPayload(msg *events.Message) store.MessagePayload {
 	return payload
 }
 
-// handleMediaUpload downloads the attachment and uploads it to Supabase
-// Storage, then updates the message record with the resulting path.
-// For audio messages it also forwards to the voice webhook.
-func handleMediaUpload(client *whatsmeow.Client, cfg config.Config, db *store.Store, msg *events.Message, payload store.MessagePayload) {
+// handleMedia downloads the attachment, forwards it to the appropriate webhook
+// (voice or image), and — when storage is configured — uploads it to Supabase
+// Storage and updates the message record with the resulting path.
+func handleMedia(client *whatsmeow.Client, cfg config.Config, db *store.Store, msg *events.Message, payload store.MessagePayload) {
 	info := media.FromMessage(msg)
 	if info == nil {
 		return
@@ -148,24 +137,35 @@ func handleMediaUpload(client *whatsmeow.Client, cfg config.Config, db *store.St
 		return
 	}
 
+	// Forward to voice webhook if audio.
 	if payload.MediaType == "audio" && cfg.VoiceWebhookURL != "" {
 		go webhook.SendVoice(cfg.VoiceWebhookURL,
 			payload.SenderID, payload.SenderName, payload.ChatID,
 			payload.MessageID, payload.IsGroup, data)
 	}
 
-	ext := media.MimeToExt(info.MimeType)
-	mediaPath := fmt.Sprintf("%s/%s.%s", payload.ChatID, payload.MessageID, ext)
-
-	if err := media.UploadToSupabase(data, cfg.SupabaseURL, cfg.SupabaseServiceKey, "wa-media", mediaPath, info.MimeType); err != nil {
-		log.Error().Err(err).Str("message_id", payload.MessageID).Str("media_path", mediaPath).Msg("failed to upload media")
-		return
+	// Forward to image webhook if image.
+	if payload.MediaType == "image" && cfg.ImageWebhookURL != "" {
+		go webhook.SendImage(cfg.ImageWebhookURL,
+			payload.SenderID, payload.SenderName, payload.ChatID,
+			payload.MessageID, payload.IsGroup, data, info.MimeType)
 	}
 
-	if err := db.UpdateMediaPath(payload.MessageID, payload.ChatID, mediaPath); err != nil {
-		log.Error().Err(err).Str("message_id", payload.MessageID).Str("media_path", mediaPath).Msg("failed to update media_path")
-		return
-	}
+	// Upload to storage if configured.
+	if cfg.StorageConfigured() {
+		ext := media.MimeToExt(info.MimeType)
+		mediaPath := fmt.Sprintf("%s/%s.%s", payload.ChatID, payload.MessageID, ext)
 
-	log.Debug().Str("media_path", mediaPath).Msg("media stored")
+		if err := media.UploadToSupabase(data, cfg.SupabaseURL, cfg.SupabaseServiceKey, "wa-media", mediaPath, info.MimeType); err != nil {
+			log.Error().Err(err).Str("message_id", payload.MessageID).Str("media_path", mediaPath).Msg("failed to upload media")
+			return
+		}
+
+		if err := db.UpdateMediaPath(payload.MessageID, payload.ChatID, mediaPath); err != nil {
+			log.Error().Err(err).Str("message_id", payload.MessageID).Str("media_path", mediaPath).Msg("failed to update media_path")
+			return
+		}
+
+		log.Debug().Str("media_path", mediaPath).Msg("media stored")
+	}
 }

@@ -140,5 +140,5 @@ internal/
 ### Environment Variables (Go service)
 - `DATABASE_URL` — Postgres connection string (connects as `wa_bridge_app`)
 - `SUPABASE_URL` / `SUPABASE_SERVICE_KEY` — For Supabase Storage uploads
-- `MESSAGE_WEBHOOK_URL` / `VOICE_WEBHOOK_URL` — External webhook endpoints
+- `MESSAGE_WEBHOOK_URL` / `VOICE_WEBHOOK_URL` / `IMAGE_WEBHOOK_URL` — External webhook endpoints
 - `LISTEN_ADDR` — HTTP listen address

@@ -14,6 +14,7 @@ type Config struct {
 	ListenAddr         string
 	WebhookURL         string
 	VoiceWebhookURL    string
+	ImageWebhookURL    string
 	SupabaseURL        string
 	SupabaseServiceKey string
 }
@@ -41,11 +42,17 @@ func Load() Config {
 		log.Warn().Msg("VOICE_WEBHOOK_URL not set, audio messages won't be forwarded")
 	}
 
+	imageWebhookURL := os.Getenv("IMAGE_WEBHOOK_URL")
+	if imageWebhookURL == "" {
+		log.Warn().Msg("IMAGE_WEBHOOK_URL not set, image messages won't be forwarded")
+	}
+
 	return Config{
 		DatabaseURL:        databaseURL,
 		ListenAddr:         listenAddr,
 		WebhookURL:         webhookURL,
 		VoiceWebhookURL:    voiceWebhookURL,
+		ImageWebhookURL:    imageWebhookURL,
 		SupabaseURL:        os.Getenv("SUPABASE_URL"),
 		SupabaseServiceKey: os.Getenv("SUPABASE_SERVICE_KEY"),
 	}
