@@ -50,6 +50,7 @@ CREATE TABLE "wa_bridge"."messages" (
     "media_type"            character varying,
     "content"               text,
     "media_path"            text,
+    "description"           text,
     "reply_to_message_id"   text,
     "is_from_me"            boolean                     NOT NULL DEFAULT false,
     "is_agent"              boolean                     NOT NULL DEFAULT false,
