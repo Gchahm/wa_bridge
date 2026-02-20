@@ -11,28 +11,37 @@ import (
 	"net/textproto"
 	"strconv"
 
+	"whatsapp-bridge/internal/logging"
 	"whatsapp-bridge/internal/store"
 )
+
+var log = logging.Component("webhook")
 
 // SendText marshals payload as JSON and POSTs it to webhookURL.
 func SendText(webhookURL string, payload store.MessagePayload) {
 	data, err := json.Marshal(payload)
 	if err != nil {
-		fmt.Printf("Error marshaling payload: %v\n", err)
+		log.Error().Err(err).Msg("failed to marshal payload")
 		return
 	}
 
 	resp, err := http.Post(webhookURL, "application/json", bytes.NewBuffer(data))
 	if err != nil {
-		fmt.Printf("Error sending to webhook: %v\n", err)
+		log.Error().Err(err).Msg("failed to send to webhook")
 		return
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode >= 200 && resp.StatusCode < 300 {
-		fmt.Printf("Message forwarded: %s from %s\n", payload.MessageID, payload.SenderID)
+		log.Debug().
+			Str("message_id", payload.MessageID).
+			Str("sender_id", payload.SenderID).
+			Msg("message forwarded")
 	} else {
-		fmt.Printf("Webhook returned status: %d\n", resp.StatusCode)
+		log.Warn().
+			Int("status_code", resp.StatusCode).
+			Str("message_id", payload.MessageID).
+			Msg("webhook returned non-2xx status")
 	}
 }
 
@@ -61,25 +70,31 @@ func SendVoice(voiceWebhookURL, senderID, senderName, chatID, messageID string, 
 	partHeader.Set("Content-Type", contentType)
 	part, err := writer.CreatePart(partHeader)
 	if err != nil {
-		fmt.Printf("Error creating multipart part: %v\n", err)
+		log.Error().Err(err).Str("message_id", messageID).Msg("failed to create multipart part")
 		return
 	}
 	if _, err := io.Copy(part, bytes.NewReader(audioData)); err != nil {
-		fmt.Printf("Error writing audio data: %v\n", err)
+		log.Error().Err(err).Str("message_id", messageID).Msg("failed to write audio data")
 		return
 	}
 	writer.Close()
 
 	resp, err := http.Post(voiceWebhookURL, writer.FormDataContentType(), &body)
 	if err != nil {
-		fmt.Printf("Error sending to voice webhook: %v\n", err)
+		log.Error().Err(err).Str("message_id", messageID).Msg("failed to send to voice webhook")
 		return
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode >= 200 && resp.StatusCode < 300 {
-		fmt.Printf("Audio forwarded: %s from %s\n", messageID, senderID)
+		log.Debug().
+			Str("message_id", messageID).
+			Str("sender_id", senderID).
+			Msg("audio forwarded")
 	} else {
-		fmt.Printf("Voice webhook returned status: %d\n", resp.StatusCode)
+		log.Warn().
+			Int("status_code", resp.StatusCode).
+			Str("message_id", messageID).
+			Msg("voice webhook returned non-2xx status")
 	}
 }

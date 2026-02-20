@@ -16,9 +16,12 @@ import (
 
 	"go.mau.fi/whatsmeow"
 
+	"whatsapp-bridge/internal/logging"
 	"whatsapp-bridge/internal/store"
 	"whatsapp-bridge/internal/waclient"
 )
+
+var log = logging.Component("server")
 
 //go:embed templates/*.html
 var templateFS embed.FS
@@ -128,7 +131,10 @@ func (h *handler) updateDescription(c *gin.Context) {
 	}
 
 	if err := h.db.UpdateDescription(req.MessageID, req.ChatID, req.Description); err != nil {
-		fmt.Printf("server: update description: %v\n", err)
+		log.Error().Err(err).
+			Str("message_id", req.MessageID).
+			Str("chat_id", req.ChatID).
+			Msg("failed to update description")
 		c.String(http.StatusInternalServerError, "failed to update description")
 		return
 	}
@@ -139,7 +145,9 @@ func (h *handler) updateDescription(c *gin.Context) {
 // Start registers all HTTP routes and begins serving on listenAddr.
 // It runs the HTTP server in a goroutine and returns immediately.
 func Start(ctx context.Context, client *whatsmeow.Client, qrStore *waclient.QRStore, db *store.Store, listenAddr string) {
-	r := gin.Default()
+	gin.SetMode(gin.ReleaseMode)
+	r := gin.New()
+	r.Use(logging.GinLogger(), logging.GinRecovery())
 
 	tmpl, err := template.ParseFS(templateFS, "templates/*.html")
 	if err != nil {
@@ -156,7 +164,7 @@ func Start(ctx context.Context, client *whatsmeow.Client, qrStore *waclient.QRSt
 	r.POST("/messages/description", h.updateDescription)
 
 	go func() {
-		fmt.Printf("HTTP server listening on %s\n", listenAddr)
+		log.Info().Str("addr", listenAddr).Msg("HTTP server listening")
 		if err := r.Run(listenAddr); err != nil {
 			panic(err)
 		}

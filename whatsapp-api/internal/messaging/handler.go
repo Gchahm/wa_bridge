@@ -12,17 +12,20 @@ import (
 	"go.mau.fi/whatsmeow/types/events"
 
 	"whatsapp-bridge/internal/config"
+	"whatsapp-bridge/internal/logging"
 	"whatsapp-bridge/internal/media"
 	"whatsapp-bridge/internal/store"
 	"whatsapp-bridge/internal/webhook"
 )
+
+var log = logging.Component("messaging")
 
 // RegisterHandler attaches the message event handler to client. All
 // configuration and dependencies are provided explicitly so there is no
 // reliance on package-level globals.
 func RegisterHandler(client *whatsmeow.Client, cfg config.Config, db *store.Store) {
 	client.AddEventHandler(func(evt interface{}) {
-		fmt.Printf("Event received: %T\n", evt)
+		log.Debug().Str("type", fmt.Sprintf("%T", evt)).Msg("event received")
 		if msg, ok := evt.(*events.Message); ok {
 			handleMessage(client, cfg, db, msg)
 		}
@@ -42,7 +45,7 @@ func handleMessage(client *whatsmeow.Client, cfg config.Config, db *store.Store,
 		// not configured.
 		audioData, err := client.Download(context.Background(), msg.Message.AudioMessage)
 		if err != nil {
-			fmt.Printf("Error downloading audio: %v\n", err)
+			log.Error().Err(err).Str("message_id", payload.MessageID).Msg("failed to download audio")
 		} else {
 			go webhook.SendVoice(cfg.VoiceWebhookURL,
 				payload.SenderID, payload.SenderName, payload.ChatID,
@@ -62,7 +65,7 @@ func resolveChatName(client *whatsmeow.Client, msg *events.Message) string {
 	if msg.Info.IsGroup {
 		info, err := client.GetGroupInfo(context.Background(), msg.Info.Chat)
 		if err != nil {
-			fmt.Printf("Error fetching group info for %s: %v\n", msg.Info.Chat, err)
+			log.Error().Err(err).Str("chat_id", msg.Info.Chat.String()).Msg("failed to fetch group info")
 			return ""
 		}
 		return info.Name
@@ -141,7 +144,7 @@ func handleMediaUpload(client *whatsmeow.Client, cfg config.Config, db *store.St
 
 	data, err := client.Download(context.Background(), info.Downloadable)
 	if err != nil {
-		fmt.Printf("Error downloading media %s: %v\n", payload.MessageID, err)
+		log.Error().Err(err).Str("message_id", payload.MessageID).Msg("failed to download media")
 		return
 	}
 
@@ -155,14 +158,14 @@ func handleMediaUpload(client *whatsmeow.Client, cfg config.Config, db *store.St
 	mediaPath := fmt.Sprintf("%s/%s.%s", payload.ChatID, payload.MessageID, ext)
 
 	if err := media.UploadToSupabase(data, cfg.SupabaseURL, cfg.SupabaseServiceKey, "wa-media", mediaPath, info.MimeType); err != nil {
-		fmt.Printf("Error uploading media %s: %v\n", payload.MessageID, err)
+		log.Error().Err(err).Str("message_id", payload.MessageID).Str("media_path", mediaPath).Msg("failed to upload media")
 		return
 	}
 
 	if err := db.UpdateMediaPath(payload.MessageID, payload.ChatID, mediaPath); err != nil {
-		fmt.Printf("Error updating media_path %s: %v\n", payload.MessageID, err)
+		log.Error().Err(err).Str("message_id", payload.MessageID).Str("media_path", mediaPath).Msg("failed to update media_path")
 		return
 	}
 
-	fmt.Printf("Media stored: %s\n", mediaPath)
+	log.Debug().Str("media_path", mediaPath).Msg("media stored")
 }

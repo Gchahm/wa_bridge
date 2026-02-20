@@ -1,9 +1,12 @@
 package config
 
 import (
-	"fmt"
 	"os"
+
+	"whatsapp-bridge/internal/logging"
 )
+
+var log = logging.Component("config")
 
 // Config holds all application configuration loaded from environment variables.
 type Config struct {
@@ -30,12 +33,12 @@ func Load() Config {
 
 	webhookURL := os.Getenv("MESSAGE_WEBHOOK_URL")
 	if webhookURL == "" {
-		fmt.Println("Warning: MESSAGE_WEBHOOK_URL not set, incoming messages won't be forwarded")
+		log.Warn().Msg("MESSAGE_WEBHOOK_URL not set, incoming messages won't be forwarded")
 	}
 
 	voiceWebhookURL := os.Getenv("VOICE_WEBHOOK_URL")
 	if voiceWebhookURL == "" {
-		fmt.Println("Warning: VOICE_WEBHOOK_URL not set, audio messages won't be forwarded")
+		log.Warn().Msg("VOICE_WEBHOOK_URL not set, audio messages won't be forwarded")
 	}
 
 	return Config{

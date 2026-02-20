@@ -8,7 +8,11 @@ import (
 	"time"
 
 	_ "github.com/lib/pq"
+
+	"whatsapp-bridge/internal/logging"
 )
+
+var log = logging.Component("store")
 
 // Store wraps a *sql.DB and provides bridge-specific persistence operations.
 type Store struct {
@@ -25,7 +29,7 @@ func New(databaseURL string) *Store {
 	if err := db.Ping(); err != nil {
 		panic(fmt.Sprintf("failed to ping bridge DB: %v", err))
 	}
-	fmt.Println("Connected to bridge database")
+	log.Info().Msg("connected to bridge database")
 	return &Store{db: db}
 }
 
@@ -65,7 +69,7 @@ func (s *Store) SaveMessage(payload MessagePayload) {
 			   last_seen_at = now()`,
 			payload.SenderID, payload.SenderName)
 		if err != nil {
-			fmt.Printf("Error upserting contact: %v\n", err)
+			log.Error().Err(err).Msg("failed to upsert contact")
 		}
 	}
 
@@ -77,7 +81,7 @@ func (s *Store) SaveMessage(payload MessagePayload) {
 		   last_message_at = $4`,
 		payload.ChatID, payload.IsGroup, payload.ChatName, payload.Timestamp)
 	if err != nil {
-		fmt.Printf("Error upserting chat: %v\n", err)
+		log.Error().Err(err).Str("chat_id", payload.ChatID).Msg("failed to upsert chat")
 		return
 	}
 
@@ -89,11 +93,14 @@ func (s *Store) SaveMessage(payload MessagePayload) {
 		payload.MessageType, payload.MediaType, payload.Text, payload.IsFromMe,
 		payload.ReplyToMessageID, payload.Timestamp)
 	if err != nil {
-		fmt.Printf("Error inserting message: %v\n", err)
+		log.Error().Err(err).Str("message_id", payload.MessageID).Msg("failed to insert message")
 		return
 	}
 
-	fmt.Printf("Message saved to DB: %s from %s\n", payload.MessageID, payload.SenderID)
+	log.Debug().
+		Str("message_id", payload.MessageID).
+		Str("sender_id", payload.SenderID).
+		Msg("message saved")
 }
 
 // UpdateDescription sets the description column on a previously saved message.
@@ -165,9 +172,9 @@ func (s *Store) MarkOutboxFailed(ctx context.Context, id int64, errMsg string) {
 		 WHERE id = $2`,
 		errMsg, id)
 	if err != nil {
-		fmt.Printf("Error marking outbox message %d as failed: %v\n", id, err)
+		log.Error().Err(err).Int64("outbox_id", id).Msg("failed to mark outbox message as failed")
 	}
-	fmt.Printf("Outbox message %d failed: %s\n", id, errMsg)
+	log.Warn().Int64("outbox_id", id).Str("error", errMsg).Msg("outbox message failed")
 }
 
 // UpsertOwnContact inserts or updates the bridge account's own contact record

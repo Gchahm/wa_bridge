@@ -4,15 +4,17 @@ package waclient
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"sync"
 
 	"github.com/mdp/qrterminal/v3"
 	"go.mau.fi/whatsmeow"
 	"go.mau.fi/whatsmeow/store/sqlstore"
-	waLog "go.mau.fi/whatsmeow/util/log"
+
+	"whatsapp-bridge/internal/logging"
 )
+
+var log = logging.Component("waclient")
 
 // QRStore holds the latest QR code string behind a read-write mutex so it can
 // be shared safely between the connect goroutine and HTTP handlers.
@@ -38,7 +40,7 @@ func (q *QRStore) Get() string {
 // New creates a whatsmeow client backed by the Postgres device store at
 // databaseURL. It panics on any unrecoverable setup error.
 func New(ctx context.Context, databaseURL string) *whatsmeow.Client {
-	dbLog := waLog.Stdout("Database", "WARN", true)
+	dbLog := logging.WaLog("Database")
 	container, err := sqlstore.New(ctx, "postgres", databaseURL, dbLog)
 	if err != nil {
 		panic(err)
@@ -47,7 +49,7 @@ func New(ctx context.Context, databaseURL string) *whatsmeow.Client {
 	if err != nil {
 		panic(err)
 	}
-	clientLog := waLog.Stdout("Client", "INFO", true)
+	clientLog := logging.WaLog("Client")
 	return whatsmeow.NewClient(deviceStore, clientLog)
 }
 
@@ -61,13 +63,13 @@ func Connect(ctx context.Context, client *whatsmeow.Client, qrStore *QRStore) {
 		if err := client.Connect(); err != nil {
 			panic(err)
 		}
-		fmt.Println("Waiting for QR code scan. Open /connect in browser to see QR code.")
+		log.Info().Msg("waiting for QR code scan, open /connect in browser to see QR code")
 		for evt := range qrChan {
 			if evt.Event == "code" {
 				qrStore.Set(evt.Code)
 				qrterminal.Generate(evt.Code, qrterminal.L, os.Stdout)
 			} else {
-				fmt.Println("Login event:", evt.Event)
+				log.Info().Str("event", evt.Event).Msg("login event")
 				if evt.Event == "success" {
 					qrStore.Set("")
 				}
@@ -79,5 +81,5 @@ func Connect(ctx context.Context, client *whatsmeow.Client, qrStore *QRStore) {
 	if err := client.Connect(); err != nil {
 		panic(err)
 	}
-	fmt.Println("WhatsApp connected with existing session")
+	log.Info().Msg("WhatsApp connected with existing session")
 }
