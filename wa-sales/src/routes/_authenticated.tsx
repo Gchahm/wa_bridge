@@ -4,7 +4,9 @@ import { AppSidebar } from '@/components/AppSidebar'
 
 export const Route = createFileRoute('/_authenticated')({
   beforeLoad: ({ context }) => {
-    if (!context.session) {
+    // Only redirect on the client — the server has no localStorage
+    // so the session is always null during SSR
+    if (typeof window !== 'undefined' && !context.session) {
       throw redirect({ to: '/login' })
     }
   },

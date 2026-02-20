@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label'
 
 export const Route = createFileRoute('/login')({
   beforeLoad: ({ context }) => {
-    if (context.session) {
+    if (typeof window !== 'undefined' && context.session) {
       throw redirect({ to: '/' })
     }
   },

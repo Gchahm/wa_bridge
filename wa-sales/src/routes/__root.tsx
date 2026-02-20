@@ -36,6 +36,11 @@ export const Route = createRootRouteWithContext<RouterContext>()({
   }),
 
   beforeLoad: async () => {
+    // On the server there is no localStorage, so skip the session check
+    // and let the client hydrate with the real session via onAuthStateChange
+    if (typeof window === 'undefined') {
+      return { session: null, user: null }
+    }
     const { data } = await supabase.auth.getSession()
     return {
       session: data.session,
@@ -69,7 +74,12 @@ function RootComponent() {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event) => {
-      if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
+      if (
+        event === 'INITIAL_SESSION' ||
+        event === 'SIGNED_IN' ||
+        event === 'SIGNED_OUT' ||
+        event === 'TOKEN_REFRESHED'
+      ) {
         router.invalidate()
       }
     })
