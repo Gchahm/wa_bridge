@@ -101,6 +101,7 @@ export type Database = {
           chat_id: string | null
           content: string | null
           created_at: string | null
+          description: string | null
           is_agent: boolean | null
           is_from_me: boolean | null
           media_path: string | null
@@ -116,6 +117,7 @@ export type Database = {
           chat_id?: string | null
           content?: string | null
           created_at?: string | null
+          description?: string | null
           is_agent?: boolean | null
           is_from_me?: boolean | null
           media_path?: string | null
@@ -131,6 +133,7 @@ export type Database = {
           chat_id?: string | null
           content?: string | null
           created_at?: string | null
+          description?: string | null
           is_agent?: boolean | null
           is_from_me?: boolean | null
           media_path?: string | null
@@ -277,6 +280,7 @@ export type Database = {
           chat_id: string
           content: string | null
           created_at: string | null
+          description: string | null
           is_agent: boolean
           is_from_me: boolean
           media_path: string | null
@@ -292,6 +296,7 @@ export type Database = {
           chat_id: string
           content?: string | null
           created_at?: string | null
+          description?: string | null
           is_agent?: boolean
           is_from_me?: boolean
           media_path?: string | null
@@ -307,6 +312,7 @@ export type Database = {
           chat_id?: string
           content?: string | null
           created_at?: string | null
+          description?: string | null
           is_agent?: boolean
           is_from_me?: boolean
           media_path?: string | null

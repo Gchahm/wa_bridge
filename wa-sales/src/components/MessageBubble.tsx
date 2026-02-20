@@ -1,3 +1,5 @@
+import { useState } from 'react'
+import { ChevronDown, ChevronUp } from 'lucide-react'
 import type { Database } from '@/lib/database.types'
 
 type Message = Database['public']['Views']['messages']['Row']
@@ -122,6 +124,11 @@ export function MessageBubble({
             </p>
           )}
 
+          {/* Description toggle */}
+          {message.description && (
+            <DescriptionToggle description={message.description} />
+          )}
+
           {/* Timestamp */}
           <div
             className={`flex items-center gap-1 mt-1 ${isFromMe ? 'justify-end' : 'justify-start'}`}
@@ -133,6 +140,31 @@ export function MessageBubble({
         </div>
       </div>
     </>
+  )
+}
+
+function DescriptionToggle({ description }: { description: string }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <div className="mt-1">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="flex items-center gap-1 text-[11px] text-gray-500 hover:text-gray-700 transition-colors"
+      >
+        {open ? (
+          <ChevronUp className="size-3" />
+        ) : (
+          <ChevronDown className="size-3" />
+        )}
+        <span>Description</span>
+      </button>
+      {open && (
+        <p className="mt-1 text-xs text-gray-600 whitespace-pre-wrap break-words">
+          {description}
+        </p>
+      )}
+    </div>
   )
 }
 
