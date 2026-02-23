@@ -42,7 +42,7 @@ func handleMessage(client *whatsmeow.Client, cfg config.Config, db *store.Store,
 		go handleMedia(client, cfg, db, msg, payload)
 	}
 
-	if cfg.WebhookURL != "" {
+	if cfg.WebhookURL != "" && !(payload.MessageType == "media" && payload.Text == "") {
 		go webhook.SendText(cfg.WebhookURL, payload)
 	}
 }
