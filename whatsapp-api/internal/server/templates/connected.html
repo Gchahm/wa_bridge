@@ -6,6 +6,9 @@
         body { font-family: -apple-system, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background: #f0f0f0; }
         .container { text-align: center; background: white; padding: 40px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
         .success { color: #25D366; font-size: 48px; }
+        button { margin-top: 20px; padding: 10px 24px; background: #dc3545; color: white; border: none; border-radius: 6px; font-size: 16px; cursor: pointer; }
+        button:hover { background: #c82333; }
+        button:disabled { background: #999; cursor: not-allowed; }
     </style>
 </head>
 <body>
@@ -13,6 +16,28 @@
         <div class="success">&#10003;</div>
         <h1>WhatsApp Connected</h1>
         <p>Your WhatsApp is already linked and connected.</p>
+        <button id="disconnectBtn" onclick="disconnect()">Disconnect</button>
+        <script>
+            async function disconnect() {
+                const btn = document.getElementById('disconnectBtn');
+                btn.disabled = true;
+                btn.textContent = 'Disconnecting...';
+                try {
+                    const res = await fetch('/disconnect', { method: 'POST' });
+                    if (res.ok) {
+                        window.location.href = '/connect';
+                    } else {
+                        alert('Failed to disconnect');
+                        btn.disabled = false;
+                        btn.textContent = 'Disconnect';
+                    }
+                } catch (e) {
+                    alert('Request failed');
+                    btn.disabled = false;
+                    btn.textContent = 'Disconnect';
+                }
+            }
+        </script>
     </div>
 </body>
 </html>

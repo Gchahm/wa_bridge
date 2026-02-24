@@ -123,6 +123,24 @@ func (h *handler) qrPNG(c *gin.Context) {
 	c.Data(http.StatusOK, "image/png", png)
 }
 
+func (h *handler) disconnect(c *gin.Context) {
+	if h.client.Store.ID == nil {
+		c.JSON(http.StatusOK, gin.H{"status": "already disconnected"})
+		return
+	}
+
+	if err := h.client.Logout(h.ctx); err != nil {
+		log.Error().Err(err).Msg("failed to logout")
+		c.String(http.StatusInternalServerError, "failed to logout")
+		return
+	}
+
+	log.Info().Msg("logged out, starting new QR code flow")
+	go waclient.Connect(h.ctx, h.client, h.qrStore)
+
+	c.JSON(http.StatusOK, gin.H{"status": "disconnected"})
+}
+
 func (h *handler) updateDescription(c *gin.Context) {
 	var req UpdateDescriptionRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -162,6 +180,7 @@ func Start(ctx context.Context, client *whatsmeow.Client, qrStore *waclient.QRSt
 	r.GET("/qr", h.qr)
 	r.GET("/qr.png", h.qrPNG)
 	r.POST("/messages/description", h.updateDescription)
+	r.POST("/disconnect", h.disconnect)
 
 	go func() {
 		log.Info().Str("addr", listenAddr).Msg("HTTP server listening")
