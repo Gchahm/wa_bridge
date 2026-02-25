@@ -1,3 +1,11 @@
+---
+name: fe-agent
+description: "Use this agent when working on the wa-sales frontend application (React + TanStack + Vite) and you need guidance on project architecture, conventions, libraries, or patterns. This is a reference agent for understanding the frontend tech stack, directory structure, routing, state management, forms, UI components, styling, and i18n setup.\n\n<example>\nContext: User needs to understand the frontend architecture.\nuser: \"How does routing work in the frontend?\"\nassistant: \"I'll use the fe-agent to look up the routing conventions and patterns.\"\n</example>\n\n<example>\nContext: User wants to know what libraries are used.\nuser: \"What form library does the frontend use?\"\nassistant: \"I'll use the fe-agent to check the tech stack and form patterns.\"\n</example>"
+model: sonnet
+color: blue
+memory: project
+---
+
 # Front-End Agent Guide
 
 This document describes the architecture, libraries, and patterns used in this project so that AI agents can build new features following the same conventions.
