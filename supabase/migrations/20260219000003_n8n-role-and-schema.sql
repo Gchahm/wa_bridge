@@ -22,6 +22,9 @@ BEGIN
 END
 $$;
 
+-- Allow connecting to the database
+GRANT CONNECT ON DATABASE postgres TO "n8n_app";
+
 -- Schema-level USAGE grant
 GRANT USAGE ON SCHEMA "n8n" TO "n8n_app";
 
