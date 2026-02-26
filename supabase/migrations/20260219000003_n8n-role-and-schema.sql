@@ -22,8 +22,10 @@ BEGIN
 END
 $$;
 
--- Allow connecting to the database
-GRANT CONNECT ON DATABASE postgres TO "n8n_app";
+-- Database-level grants: CONNECT to allow login, CREATE because n8n runs
+-- CREATE SCHEMA IF NOT EXISTS at startup (requires this privilege even when
+-- the schema already exists).
+GRANT CONNECT, CREATE ON DATABASE postgres TO "n8n_app";
 
 -- Schema-level USAGE grant
 GRANT USAGE ON SCHEMA "n8n" TO "n8n_app";
