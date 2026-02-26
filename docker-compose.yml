@@ -38,6 +38,7 @@ services:
       - N8N_PORT=${N8N_PORT}
       - N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY}
       - WEBHOOK_URL=${N8N_WEBHOOK_URL}
+      - NODE_TLS_REJECT_UNAUTHORIZED=0
     volumes:
       - n8n_data:/home/node/.n8n
 
