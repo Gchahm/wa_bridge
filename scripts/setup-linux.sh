@@ -7,6 +7,7 @@
 #   - Docker Engine + Docker Compose plugin
 #   - Grafana Loki Docker log driver (ARM64)
 #   - PostgreSQL client (psql)
+#   - Python 3 (for n8n Code nodes)
 #   - Git
 #
 # Usage:
@@ -103,6 +104,20 @@ install_psql() {
   ok "psql installed: $(psql --version)"
 }
 
+# --- Python 3 ---
+
+install_python() {
+  if command -v python3 &>/dev/null; then
+    ok "Python 3 already installed: $(python3 --version)"
+    return
+  fi
+
+  info "Installing Python 3..."
+  apt-get update
+  apt-get install -y python3
+  ok "Python 3 installed: $(python3 --version)"
+}
+
 # --- Git ---
 
 install_git() {
@@ -128,6 +143,7 @@ main() {
   setup_docker_user
   install_loki_driver
   install_psql
+  install_python
   install_git
 
   echo ""
@@ -137,6 +153,7 @@ main() {
   echo "  docker compose   $(docker compose version 2>/dev/null || echo 'N/A')"
   echo "  loki driver      $(docker plugin ls 2>/dev/null | grep "$LOKI_ALIAS" || echo 'N/A')"
   echo "  psql             $(psql --version 2>/dev/null || echo 'N/A')"
+  echo "  python3          $(python3 --version 2>/dev/null || echo 'N/A')"
   echo "  git              $(git --version 2>/dev/null || echo 'N/A')"
   echo ""
 }
