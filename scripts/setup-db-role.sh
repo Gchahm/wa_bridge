@@ -1,11 +1,11 @@
 #!/bin/bash
 #
-# Sets the password for the wa_bridge_app database role.
-# The role itself is created by the Supabase migration.
+# Sets the password for the wa_bridge_app and n8n_app database roles.
+# The roles themselves are created by Supabase migrations.
 #
 # Usage:
 #   cp scripts/.env.example scripts/.env
-#   # Edit scripts/.env with your admin credentials and password
+#   # Edit scripts/.env with your admin credentials and passwords
 #   ./scripts/setup-db-role.sh
 #
 
@@ -38,8 +38,19 @@ if [ -z "${WA_BRIDGE_APP_PASSWORD:-}" ]; then
   fi
 fi
 
-echo "Setting wa_bridge_app password..."
+if [ -z "${N8N_APP_PASSWORD:-}" ]; then
+  read -rsp "Enter password for n8n_app role: " N8N_APP_PASSWORD
+  echo
+  if [ -z "$N8N_APP_PASSWORD" ]; then
+    echo "Error: password cannot be empty"
+    exit 1
+  fi
+fi
 
+echo "Setting wa_bridge_app password..."
 psql "$DATABASE_URL" -c "ALTER ROLE wa_bridge_app PASSWORD '${WA_BRIDGE_APP_PASSWORD}';"
+
+echo "Setting n8n_app password..."
+psql "$DATABASE_URL" -c "ALTER ROLE n8n_app PASSWORD '${N8N_APP_PASSWORD}';"
 
 echo "Done."
