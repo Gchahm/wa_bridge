@@ -4,6 +4,7 @@ import { Loader2, MessageSquare, Send } from 'lucide-react'
 import { MessageBubble, getMessageDateKey } from './MessageBubble'
 import { supabase } from '@/lib/supabase'
 import type { Database } from '@/lib/database.types'
+import type { Reaction } from '@/routes/_authenticated/chat/-hooks/useReactions'
 
 type Chat = Database['public']['Views']['chats']['Row']
 type Message = Database['public']['Views']['messages']['Row']
@@ -11,6 +12,7 @@ type Message = Database['public']['Views']['messages']['Row']
 type MessageViewProps = {
   chat: Chat | null
   messages: Message[]
+  reactionsMap: Map<string, Reaction[]>
   fetchNextPage: () => void
   hasNextPage: boolean
   isFetchingNextPage: boolean
@@ -19,6 +21,7 @@ type MessageViewProps = {
 export function MessageView({
   chat,
   messages,
+  reactionsMap,
   fetchNextPage,
   hasNextPage,
   isFetchingNextPage,
@@ -173,6 +176,11 @@ export function MessageView({
                   key={`${message.message_id}-${message.chat_id}`}
                   message={message}
                   quotedMessage={quoted}
+                  reactions={
+                    message.message_id
+                      ? reactionsMap.get(message.message_id)
+                      : undefined
+                  }
                   isGroup={chat.is_group ?? false}
                   showDateSeparator={showDateSeparator}
                 />

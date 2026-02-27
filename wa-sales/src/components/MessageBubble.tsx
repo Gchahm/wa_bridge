@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { ChevronDown, ChevronUp } from 'lucide-react'
 import type { Database } from '@/lib/database.types'
 import { AudioPlayer } from '@/components/AudioPlayer'
 import { MessageImage } from '@/components/MessageImage'
+import type { Reaction } from '@/routes/_authenticated/chat/-hooks/useReactions'
 
 type Message = Database['public']['Views']['messages']['Row']
 
@@ -46,6 +47,7 @@ function getMessageDateKey(timestamp: string): string {
 type MessageBubbleProps = {
   message: Message
   quotedMessage?: Message | null
+  reactions?: Reaction[]
   isGroup: boolean
   showDateSeparator: boolean
 }
@@ -53,6 +55,7 @@ type MessageBubbleProps = {
 export function MessageBubble({
   message,
   quotedMessage,
+  reactions,
   isGroup,
   showDateSeparator,
 }: MessageBubbleProps) {
@@ -139,6 +142,11 @@ export function MessageBubble({
             <DescriptionToggle description={message.description} />
           )}
 
+          {/* Reactions */}
+          {reactions && reactions.length > 0 && (
+            <ReactionBadges reactions={reactions} />
+          )}
+
           {/* Timestamp */}
           <div
             className={`flex items-center gap-1 mt-1 ${isFromMe ? 'justify-end' : 'justify-start'}`}
@@ -150,6 +158,39 @@ export function MessageBubble({
         </div>
       </div>
     </>
+  )
+}
+
+function ReactionBadges({ reactions }: { reactions: Reaction[] }) {
+  const grouped = useMemo(() => {
+    const map = new Map<string, string[]>()
+    for (const r of reactions) {
+      if (!r.emoji) continue
+      const senders = map.get(r.emoji)
+      if (senders) {
+        senders.push(r.sender_id ?? '')
+      } else {
+        map.set(r.emoji, [r.sender_id ?? ''])
+      }
+    }
+    return map
+  }, [reactions])
+
+  return (
+    <div className="flex flex-wrap gap-1 mt-1">
+      {[...grouped.entries()].map(([emoji, senders]) => (
+        <span
+          key={emoji}
+          title={senders.join(', ')}
+          className="inline-flex items-center gap-0.5 rounded-full bg-black/5 px-1.5 py-0.5 text-xs leading-none"
+        >
+          <span>{emoji}</span>
+          {senders.length > 1 && (
+            <span className="text-gray-500">{senders.length}</span>
+          )}
+        </span>
+      ))}
+    </div>
   )
 }
 

@@ -8,6 +8,7 @@ import (
 	"fmt"
 
 	"go.mau.fi/whatsmeow"
+	"go.mau.fi/whatsmeow/proto/waE2E"
 	"go.mau.fi/whatsmeow/types"
 	"go.mau.fi/whatsmeow/types/events"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -34,6 +35,12 @@ func RegisterHandler(client *whatsmeow.Client, cfg config.Config, db *store.Stor
 }
 
 func handleMessage(client *whatsmeow.Client, cfg config.Config, db *store.Store, msg *events.Message) {
+	// Handle reactions separately — they are not regular messages.
+	if reaction := msg.Message.GetReactionMessage(); reaction != nil {
+		go handleReaction(db, msg, reaction)
+		return
+	}
+
 	payload := buildPayload(msg)
 	payload.ChatName = resolveChatName(client, msg)
 
@@ -81,17 +88,21 @@ func resolveChatName(client *whatsmeow.Client, msg *events.Message) string {
 	return ""
 }
 
-// buildPayload derives a MessagePayload from the raw whatsmeow event.
-func buildPayload(msg *events.Message) store.MessagePayload {
-	var sender string
+// resolveSender extracts the sender phone number from the message metadata.
+func resolveSender(msg *events.Message) string {
 	switch msg.Info.Chat.Server {
 	case types.HiddenUserServer:
-		sender = msg.Info.MessageSource.SenderAlt.User
+		return msg.Info.MessageSource.SenderAlt.User
 	case types.GroupServer:
-		sender = msg.Info.MessageSource.Chat.User
+		return msg.Info.MessageSource.Chat.User
 	default:
-		sender = msg.Info.Sender.User
+		return msg.Info.Sender.User
 	}
+}
+
+// buildPayload derives a MessagePayload from the raw whatsmeow event.
+func buildPayload(msg *events.Message) store.MessagePayload {
+	sender := resolveSender(msg)
 
 	payload := store.MessagePayload{
 		Timestamp:  msg.Info.Timestamp,
@@ -135,6 +146,45 @@ func buildPayload(msg *events.Message) store.MessagePayload {
 	}
 
 	return payload
+}
+
+// handleReaction persists or removes a WhatsApp reaction. An empty emoji in
+// the reaction event means the user retracted their reaction.
+func handleReaction(db *store.Store, msg *events.Message, reaction *waE2E.ReactionMessage) {
+	targetID := reaction.GetKey().GetID()
+	if targetID == "" {
+		log.Warn().Msg("reaction has no target message ID")
+		return
+	}
+
+	// The reaction key contains the target message's JID. Fall back to the
+	// event's chat when the key does not carry a remote JID.
+	chatID := msg.Info.Chat.String()
+	if reaction.GetKey().GetRemoteJID() != "" {
+		chatID = reaction.GetKey().GetRemoteJID()
+	}
+
+	senderID := resolveSender(msg)
+	senderName := msg.Info.PushName
+
+	ctx := context.Background()
+
+	// Empty emoji text means the user retracted their reaction.
+	if reaction.GetText() == "" {
+		if err := db.DeleteReaction(ctx, targetID, chatID, senderID); err != nil {
+			log.Error().Err(err).Str("target_message_id", targetID).Msg("failed to delete reaction")
+		} else {
+			log.Debug().Str("target_message_id", targetID).Str("sender_id", senderID).Msg("reaction removed")
+		}
+		return
+	}
+
+	ts := msg.Info.Timestamp
+	if err := db.UpsertReaction(ctx, targetID, chatID, senderID, senderName, reaction.GetText(), ts); err != nil {
+		log.Error().Err(err).Str("target_message_id", targetID).Str("emoji", reaction.GetText()).Msg("failed to upsert reaction")
+	} else {
+		log.Debug().Str("target_message_id", targetID).Str("emoji", reaction.GetText()).Str("sender_id", senderID).Msg("reaction saved")
+	}
 }
 
 // handleMedia downloads the attachment, forwards it to the appropriate webhook

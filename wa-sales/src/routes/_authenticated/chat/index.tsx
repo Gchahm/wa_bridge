@@ -6,6 +6,7 @@ import { ChatList } from '@/components/ChatList'
 import { MessageView } from '@/components/MessageView'
 import { chatStore } from './-store/chatStore'
 import { useMessages } from './-hooks/useMessages'
+import { useReactions } from './-hooks/useReactions'
 
 const searchSchema = z.object({
   chatId: z.string().optional(),
@@ -21,6 +22,7 @@ function MessengerPage() {
   const { chatId } = Route.useSearch()
   const navigate = useNavigate({ from: '/chat' })
   const { messages, ...pagination } = useMessages(chatId)
+  const reactionsMap = useReactions(chatId)
 
   const selectedChat = chatId
     ? (chats.find((c) => c.chat_id === chatId) ?? null)
@@ -55,7 +57,12 @@ function MessengerPage() {
           chatId ? 'flex' : 'hidden md:flex'
         }`}
       >
-        <MessageView chat={selectedChat} messages={messages} {...pagination} />
+        <MessageView
+          chat={selectedChat}
+          messages={messages}
+          reactionsMap={reactionsMap}
+          {...pagination}
+        />
       </div>
     </div>
   )

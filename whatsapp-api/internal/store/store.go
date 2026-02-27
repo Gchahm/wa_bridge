@@ -214,6 +214,41 @@ func (s *Store) UpdateChatLastMessage(ctx context.Context, chatID string, ts tim
 	return err
 }
 
+// UpsertReaction upserts the sender's contact record and then inserts or
+// updates a reaction on the target message. An existing reaction from the same
+// sender on the same message is replaced when the emoji changes.
+func (s *Store) UpsertReaction(ctx context.Context, messageID, chatID, senderID, senderName, emoji string, ts time.Time) error {
+	if senderID != "" {
+		_, err := s.db.ExecContext(ctx,
+			`INSERT INTO wa_bridge.contacts (phone_number, push_name, last_seen_at)
+			 VALUES ($1, $2, now())
+			 ON CONFLICT (phone_number) DO UPDATE SET
+			   push_name = COALESCE(NULLIF($2, ''), wa_bridge.contacts.push_name),
+			   last_seen_at = now()`,
+			senderID, senderName)
+		if err != nil {
+			log.Error().Err(err).Msg("failed to upsert contact for reaction")
+		}
+	}
+
+	_, err := s.db.ExecContext(ctx,
+		`INSERT INTO wa_bridge.reactions (message_id, chat_id, sender_id, emoji, timestamp)
+		 VALUES ($1, $2, $3, $4, $5)
+		 ON CONFLICT (message_id, chat_id, sender_id) DO UPDATE SET
+		   emoji = EXCLUDED.emoji, timestamp = EXCLUDED.timestamp`,
+		messageID, chatID, senderID, emoji, ts)
+	return err
+}
+
+// DeleteReaction removes a reaction from a message. This is called when a user
+// retracts their reaction (WhatsApp sends a reaction event with an empty emoji).
+func (s *Store) DeleteReaction(ctx context.Context, messageID, chatID, senderID string) error {
+	_, err := s.db.ExecContext(ctx,
+		`DELETE FROM wa_bridge.reactions WHERE message_id = $1 AND chat_id = $2 AND sender_id = $3`,
+		messageID, chatID, senderID)
+	return err
+}
+
 // EnsureCustomer creates a customer record for the given phone number if one
 // does not already exist. It uses the push name as the customer name, falling
 // back to the phone number itself when push name is empty.

@@ -328,6 +328,48 @@ export type Database = {
           },
         ]
       }
+      reactions: {
+        Row: {
+          chat_id: string | null
+          created_at: string | null
+          emoji: string | null
+          message_id: string | null
+          sender_id: string | null
+          timestamp: string | null
+        }
+        Insert: {
+          chat_id?: string | null
+          created_at?: string | null
+          emoji?: string | null
+          message_id?: string | null
+          sender_id?: string | null
+          timestamp?: string | null
+        }
+        Update: {
+          chat_id?: string | null
+          created_at?: string | null
+          emoji?: string | null
+          message_id?: string | null
+          sender_id?: string | null
+          timestamp?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'fk_reactions_message'
+            columns: ['message_id', 'chat_id']
+            isOneToOne: false
+            referencedRelation: 'messages'
+            referencedColumns: ['message_id', 'chat_id']
+          },
+          {
+            foreignKeyName: 'fk_reactions_sender'
+            columns: ['sender_id']
+            isOneToOne: false
+            referencedRelation: 'contacts'
+            referencedColumns: ['phone_number']
+          },
+        ]
+      }
     }
     Functions: {
       [_ in never]: never
@@ -564,6 +606,48 @@ export type Database = {
             isOneToOne: false
             referencedRelation: 'chats'
             referencedColumns: ['chat_id']
+          },
+        ]
+      }
+      reactions: {
+        Row: {
+          chat_id: string
+          created_at: string | null
+          emoji: string
+          message_id: string
+          sender_id: string
+          timestamp: string | null
+        }
+        Insert: {
+          chat_id: string
+          created_at?: string | null
+          emoji: string
+          message_id: string
+          sender_id: string
+          timestamp?: string | null
+        }
+        Update: {
+          chat_id?: string
+          created_at?: string | null
+          emoji?: string
+          message_id?: string
+          sender_id?: string
+          timestamp?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'fk_reactions_message'
+            columns: ['message_id', 'chat_id']
+            isOneToOne: false
+            referencedRelation: 'messages'
+            referencedColumns: ['message_id', 'chat_id']
+          },
+          {
+            foreignKeyName: 'fk_reactions_sender'
+            columns: ['sender_id']
+            isOneToOne: false
+            referencedRelation: 'contacts'
+            referencedColumns: ['phone_number']
           },
         ]
       }
