@@ -1,5 +1,11 @@
 import { Link, useMatchRoute } from '@tanstack/react-router'
-import { MessageSquare, LogOut, Plane, Users } from 'lucide-react'
+import {
+  LayoutDashboard,
+  MessageSquare,
+  LogOut,
+  Plane,
+  Users,
+} from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import {
   Sidebar,
@@ -13,6 +19,11 @@ import {
 } from '@/components/ui/sidebar'
 
 const navItems = [
+  {
+    title: 'Dashboard',
+    icon: LayoutDashboard,
+    to: '/' as const,
+  },
   {
     title: 'Chat',
     icon: MessageSquare,
@@ -43,7 +54,12 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton
                     asChild
-                    isActive={!!matchRoute({ to: item.to, fuzzy: true })}
+                    isActive={
+                      !!matchRoute({
+                        to: item.to,
+                        fuzzy: item.to !== '/',
+                      })
+                    }
                     tooltip={item.title}
                   >
                     <Link to={item.to}>

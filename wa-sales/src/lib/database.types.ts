@@ -70,6 +70,13 @@ export type Database = {
             referencedRelation: 'contacts'
             referencedColumns: ['phone_number']
           },
+          {
+            foreignKeyName: 'chats_contact_phone_number_fkey'
+            columns: ['contact_phone_number']
+            isOneToOne: false
+            referencedRelation: 'unlinked_contacts'
+            referencedColumns: ['phone_number']
+          },
         ]
       }
       chats_with_preview: {
@@ -91,6 +98,13 @@ export type Database = {
             columns: ['contact_phone_number']
             isOneToOne: false
             referencedRelation: 'contacts'
+            referencedColumns: ['phone_number']
+          },
+          {
+            foreignKeyName: 'chats_contact_phone_number_fkey'
+            columns: ['contact_phone_number']
+            isOneToOne: false
+            referencedRelation: 'unlinked_contacts'
             referencedColumns: ['phone_number']
           },
         ]
@@ -242,6 +256,13 @@ export type Database = {
             referencedRelation: 'contacts'
             referencedColumns: ['phone_number']
           },
+          {
+            foreignKeyName: 'fk_customers_contact'
+            columns: ['phone_number']
+            isOneToOne: false
+            referencedRelation: 'unlinked_contacts'
+            referencedColumns: ['phone_number']
+          },
         ]
       }
       customers_with_contact: {
@@ -263,6 +284,13 @@ export type Database = {
             columns: ['phone_number']
             isOneToOne: false
             referencedRelation: 'contacts'
+            referencedColumns: ['phone_number']
+          },
+          {
+            foreignKeyName: 'fk_customers_contact'
+            columns: ['phone_number']
+            isOneToOne: false
+            referencedRelation: 'unlinked_contacts'
             referencedColumns: ['phone_number']
           },
         ]
@@ -532,6 +560,13 @@ export type Database = {
             referencedRelation: 'contacts'
             referencedColumns: ['phone_number']
           },
+          {
+            foreignKeyName: 'fk_messages_sender'
+            columns: ['sender_id']
+            isOneToOne: false
+            referencedRelation: 'unlinked_contacts'
+            referencedColumns: ['phone_number']
+          },
         ]
       }
       outgoing_messages: {
@@ -715,7 +750,22 @@ export type Database = {
             referencedRelation: 'contacts'
             referencedColumns: ['phone_number']
           },
+          {
+            foreignKeyName: 'fk_reactions_sender'
+            columns: ['sender_id']
+            isOneToOne: false
+            referencedRelation: 'unlinked_contacts'
+            referencedColumns: ['phone_number']
+          },
         ]
+      }
+      unlinked_contacts: {
+        Row: {
+          last_seen_at: string | null
+          phone_number: string | null
+          push_name: string | null
+        }
+        Relationships: []
       }
     }
     Functions: {
