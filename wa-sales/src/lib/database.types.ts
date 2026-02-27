@@ -668,8 +668,10 @@ export type Database = {
           return_date_end: string | null
           return_date_start: string | null
           selected_quote_currency: string | null
+          selected_quote_departure_date: string | null
           selected_quote_description: string | null
           selected_quote_price: number | null
+          selected_quote_return_date: string | null
           status: string | null
           updated_at: string | null
         }
@@ -881,32 +883,38 @@ export type Database = {
         Row: {
           created_at: string | null
           currency: string | null
+          departure_date: string | null
           description: string | null
           flight_request_id: string | null
           id: string | null
           is_selected: boolean | null
           notes: string | null
           price: number | null
+          return_date: string | null
         }
         Insert: {
           created_at?: string | null
           currency?: string | null
+          departure_date?: string | null
           description?: string | null
           flight_request_id?: string | null
           id?: string | null
           is_selected?: boolean | null
           notes?: string | null
           price?: number | null
+          return_date?: string | null
         }
         Update: {
           created_at?: string | null
           currency?: string | null
+          departure_date?: string | null
           description?: string | null
           flight_request_id?: string | null
           id?: string | null
           is_selected?: boolean | null
           notes?: string | null
           price?: number | null
+          return_date?: string | null
         }
         Relationships: [
           {
@@ -1565,32 +1573,38 @@ export type Database = {
         Row: {
           created_at: string | null
           currency: string | null
+          departure_date: string | null
           description: string
           flight_request_id: string
           id: string
           is_selected: boolean | null
           notes: string | null
           price: number | null
+          return_date: string | null
         }
         Insert: {
           created_at?: string | null
           currency?: string | null
+          departure_date?: string | null
           description: string
           flight_request_id: string
           id?: string
           is_selected?: boolean | null
           notes?: string | null
           price?: number | null
+          return_date?: string | null
         }
         Update: {
           created_at?: string | null
           currency?: string | null
+          departure_date?: string | null
           description?: string
           flight_request_id?: string
           id?: string
           is_selected?: boolean | null
           notes?: string | null
           price?: number | null
+          return_date?: string | null
         }
         Relationships: [
           {

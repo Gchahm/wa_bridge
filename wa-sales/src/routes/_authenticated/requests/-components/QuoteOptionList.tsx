@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Check, Pencil, Plus, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { supabase } from '@/lib/supabase'
 import type { Database } from '@/lib/database.types'
@@ -28,11 +29,15 @@ export function QuoteOptionList({
   const [newDescription, setNewDescription] = useState('')
   const [newPrice, setNewPrice] = useState('')
   const [newCurrency, setNewCurrency] = useState('BRL')
+  const [newDepartureDate, setNewDepartureDate] = useState('')
+  const [newReturnDate, setNewReturnDate] = useState('')
 
   // Edit form state
   const [editDescription, setEditDescription] = useState('')
   const [editPrice, setEditPrice] = useState('')
   const [editCurrency, setEditCurrency] = useState('BRL')
+  const [editDepartureDate, setEditDepartureDate] = useState('')
+  const [editReturnDate, setEditReturnDate] = useState('')
 
   useEffect(() => {
     const ctrl = { cancelled: false }
@@ -67,6 +72,8 @@ export function QuoteOptionList({
         description: newDescription.trim(),
         price: newPrice ? parseFloat(newPrice) : null,
         currency: newCurrency || 'BRL',
+        departure_date: newDepartureDate || null,
+        return_date: newReturnDate || null,
       })
       .select()
       .single()
@@ -80,6 +87,8 @@ export function QuoteOptionList({
     setNewDescription('')
     setNewPrice('')
     setNewCurrency('BRL')
+    setNewDepartureDate('')
+    setNewReturnDate('')
     setShowAddForm(false)
   }
 
@@ -141,6 +150,8 @@ export function QuoteOptionList({
     setEditDescription(option.description ?? '')
     setEditPrice(option.price?.toString() ?? '')
     setEditCurrency(option.currency ?? 'BRL')
+    setEditDepartureDate(option.departure_date ?? '')
+    setEditReturnDate(option.return_date ?? '')
   }
 
   async function handleSaveEdit() {
@@ -152,6 +163,8 @@ export function QuoteOptionList({
         description: editDescription.trim(),
         price: editPrice ? parseFloat(editPrice) : null,
         currency: editCurrency || 'BRL',
+        departure_date: editDepartureDate || null,
+        return_date: editReturnDate || null,
       })
       .eq('id', editingId)
 
@@ -168,6 +181,8 @@ export function QuoteOptionList({
               description: editDescription.trim(),
               price: editPrice ? parseFloat(editPrice) : null,
               currency: editCurrency || 'BRL',
+              departure_date: editDepartureDate || null,
+              return_date: editReturnDate || null,
             }
           : o,
       ),
@@ -214,6 +229,24 @@ export function QuoteOptionList({
                 className="w-20"
               />
             </div>
+            <div className="flex gap-2">
+              <div className="flex flex-1 flex-col gap-1">
+                <Label className="text-xs">Departure</Label>
+                <Input
+                  type="date"
+                  value={editDepartureDate}
+                  onChange={(e) => setEditDepartureDate(e.target.value)}
+                />
+              </div>
+              <div className="flex flex-1 flex-col gap-1">
+                <Label className="text-xs">Return</Label>
+                <Input
+                  type="date"
+                  value={editReturnDate}
+                  onChange={(e) => setEditReturnDate(e.target.value)}
+                />
+              </div>
+            </div>
             <div className="flex justify-end gap-2">
               <Button
                 type="button"
@@ -248,6 +281,19 @@ export function QuoteOptionList({
                   {Number(option.price).toLocaleString('pt-BR', {
                     minimumFractionDigits: 2,
                   })}
+                </span>
+              )}
+              {(option.departure_date || option.return_date) && (
+                <span className="text-muted-foreground text-xs">
+                  {option.departure_date &&
+                    new Date(
+                      option.departure_date + 'T00:00:00',
+                    ).toLocaleDateString('pt-BR')}
+                  {option.departure_date && option.return_date && ' → '}
+                  {option.return_date &&
+                    new Date(
+                      option.return_date + 'T00:00:00',
+                    ).toLocaleDateString('pt-BR')}
                 </span>
               )}
             </div>
@@ -307,6 +353,24 @@ export function QuoteOptionList({
               className="w-20"
             />
           </div>
+          <div className="flex gap-2">
+            <div className="flex flex-1 flex-col gap-1">
+              <Label className="text-xs">Departure</Label>
+              <Input
+                type="date"
+                value={newDepartureDate}
+                onChange={(e) => setNewDepartureDate(e.target.value)}
+              />
+            </div>
+            <div className="flex flex-1 flex-col gap-1">
+              <Label className="text-xs">Return</Label>
+              <Input
+                type="date"
+                value={newReturnDate}
+                onChange={(e) => setNewReturnDate(e.target.value)}
+              />
+            </div>
+          </div>
           <div className="flex justify-end gap-2">
             <Button
               type="button"
@@ -317,6 +381,8 @@ export function QuoteOptionList({
                 setNewDescription('')
                 setNewPrice('')
                 setNewCurrency('BRL')
+                setNewDepartureDate('')
+                setNewReturnDate('')
               }}
             >
               Cancel
