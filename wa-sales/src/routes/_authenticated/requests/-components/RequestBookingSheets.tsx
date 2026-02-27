@@ -31,6 +31,11 @@ export function RequestBookingSheets({
     null,
   )
 
+  function handleOpenChange(isOpen: boolean) {
+    onOpenChange(isOpen)
+    if (!isOpen) onChanged()
+  }
+
   function handleSaved() {
     onOpenChange(false)
     onChanged()
@@ -68,7 +73,7 @@ export function RequestBookingSheets({
       {customerId && (
         <RequestSheet
           open={open}
-          onOpenChange={onOpenChange}
+          onOpenChange={handleOpenChange}
           customerId={customerId}
           chatId={chatId}
           request={request}

@@ -126,7 +126,7 @@ function formatDateRange(
 function RequestSheetForm({
   customerId,
   chatId,
-  request,
+  request: requestProp,
   onOpenChange,
   onSaved,
   onDelete,
@@ -140,10 +140,14 @@ function RequestSheetForm({
   onDelete?: (id: string) => void
   onCreateBooking?: (flightRequestId: string, customerId: string) => void
 }) {
+  const [createdRequest, setCreatedRequest] = useState<FlightRequest | null>(
+    null,
+  )
+  const request = createdRequest ?? requestProp
   const isEditing = !!request
 
   const [viewMode, setViewMode] = useState<'summary' | 'form'>(
-    isEditing ? 'summary' : 'form',
+    requestProp ? 'summary' : 'form',
   )
   const [passengerRefreshKey, setPassengerRefreshKey] = useState(0)
   const [quoteRefreshKey, setQuoteRefreshKey] = useState(0)
@@ -191,24 +195,29 @@ function RequestSheetForm({
         notes: parsed.data.notes || null,
       }
 
-      if (isEditing && request.id) {
+      if (requestProp?.id) {
         const { error } = await supabase
           .from('flight_requests')
           .update(payload)
-          .eq('id', request.id)
+          .eq('id', requestProp.id)
         if (error) {
           console.error('Error updating request:', error)
           return
         }
+        onSaved()
       } else {
-        const { error } = await supabase.from('flight_requests').insert(payload)
+        const { data, error } = await supabase
+          .from('flight_requests')
+          .insert(payload)
+          .select()
+          .single()
         if (error) {
           console.error('Error creating request:', error)
           return
         }
+        setCreatedRequest(data as unknown as FlightRequest)
+        setViewMode('summary')
       }
-
-      onSaved()
     },
   })
 
