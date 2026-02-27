@@ -43,6 +43,14 @@ services:
       - NODE_TLS_REJECT_UNAUTHORIZED=${NODE_TLS_REJECT_UNAUTHORIZED}
     volumes:
       - n8n_data:/home/node/.n8n
+    logging:
+      driver: loki
+      options:
+        loki-url: "http://localhost:3100/loki/api/v1/push"
+        loki-batch-size: "100"
+        loki-retries: "3"
+        labels: "service"
+        loki-external-labels: "container={{.Name}}"
 
   loki:
     image: grafana/loki:3.4.2
@@ -65,6 +73,7 @@ services:
       - LOKI_URL=http://localhost:3100
     volumes:
       - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
       - grafana_data:/var/lib/grafana
 
 volumes:
