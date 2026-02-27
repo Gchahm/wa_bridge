@@ -54,6 +54,6 @@ if [ -d "$BACKUP_DIR/credentials" ] && ls "$BACKUP_DIR/credentials"/*.json &>/de
 fi
 
 # Cleanup inside container
-docker exec "$CONTAINER" rm -rf "$TEMP_DIR"
+docker exec --user root "$CONTAINER" rm -rf "$TEMP_DIR"
 
 echo "Done."
