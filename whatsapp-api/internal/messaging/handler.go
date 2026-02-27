@@ -10,6 +10,7 @@ import (
 	"go.mau.fi/whatsmeow"
 	"go.mau.fi/whatsmeow/types"
 	"go.mau.fi/whatsmeow/types/events"
+	"google.golang.org/protobuf/encoding/protojson"
 
 	"whatsapp-bridge/internal/config"
 	"whatsapp-bridge/internal/logging"
@@ -36,7 +37,21 @@ func handleMessage(client *whatsmeow.Client, cfg config.Config, db *store.Store,
 	payload := buildPayload(msg)
 	payload.ChatName = resolveChatName(client, msg)
 
-	go db.SaveMessage(payload)
+	if payload.MessageType == "other" {
+		go func() {
+			db.SaveMessage(payload)
+			rawJSON, err := protojson.Marshal(msg.Message)
+			if err != nil {
+				log.Error().Err(err).Str("message_id", payload.MessageID).Msg("failed to marshal message proto")
+				return
+			}
+			if err := db.UpdateDescription(payload.MessageID, payload.ChatID, string(rawJSON)); err != nil {
+				log.Error().Err(err).Str("message_id", payload.MessageID).Msg("failed to update description for unknown message type")
+			}
+		}()
+	} else {
+		go db.SaveMessage(payload)
+	}
 
 	if payload.MessageType == "media" {
 		go handleMedia(client, cfg, db, msg, payload)
