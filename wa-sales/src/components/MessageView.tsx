@@ -1,11 +1,19 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
-import { Loader2, MessageSquare, Send, User, UserCheck } from 'lucide-react'
+import {
+  Loader2,
+  MessageSquare,
+  Plane,
+  Send,
+  User,
+  UserCheck,
+} from 'lucide-react'
 import { MessageBubble, getMessageDateKey } from './MessageBubble'
 import { supabase } from '@/lib/supabase'
 import type { Database } from '@/lib/database.types'
 import type { Reaction } from '@/routes/_authenticated/chat/-hooks/useReactions'
 import { CustomerSheet } from '@/routes/_authenticated/customers/-components/CustomerSheet'
+import { RequestsForCustomerSheet } from '@/routes/_authenticated/requests/-components/RequestsForCustomerSheet'
 import { Button } from '@/components/ui/button'
 
 type CustomerWithContact =
@@ -40,6 +48,7 @@ export function MessageView({
   // Customer sheet state
   const [customerSheetOpen, setCustomerSheetOpen] = useState(false)
   const [customer, setCustomer] = useState<CustomerWithContact | null>(null)
+  const [requestsSheetOpen, setRequestsSheetOpen] = useState(false)
 
   // Fetch customer for private chats
   const isPrivateChat = chat && !chat.is_group
@@ -190,6 +199,17 @@ export function MessageView({
             )}
           </Button>
         )}
+        {isPrivateChat && customer && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="flex-shrink-0"
+            onClick={() => setRequestsSheetOpen(true)}
+            title="Flight requests"
+          >
+            <Plane className="size-5 text-gray-500" />
+          </Button>
+        )}
       </div>
 
       {/* Messages area */}
@@ -259,6 +279,15 @@ export function MessageView({
           defaultPhoneNumber={phoneNumber}
           onSaved={handleCustomerSaved}
           onDelete={handleCustomerDelete}
+        />
+      )}
+
+      {isPrivateChat && customer?.id && (
+        <RequestsForCustomerSheet
+          open={requestsSheetOpen}
+          onOpenChange={setRequestsSheetOpen}
+          customerId={customer.id}
+          chatId={chat.chat_id}
         />
       )}
     </div>

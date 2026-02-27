@@ -1,5 +1,5 @@
 import { Link, useMatchRoute } from '@tanstack/react-router'
-import { MessageSquare, LogOut, Users } from 'lucide-react'
+import { MessageSquare, LogOut, Plane, Users } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import {
   Sidebar,
@@ -22,6 +22,11 @@ const navItems = [
     title: 'Customers',
     icon: Users,
     to: '/customers' as const,
+  },
+  {
+    title: 'Requests',
+    icon: Plane,
+    to: '/requests' as const,
   },
 ]
 

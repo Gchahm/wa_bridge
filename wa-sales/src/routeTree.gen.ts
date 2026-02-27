@@ -12,8 +12,10 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
+import { Route as AuthenticatedRequestsRouteImport } from './routes/_authenticated/requests'
 import { Route as AuthenticatedCustomersRouteImport } from './routes/_authenticated/customers'
 import { Route as AuthenticatedChatRouteImport } from './routes/_authenticated/chat'
+import { Route as AuthenticatedRequestsIndexRouteImport } from './routes/_authenticated/requests/index'
 import { Route as AuthenticatedCustomersIndexRouteImport } from './routes/_authenticated/customers/index'
 import { Route as AuthenticatedChatIndexRouteImport } from './routes/_authenticated/chat/index'
 
@@ -31,6 +33,11 @@ const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedRequestsRoute = AuthenticatedRequestsRouteImport.update({
+  id: '/requests',
+  path: '/requests',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedCustomersRoute = AuthenticatedCustomersRouteImport.update({
   id: '/customers',
   path: '/customers',
@@ -41,6 +48,12 @@ const AuthenticatedChatRoute = AuthenticatedChatRouteImport.update({
   path: '/chat',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedRequestsIndexRoute =
+  AuthenticatedRequestsIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedRequestsRoute,
+  } as any)
 const AuthenticatedCustomersIndexRoute =
   AuthenticatedCustomersIndexRouteImport.update({
     id: '/',
@@ -58,14 +71,17 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/chat': typeof AuthenticatedChatRouteWithChildren
   '/customers': typeof AuthenticatedCustomersRouteWithChildren
+  '/requests': typeof AuthenticatedRequestsRouteWithChildren
   '/chat/': typeof AuthenticatedChatIndexRoute
   '/customers/': typeof AuthenticatedCustomersIndexRoute
+  '/requests/': typeof AuthenticatedRequestsIndexRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/': typeof AuthenticatedIndexRoute
   '/chat': typeof AuthenticatedChatIndexRoute
   '/customers': typeof AuthenticatedCustomersIndexRoute
+  '/requests': typeof AuthenticatedRequestsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -73,24 +89,36 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/_authenticated/chat': typeof AuthenticatedChatRouteWithChildren
   '/_authenticated/customers': typeof AuthenticatedCustomersRouteWithChildren
+  '/_authenticated/requests': typeof AuthenticatedRequestsRouteWithChildren
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/chat/': typeof AuthenticatedChatIndexRoute
   '/_authenticated/customers/': typeof AuthenticatedCustomersIndexRoute
+  '/_authenticated/requests/': typeof AuthenticatedRequestsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login' | '/chat' | '/customers' | '/chat/' | '/customers/'
+  fullPaths:
+    | '/'
+    | '/login'
+    | '/chat'
+    | '/customers'
+    | '/requests'
+    | '/chat/'
+    | '/customers/'
+    | '/requests/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/login' | '/' | '/chat' | '/customers'
+  to: '/login' | '/' | '/chat' | '/customers' | '/requests'
   id:
     | '__root__'
     | '/_authenticated'
     | '/login'
     | '/_authenticated/chat'
     | '/_authenticated/customers'
+    | '/_authenticated/requests'
     | '/_authenticated/'
     | '/_authenticated/chat/'
     | '/_authenticated/customers/'
+    | '/_authenticated/requests/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -121,6 +149,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/requests': {
+      id: '/_authenticated/requests'
+      path: '/requests'
+      fullPath: '/requests'
+      preLoaderRoute: typeof AuthenticatedRequestsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/customers': {
       id: '/_authenticated/customers'
       path: '/customers'
@@ -134,6 +169,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/chat'
       preLoaderRoute: typeof AuthenticatedChatRouteImport
       parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/requests/': {
+      id: '/_authenticated/requests/'
+      path: '/'
+      fullPath: '/requests/'
+      preLoaderRoute: typeof AuthenticatedRequestsIndexRouteImport
+      parentRoute: typeof AuthenticatedRequestsRoute
     }
     '/_authenticated/customers/': {
       id: '/_authenticated/customers/'
@@ -177,15 +219,30 @@ const AuthenticatedCustomersRouteWithChildren =
     AuthenticatedCustomersRouteChildren,
   )
 
+interface AuthenticatedRequestsRouteChildren {
+  AuthenticatedRequestsIndexRoute: typeof AuthenticatedRequestsIndexRoute
+}
+
+const AuthenticatedRequestsRouteChildren: AuthenticatedRequestsRouteChildren = {
+  AuthenticatedRequestsIndexRoute: AuthenticatedRequestsIndexRoute,
+}
+
+const AuthenticatedRequestsRouteWithChildren =
+  AuthenticatedRequestsRoute._addFileChildren(
+    AuthenticatedRequestsRouteChildren,
+  )
+
 interface AuthenticatedRouteChildren {
   AuthenticatedChatRoute: typeof AuthenticatedChatRouteWithChildren
   AuthenticatedCustomersRoute: typeof AuthenticatedCustomersRouteWithChildren
+  AuthenticatedRequestsRoute: typeof AuthenticatedRequestsRouteWithChildren
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedChatRoute: AuthenticatedChatRouteWithChildren,
   AuthenticatedCustomersRoute: AuthenticatedCustomersRouteWithChildren,
+  AuthenticatedRequestsRoute: AuthenticatedRequestsRouteWithChildren,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
 }
 

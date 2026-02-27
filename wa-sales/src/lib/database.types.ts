@@ -267,6 +267,200 @@ export type Database = {
           },
         ]
       }
+      flight_request_passengers: {
+        Row: {
+          flight_request_id: string | null
+          passenger_id: string | null
+        }
+        Insert: {
+          flight_request_id?: string | null
+          passenger_id?: string | null
+        }
+        Update: {
+          flight_request_id?: string | null
+          passenger_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'fk_flight_request_passengers_passenger'
+            columns: ['passenger_id']
+            isOneToOne: false
+            referencedRelation: 'passengers'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'fk_flight_request_passengers_request'
+            columns: ['flight_request_id']
+            isOneToOne: false
+            referencedRelation: 'flight_requests'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'fk_flight_request_passengers_request'
+            columns: ['flight_request_id']
+            isOneToOne: false
+            referencedRelation: 'flight_requests_summary'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      flight_requests: {
+        Row: {
+          adults: number | null
+          budget_currency: string | null
+          budget_max: number | null
+          budget_min: number | null
+          cabin_class: string | null
+          chat_id: string | null
+          children: number | null
+          created_at: string | null
+          customer_id: string | null
+          departure_date_end: string | null
+          departure_date_start: string | null
+          destination: string | null
+          id: string | null
+          infants: number | null
+          notes: string | null
+          origin: string | null
+          return_date_end: string | null
+          return_date_start: string | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          adults?: number | null
+          budget_currency?: string | null
+          budget_max?: number | null
+          budget_min?: number | null
+          cabin_class?: string | null
+          chat_id?: string | null
+          children?: number | null
+          created_at?: string | null
+          customer_id?: string | null
+          departure_date_end?: string | null
+          departure_date_start?: string | null
+          destination?: string | null
+          id?: string | null
+          infants?: number | null
+          notes?: string | null
+          origin?: string | null
+          return_date_end?: string | null
+          return_date_start?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          adults?: number | null
+          budget_currency?: string | null
+          budget_max?: number | null
+          budget_min?: number | null
+          cabin_class?: string | null
+          chat_id?: string | null
+          children?: number | null
+          created_at?: string | null
+          customer_id?: string | null
+          departure_date_end?: string | null
+          departure_date_start?: string | null
+          destination?: string | null
+          id?: string | null
+          infants?: number | null
+          notes?: string | null
+          origin?: string | null
+          return_date_end?: string | null
+          return_date_start?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'fk_flight_requests_chat'
+            columns: ['chat_id']
+            isOneToOne: false
+            referencedRelation: 'chats'
+            referencedColumns: ['chat_id']
+          },
+          {
+            foreignKeyName: 'fk_flight_requests_chat'
+            columns: ['chat_id']
+            isOneToOne: false
+            referencedRelation: 'chats_with_preview'
+            referencedColumns: ['chat_id']
+          },
+          {
+            foreignKeyName: 'fk_flight_requests_customer'
+            columns: ['customer_id']
+            isOneToOne: false
+            referencedRelation: 'customers'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'fk_flight_requests_customer'
+            columns: ['customer_id']
+            isOneToOne: false
+            referencedRelation: 'customers_with_contact'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      flight_requests_summary: {
+        Row: {
+          adults: number | null
+          budget_currency: string | null
+          budget_max: number | null
+          budget_min: number | null
+          cabin_class: string | null
+          chat_id: string | null
+          children: number | null
+          created_at: string | null
+          customer_id: string | null
+          customer_name: string | null
+          departure_date_end: string | null
+          departure_date_start: string | null
+          destination: string | null
+          id: string | null
+          infants: number | null
+          notes: string | null
+          origin: string | null
+          passenger_count: number | null
+          return_date_end: string | null
+          return_date_start: string | null
+          selected_quote_currency: string | null
+          selected_quote_description: string | null
+          selected_quote_price: number | null
+          status: string | null
+          updated_at: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'fk_flight_requests_chat'
+            columns: ['chat_id']
+            isOneToOne: false
+            referencedRelation: 'chats'
+            referencedColumns: ['chat_id']
+          },
+          {
+            foreignKeyName: 'fk_flight_requests_chat'
+            columns: ['chat_id']
+            isOneToOne: false
+            referencedRelation: 'chats_with_preview'
+            referencedColumns: ['chat_id']
+          },
+          {
+            foreignKeyName: 'fk_flight_requests_customer'
+            columns: ['customer_id']
+            isOneToOne: false
+            referencedRelation: 'customers'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'fk_flight_requests_customer'
+            columns: ['customer_id']
+            isOneToOne: false
+            referencedRelation: 'customers_with_contact'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       messages: {
         Row: {
           chat_id: string | null
@@ -432,6 +626,54 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      quote_options: {
+        Row: {
+          created_at: string | null
+          currency: string | null
+          description: string | null
+          flight_request_id: string | null
+          id: string | null
+          is_selected: boolean | null
+          notes: string | null
+          price: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          currency?: string | null
+          description?: string | null
+          flight_request_id?: string | null
+          id?: string | null
+          is_selected?: boolean | null
+          notes?: string | null
+          price?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          currency?: string | null
+          description?: string | null
+          flight_request_id?: string | null
+          id?: string | null
+          is_selected?: boolean | null
+          notes?: string | null
+          price?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'fk_quote_options_flight_request'
+            columns: ['flight_request_id']
+            isOneToOne: false
+            referencedRelation: 'flight_requests'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'fk_quote_options_flight_request'
+            columns: ['flight_request_id']
+            isOneToOne: false
+            referencedRelation: 'flight_requests_summary'
+            referencedColumns: ['id']
+          },
+        ]
       }
       reactions: {
         Row: {
@@ -651,6 +893,120 @@ export type Database = {
           },
         ]
       }
+      flight_request_passengers: {
+        Row: {
+          flight_request_id: string
+          passenger_id: string
+        }
+        Insert: {
+          flight_request_id: string
+          passenger_id: string
+        }
+        Update: {
+          flight_request_id?: string
+          passenger_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'fk_flight_request_passengers_passenger'
+            columns: ['passenger_id']
+            isOneToOne: false
+            referencedRelation: 'passengers'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'fk_flight_request_passengers_request'
+            columns: ['flight_request_id']
+            isOneToOne: false
+            referencedRelation: 'flight_requests'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      flight_requests: {
+        Row: {
+          adults: number | null
+          budget_currency: string | null
+          budget_max: number | null
+          budget_min: number | null
+          cabin_class: string | null
+          chat_id: string | null
+          children: number | null
+          created_at: string | null
+          customer_id: string
+          departure_date_end: string | null
+          departure_date_start: string | null
+          destination: string | null
+          id: string
+          infants: number | null
+          notes: string | null
+          origin: string | null
+          return_date_end: string | null
+          return_date_start: string | null
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          adults?: number | null
+          budget_currency?: string | null
+          budget_max?: number | null
+          budget_min?: number | null
+          cabin_class?: string | null
+          chat_id?: string | null
+          children?: number | null
+          created_at?: string | null
+          customer_id: string
+          departure_date_end?: string | null
+          departure_date_start?: string | null
+          destination?: string | null
+          id?: string
+          infants?: number | null
+          notes?: string | null
+          origin?: string | null
+          return_date_end?: string | null
+          return_date_start?: string | null
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          adults?: number | null
+          budget_currency?: string | null
+          budget_max?: number | null
+          budget_min?: number | null
+          cabin_class?: string | null
+          chat_id?: string | null
+          children?: number | null
+          created_at?: string | null
+          customer_id?: string
+          departure_date_end?: string | null
+          departure_date_start?: string | null
+          destination?: string | null
+          id?: string
+          infants?: number | null
+          notes?: string | null
+          origin?: string | null
+          return_date_end?: string | null
+          return_date_start?: string | null
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'fk_flight_requests_chat'
+            columns: ['chat_id']
+            isOneToOne: false
+            referencedRelation: 'chats'
+            referencedColumns: ['chat_id']
+          },
+          {
+            foreignKeyName: 'fk_flight_requests_customer'
+            columns: ['customer_id']
+            isOneToOne: false
+            referencedRelation: 'customers'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       messages: {
         Row: {
           chat_id: string
@@ -802,6 +1158,47 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      quote_options: {
+        Row: {
+          created_at: string | null
+          currency: string | null
+          description: string
+          flight_request_id: string
+          id: string
+          is_selected: boolean | null
+          notes: string | null
+          price: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          currency?: string | null
+          description: string
+          flight_request_id: string
+          id?: string
+          is_selected?: boolean | null
+          notes?: string | null
+          price?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          currency?: string | null
+          description?: string
+          flight_request_id?: string
+          id?: string
+          is_selected?: boolean | null
+          notes?: string | null
+          price?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'fk_quote_options_flight_request'
+            columns: ['flight_request_id']
+            isOneToOne: false
+            referencedRelation: 'flight_requests'
+            referencedColumns: ['id']
+          },
+        ]
       }
       reactions: {
         Row: {
