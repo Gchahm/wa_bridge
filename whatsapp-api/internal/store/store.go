@@ -73,6 +73,11 @@ func (s *Store) SaveMessage(payload MessagePayload) {
 		}
 	}
 
+	// Auto-create customer for 1:1 contacts
+	if !payload.IsGroup && !payload.IsFromMe && payload.SenderID != "" {
+		s.EnsureCustomer(ctx, payload.SenderID, payload.SenderName)
+	}
+
 	_, err := s.db.ExecContext(ctx,
 		`INSERT INTO wa_bridge.chats (chat_id, is_group, name, last_message_at)
 		 VALUES ($1, $2, NULLIF($3, ''), $4)
@@ -207,4 +212,22 @@ func (s *Store) UpdateChatLastMessage(ctx context.Context, chatID string, ts tim
 		`UPDATE wa_bridge.chats SET last_message_at = $1 WHERE chat_id = $2`,
 		ts, chatID)
 	return err
+}
+
+// EnsureCustomer creates a customer record for the given phone number if one
+// does not already exist. It uses the push name as the customer name, falling
+// back to the phone number itself when push name is empty.
+func (s *Store) EnsureCustomer(ctx context.Context, phoneNumber, pushName string) {
+	name := pushName
+	if name == "" {
+		name = phoneNumber
+	}
+	_, err := s.db.ExecContext(ctx,
+		`INSERT INTO wa_bridge.customers (name, phone_number)
+		 VALUES ($1, $2)
+		 ON CONFLICT (phone_number) WHERE phone_number IS NOT NULL DO NOTHING`,
+		name, phoneNumber)
+	if err != nil {
+		log.Error().Err(err).Str("phone_number", phoneNumber).Msg("failed to ensure customer")
+	}
 }
