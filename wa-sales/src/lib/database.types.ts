@@ -96,6 +96,117 @@ export type Database = {
         }
         Relationships: []
       }
+      customer_relationships: {
+        Row: {
+          customer_id: string | null
+          related_customer_id: string | null
+          relationship_type: string | null
+        }
+        Insert: {
+          customer_id?: string | null
+          related_customer_id?: string | null
+          relationship_type?: string | null
+        }
+        Update: {
+          customer_id?: string | null
+          related_customer_id?: string | null
+          relationship_type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'fk_customer_relationships_customer'
+            columns: ['customer_id']
+            isOneToOne: false
+            referencedRelation: 'customers'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'fk_customer_relationships_customer'
+            columns: ['customer_id']
+            isOneToOne: false
+            referencedRelation: 'customers_with_contact'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'fk_customer_relationships_related'
+            columns: ['related_customer_id']
+            isOneToOne: false
+            referencedRelation: 'customers'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'fk_customer_relationships_related'
+            columns: ['related_customer_id']
+            isOneToOne: false
+            referencedRelation: 'customers_with_contact'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      customers: {
+        Row: {
+          created_at: string | null
+          email: string | null
+          id: string | null
+          name: string | null
+          notes: string | null
+          phone: string | null
+          phone_number: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email?: string | null
+          id?: string | null
+          name?: string | null
+          notes?: string | null
+          phone?: string | null
+          phone_number?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string | null
+          id?: string | null
+          name?: string | null
+          notes?: string | null
+          phone?: string | null
+          phone_number?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'fk_customers_contact'
+            columns: ['phone_number']
+            isOneToOne: false
+            referencedRelation: 'contacts'
+            referencedColumns: ['phone_number']
+          },
+        ]
+      }
+      customers_with_contact: {
+        Row: {
+          created_at: string | null
+          email: string | null
+          id: string | null
+          name: string | null
+          notes: string | null
+          phone: string | null
+          phone_number: string | null
+          updated_at: string | null
+          wa_last_seen_at: string | null
+          wa_push_name: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'fk_customers_contact'
+            columns: ['phone_number']
+            isOneToOne: false
+            referencedRelation: 'contacts'
+            referencedColumns: ['phone_number']
+          },
+        ]
+      }
       messages: {
         Row: {
           chat_id: string | null
@@ -274,6 +385,80 @@ export type Database = {
           push_name?: string | null
         }
         Relationships: []
+      }
+      customer_relationships: {
+        Row: {
+          customer_id: string
+          related_customer_id: string
+          relationship_type: string
+        }
+        Insert: {
+          customer_id: string
+          related_customer_id: string
+          relationship_type: string
+        }
+        Update: {
+          customer_id?: string
+          related_customer_id?: string
+          relationship_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'fk_customer_relationships_customer'
+            columns: ['customer_id']
+            isOneToOne: false
+            referencedRelation: 'customers'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'fk_customer_relationships_related'
+            columns: ['related_customer_id']
+            isOneToOne: false
+            referencedRelation: 'customers'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      customers: {
+        Row: {
+          created_at: string | null
+          email: string | null
+          id: string
+          name: string
+          notes: string | null
+          phone: string | null
+          phone_number: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          phone?: string | null
+          phone_number?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          phone_number?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'fk_customers_contact'
+            columns: ['phone_number']
+            isOneToOne: false
+            referencedRelation: 'contacts'
+            referencedColumns: ['phone_number']
+          },
+        ]
       }
       messages: {
         Row: {
