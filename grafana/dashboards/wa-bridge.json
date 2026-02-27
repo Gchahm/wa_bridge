@@ -199,35 +199,26 @@
     {
       "id": 7,
       "title": "Recent errors",
-      "type": "table",
-      "gridPos": { "h": 10, "w": 16, "x": 0, "y": 16 },
+      "type": "logs",
+      "gridPos": { "h": 14, "w": 16, "x": 0, "y": 16 },
       "datasource": { "type": "loki", "uid": "" },
       "targets": [
         {
-          "expr": "{container=~\".*whatsapp.*\"} | json | level =~ \"error|warn\"",
-          "refId": "A"
+          "expr": "{container=~\".*whatsapp.*\"} | json | level =~ \"error|warn\" | line_format \"{{.level}} [{{.component}}] {{.message}}{{if .error}} | {{.error}}{{end}}{{if .message_id}} | msg_id={{.message_id}}{{end}}{{if .chat_id}} | chat={{.chat_id}}{{end}}{{if .status_code}} | status={{.status_code}}{{end}}\"",
+          "refId": "A",
+          "maxLines": 100
         }
       ],
       "options": {
-        "showHeader": true,
-        "sortBy": [{ "displayName": "Time", "desc": true }]
-      },
-      "transformations": [
-        {
-          "id": "extractFields",
-          "options": {
-            "source": "labels",
-            "keepOther": false,
-            "fields": {
-              "level": { "alias": "Level" },
-              "component": { "alias": "Component" },
-              "message": { "alias": "Message" },
-              "error": { "alias": "Error" }
-            }
-          }
-        },
-        { "id": "limit", "options": { "limitField": 50 } }
-      ]
+        "showTime": true,
+        "showLabels": false,
+        "showCommonLabels": false,
+        "wrapLogMessage": true,
+        "prettifyLogMessage": false,
+        "enableLogDetails": true,
+        "sortOrder": "Descending",
+        "dedupStrategy": "none"
+      }
     },
     {
       "id": 8,
