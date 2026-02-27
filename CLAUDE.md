@@ -101,8 +101,9 @@ import { Pencil, Lock, RefreshCw } from 'lucide-react'
 
 **After writing or modifying any frontend code, you MUST run:**
 ```bash
-cd wa-sales && pnpm check
+cd wa-sales && pnpm check && cd /Users/gchahm/dev/gchahm/wa_bridge
 ```
+**IMPORTANT: If you `cd` into a subdirectory (e.g. `wa-sales/`), always `cd` back to the repo root (`/Users/gchahm/dev/gchahm/wa_bridge`) when done.** The shell working directory persists between commands and affects the `@` file picker in the chat interface.
 This runs `prettier --write . && eslint --fix` to auto-format and fix lint issues.
 
 **Prettier config**: no semicolons, single quotes, trailing commas everywhere.

@@ -7,7 +7,13 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Separator } from '@/components/ui/separator'
 import { Badge } from '@/components/ui/badge'
-import { ArrowLeft, Pencil, TicketCheck } from 'lucide-react'
+import {
+  ArrowLeft,
+  ClipboardCheck,
+  Copy,
+  Pencil,
+  TicketCheck,
+} from 'lucide-react'
 import {
   Select,
   SelectContent,
@@ -152,6 +158,7 @@ function RequestSheetForm({
   const [passengerRefreshKey, setPassengerRefreshKey] = useState(0)
   const [quoteRefreshKey, setQuoteRefreshKey] = useState(0)
   const [linkedPassengerIds, setLinkedPassengerIds] = useState<string[]>([])
+  const [copied, setCopied] = useState(false)
 
   const form = useForm({
     defaultValues: {
@@ -253,6 +260,61 @@ function RequestSheetForm({
     }
   }
 
+  async function handleCopyForLLM() {
+    if (!request) return
+    const lines: string[] = ['Search for flights:']
+
+    const origin = request.origin
+    const destination = request.destination
+    if (origin || destination)
+      lines.push(`Route: ${origin || '???'} → ${destination || '???'}`)
+
+    const depRange = formatDateRange(
+      request.departure_date_start,
+      request.departure_date_end,
+    )
+    if (depRange) lines.push(`Departure: ${depRange}`)
+
+    const retRange = formatDateRange(
+      request.return_date_start,
+      request.return_date_end,
+    )
+    if (retRange) lines.push(`Return: ${retRange}`)
+
+    const paxParts: string[] = []
+    if (request.adults && request.adults > 0)
+      paxParts.push(`${request.adults} adult${request.adults > 1 ? 's' : ''}`)
+    if (request.children && request.children > 0)
+      paxParts.push(
+        `${request.children} child${request.children > 1 ? 'ren' : ''}`,
+      )
+    if (request.infants && request.infants > 0)
+      paxParts.push(
+        `${request.infants} infant${request.infants > 1 ? 's' : ''}`,
+      )
+    if (paxParts.length > 0) lines.push(`Passengers: ${paxParts.join(', ')}`)
+
+    const cabinLabel =
+      cabinClassLabels[request.cabin_class ?? 'economy'] ?? request.cabin_class
+    if (cabinLabel) lines.push(`Cabin: ${cabinLabel}`)
+
+    const hasBudget = request.budget_min != null || request.budget_max != null
+    if (hasBudget) {
+      const currency = request.budget_currency || 'BRL'
+      const min =
+        request.budget_min != null ? request.budget_min.toLocaleString() : '?'
+      const max =
+        request.budget_max != null ? request.budget_max.toLocaleString() : '?'
+      lines.push(`Budget: ${currency} ${min} – ${max}`)
+    }
+
+    if (request.notes) lines.push(`Notes: ${request.notes}`)
+
+    await navigator.clipboard.writeText(lines.join('\n'))
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
   // Summary mode for editing
   if (isEditing && viewMode === 'summary' && request.id) {
     const status = request.status ?? 'new'
@@ -334,7 +396,15 @@ function RequestSheetForm({
               <p className="text-muted-foreground text-sm">{request.notes}</p>
             )}
 
-            <div className="flex justify-end">
+            <div className="flex justify-end gap-1">
+              <Button variant="ghost" size="sm" onClick={handleCopyForLLM}>
+                {copied ? (
+                  <ClipboardCheck className="size-3" />
+                ) : (
+                  <Copy className="size-3" />
+                )}
+                {copied ? 'Copied' : 'Copy for LLM'}
+              </Button>
               <Button
                 variant="ghost"
                 size="sm"
