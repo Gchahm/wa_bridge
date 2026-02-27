@@ -386,6 +386,9 @@ function RequestSheetForm({
               flightRequestId={request.id}
               refreshKey={quoteRefreshKey}
               onStatusChange={() => onSaved()}
+              chatId={chatId}
+              origin={request.origin}
+              destination={request.destination}
             />
           </div>
 

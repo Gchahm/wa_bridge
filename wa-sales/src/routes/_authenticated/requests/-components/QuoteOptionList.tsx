@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Check, Pencil, Plus, X } from 'lucide-react'
+import { Check, Pencil, Plus, Send, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -13,12 +13,18 @@ interface QuoteOptionListProps {
   flightRequestId: string
   refreshKey: number
   onStatusChange?: () => void
+  chatId?: string | null
+  origin?: string | null
+  destination?: string | null
 }
 
 export function QuoteOptionList({
   flightRequestId,
   refreshKey,
   onStatusChange,
+  chatId,
+  origin,
+  destination,
 }: QuoteOptionListProps) {
   const [options, setOptions] = useState<QuoteOption[]>([])
   const [loading, setLoading] = useState(true)
@@ -38,6 +44,9 @@ export function QuoteOptionList({
   const [editCurrency, setEditCurrency] = useState('BRL')
   const [editDepartureDate, setEditDepartureDate] = useState('')
   const [editReturnDate, setEditReturnDate] = useState('')
+
+  // Send state
+  const [sendingId, setSendingId] = useState<string | null>(null)
 
   useEffect(() => {
     const ctrl = { cancelled: false }
@@ -190,6 +199,41 @@ export function QuoteOptionList({
     setEditingId(null)
   }
 
+  async function handleSendQuote(option: QuoteOption) {
+    if (!chatId) return
+    setSendingId(option.id)
+    try {
+      const lines: string[] = []
+      if (option.description) lines.push(`*Cotação: ${option.description}*`)
+      if (origin || destination)
+        lines.push(`${origin ?? '???'} → ${destination ?? '???'}`)
+      if (option.price != null)
+        lines.push(
+          `Preço: ${option.currency ?? 'BRL'} ${Number(option.price).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
+        )
+      if (option.departure_date)
+        lines.push(
+          `Ida: ${new Date(option.departure_date + 'T00:00:00').toLocaleDateString('pt-BR')}`,
+        )
+      if (option.return_date)
+        lines.push(
+          `Volta: ${new Date(option.return_date + 'T00:00:00').toLocaleDateString('pt-BR')}`,
+        )
+
+      const content = lines.join('\n')
+
+      const { error } = await supabase
+        .from('outgoing_messages')
+        .insert({ chat_id: chatId, content })
+
+      if (error) {
+        console.error('Error sending quote:', error)
+      }
+    } finally {
+      setSendingId(null)
+    }
+  }
+
   if (loading) {
     return (
       <p className="text-muted-foreground text-sm">Loading quote options...</p>
@@ -309,6 +353,18 @@ export function QuoteOptionList({
                   className={`size-4 ${option.is_selected ? 'text-green-600' : ''}`}
                 />
               </Button>
+              {chatId && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => handleSendQuote(option)}
+                  disabled={sendingId === option.id}
+                  title="Send quote to WhatsApp"
+                >
+                  <Send className="size-4" />
+                </Button>
+              )}
               <Button
                 type="button"
                 variant="ghost"
