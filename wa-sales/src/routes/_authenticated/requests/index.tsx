@@ -29,6 +29,7 @@ import {
 import { supabase } from '@/lib/supabase'
 import type { Database } from '@/lib/database.types'
 import { RequestSheet } from './-components/RequestSheet'
+import { BookingSheet } from '@/routes/_authenticated/bookings/-components/BookingSheet'
 
 type FlightRequestSummary =
   Database['public']['Views']['flight_requests_summary']['Row']
@@ -181,6 +182,13 @@ function RequestsPage() {
   const [editingCustomerId, setEditingCustomerId] = useState<string | null>(
     null,
   )
+  const [bookingSheetOpen, setBookingSheetOpen] = useState(false)
+  const [bookingFlightRequestId, setBookingFlightRequestId] = useState<
+    string | null
+  >(null)
+  const [bookingCustomerId, setBookingCustomerId] = useState<string | null>(
+    null,
+  )
 
   const filteredData = useMemo(() => {
     return requests.filter((r) => {
@@ -236,6 +244,21 @@ function RequestsPage() {
   function handleSaved() {
     setSheetOpen(false)
     setEditingRequest(null)
+    router.invalidate()
+  }
+
+  function handleCreateBooking(flightRequestId: string, customerId: string) {
+    setSheetOpen(false)
+    setEditingRequest(null)
+    setBookingFlightRequestId(flightRequestId)
+    setBookingCustomerId(customerId)
+    setBookingSheetOpen(true)
+  }
+
+  function handleBookingSaved() {
+    setBookingSheetOpen(false)
+    setBookingFlightRequestId(null)
+    setBookingCustomerId(null)
     router.invalidate()
   }
 
@@ -322,8 +345,18 @@ function RequestsPage() {
           request={editingRequest}
           onSaved={handleSaved}
           onDelete={handleDelete}
+          onCreateBooking={handleCreateBooking}
         />
       )}
+
+      <BookingSheet
+        open={bookingSheetOpen}
+        onOpenChange={setBookingSheetOpen}
+        customerId={bookingCustomerId}
+        booking={null}
+        flightRequestId={bookingFlightRequestId}
+        onSaved={handleBookingSaved}
+      />
     </div>
   )
 }

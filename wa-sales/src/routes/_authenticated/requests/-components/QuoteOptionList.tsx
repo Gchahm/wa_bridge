@@ -11,11 +11,13 @@ type QuoteOption = Database['public']['Views']['quote_options']['Row']
 interface QuoteOptionListProps {
   flightRequestId: string
   refreshKey: number
+  onStatusChange?: () => void
 }
 
 export function QuoteOptionList({
   flightRequestId,
   refreshKey,
+  onStatusChange,
 }: QuoteOptionListProps) {
   const [options, setOptions] = useState<QuoteOption[]>([])
   const [loading, setLoading] = useState(true)
@@ -117,6 +119,13 @@ export function QuoteOptionList({
         console.error('Error setting selected:', error)
         return
       }
+
+      // Auto-update flight request status to "accepted"
+      await supabase
+        .from('flight_requests')
+        .update({ status: 'accepted' })
+        .eq('id', flightRequestId)
+      onStatusChange?.()
     }
 
     setOptions((prev) =>

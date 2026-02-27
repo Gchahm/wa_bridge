@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Separator } from '@/components/ui/separator'
+import { TicketCheck } from 'lucide-react'
 import {
   Select,
   SelectContent,
@@ -55,6 +56,7 @@ interface RequestSheetProps {
   request: FlightRequest | null
   onSaved: () => void
   onDelete?: (id: string) => void
+  onCreateBooking?: (flightRequestId: string, customerId: string) => void
 }
 
 export function RequestSheet({
@@ -65,6 +67,7 @@ export function RequestSheet({
   request,
   onSaved,
   onDelete,
+  onCreateBooking,
 }: RequestSheetProps) {
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -78,6 +81,7 @@ export function RequestSheet({
             onOpenChange={onOpenChange}
             onSaved={onSaved}
             onDelete={onDelete}
+            onCreateBooking={onCreateBooking}
           />
         )}
       </SheetContent>
@@ -92,6 +96,7 @@ function RequestSheetForm({
   onOpenChange,
   onSaved,
   onDelete,
+  onCreateBooking,
 }: {
   customerId: string
   chatId?: string | null
@@ -99,6 +104,7 @@ function RequestSheetForm({
   onOpenChange: (open: boolean) => void
   onSaved: () => void
   onDelete?: (id: string) => void
+  onCreateBooking?: (flightRequestId: string, customerId: string) => void
 }) {
   const isEditing = !!request
 
@@ -524,6 +530,7 @@ function RequestSheetForm({
               <QuoteOptionList
                 flightRequestId={request.id}
                 refreshKey={quoteRefreshKey}
+                onStatusChange={() => form.setFieldValue('status', 'accepted')}
               />
             </div>
           </>
@@ -543,6 +550,21 @@ function RequestSheetForm({
               <div />
             )}
             <div className="flex gap-2">
+              {isEditing &&
+                request.id &&
+                onCreateBooking &&
+                ['accepted', 'booked'].includes(
+                  form.getFieldValue('status'),
+                ) && (
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={() => onCreateBooking(request.id!, customerId)}
+                  >
+                    <TicketCheck className="size-4" />
+                    Create Booking
+                  </Button>
+                )}
               <Button
                 type="button"
                 variant="outline"
