@@ -78,13 +78,21 @@ func (s *Store) SaveMessage(payload MessagePayload) {
 		s.EnsureCustomer(ctx, payload.SenderID, payload.SenderName)
 	}
 
+	// For 1:1 chats, store the sender's phone number so the frontend can
+	// link the chat to a contact even when the chat_id uses an opaque @lid.
+	var contactPhone *string
+	if !payload.IsGroup && !payload.IsFromMe && payload.SenderID != "" {
+		contactPhone = &payload.SenderID
+	}
+
 	_, err := s.db.ExecContext(ctx,
-		`INSERT INTO wa_bridge.chats (chat_id, is_group, name, last_message_at)
-		 VALUES ($1, $2, NULLIF($3, ''), $4)
+		`INSERT INTO wa_bridge.chats (chat_id, is_group, name, last_message_at, contact_phone_number)
+		 VALUES ($1, $2, NULLIF($3, ''), $4, $5)
 		 ON CONFLICT (chat_id) DO UPDATE SET
 		   name = COALESCE(NULLIF($3, ''), wa_bridge.chats.name),
-		   last_message_at = $4`,
-		payload.ChatID, payload.IsGroup, payload.ChatName, payload.Timestamp)
+		   last_message_at = $4,
+		   contact_phone_number = COALESCE($5, wa_bridge.chats.contact_phone_number)`,
+		payload.ChatID, payload.IsGroup, payload.ChatName, payload.Timestamp, contactPhone)
 	if err != nil {
 		log.Error().Err(err).Str("chat_id", payload.ChatID).Msg("failed to upsert chat")
 		return

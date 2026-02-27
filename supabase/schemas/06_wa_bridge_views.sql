@@ -27,6 +27,7 @@ SELECT
     c.name,
     c.created_at,
     c.last_message_at,
+    c.contact_phone_number,
     lm.last_message_content,
     lm.last_message_timestamp,
     lm.last_message_type,

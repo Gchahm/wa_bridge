@@ -7,11 +7,12 @@
 -- -----------------------------------------------------------------------------
 
 CREATE TABLE "wa_bridge"."chats" (
-    "chat_id"         text                        NOT NULL,
-    "is_group"        boolean                     NOT NULL DEFAULT false,
-    "name"            character varying,
-    "created_at"      timestamp without time zone          DEFAULT now(),
-    "last_message_at" timestamp without time zone
+    "chat_id"                text                        NOT NULL,
+    "is_group"               boolean                     NOT NULL DEFAULT false,
+    "name"                   character varying,
+    "created_at"             timestamp without time zone          DEFAULT now(),
+    "last_message_at"        timestamp without time zone,
+    "contact_phone_number"   text
 );
 
 ALTER TABLE "wa_bridge"."chats" ENABLE ROW LEVEL SECURITY;
@@ -19,6 +20,14 @@ ALTER TABLE "wa_bridge"."chats" ENABLE ROW LEVEL SECURITY;
 CREATE UNIQUE INDEX chats_pkey ON wa_bridge.chats USING btree (chat_id);
 ALTER TABLE "wa_bridge"."chats"
     ADD CONSTRAINT "chats_pkey" PRIMARY KEY USING INDEX "chats_pkey";
+
+ALTER TABLE "wa_bridge"."chats"
+    ADD CONSTRAINT "chats_contact_phone_number_fkey"
+    FOREIGN KEY (contact_phone_number) REFERENCES wa_bridge.contacts (phone_number)
+    ON DELETE SET NULL ON UPDATE CASCADE;
+
+CREATE INDEX chats_contact_phone_number_idx
+    ON wa_bridge.chats (contact_phone_number);
 
 -- -----------------------------------------------------------------------------
 -- wa_bridge.contacts

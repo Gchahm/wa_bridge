@@ -40,6 +40,7 @@ export type Database = {
       chats: {
         Row: {
           chat_id: string | null
+          contact_phone_number: string | null
           created_at: string | null
           is_group: boolean | null
           last_message_at: string | null
@@ -47,6 +48,7 @@ export type Database = {
         }
         Insert: {
           chat_id?: string | null
+          contact_phone_number?: string | null
           created_at?: string | null
           is_group?: boolean | null
           last_message_at?: string | null
@@ -54,16 +56,26 @@ export type Database = {
         }
         Update: {
           chat_id?: string | null
+          contact_phone_number?: string | null
           created_at?: string | null
           is_group?: boolean | null
           last_message_at?: string | null
           name?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: 'chats_contact_phone_number_fkey'
+            columns: ['contact_phone_number']
+            isOneToOne: false
+            referencedRelation: 'contacts'
+            referencedColumns: ['phone_number']
+          },
+        ]
       }
       chats_with_preview: {
         Row: {
           chat_id: string | null
+          contact_phone_number: string | null
           created_at: string | null
           is_group: boolean | null
           last_message_at: string | null
@@ -73,7 +85,15 @@ export type Database = {
           last_message_type: string | null
           name: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: 'chats_contact_phone_number_fkey'
+            columns: ['contact_phone_number']
+            isOneToOne: false
+            referencedRelation: 'contacts'
+            referencedColumns: ['phone_number']
+          },
+        ]
       }
       contacts: {
         Row: {
@@ -471,6 +491,7 @@ export type Database = {
       chats: {
         Row: {
           chat_id: string
+          contact_phone_number: string | null
           created_at: string | null
           is_group: boolean
           last_message_at: string | null
@@ -478,6 +499,7 @@ export type Database = {
         }
         Insert: {
           chat_id: string
+          contact_phone_number?: string | null
           created_at?: string | null
           is_group?: boolean
           last_message_at?: string | null
@@ -485,12 +507,21 @@ export type Database = {
         }
         Update: {
           chat_id?: string
+          contact_phone_number?: string | null
           created_at?: string | null
           is_group?: boolean
           last_message_at?: string | null
           name?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: 'chats_contact_phone_number_fkey'
+            columns: ['contact_phone_number']
+            isOneToOne: false
+            referencedRelation: 'contacts'
+            referencedColumns: ['phone_number']
+          },
+        ]
       }
       contacts: {
         Row: {

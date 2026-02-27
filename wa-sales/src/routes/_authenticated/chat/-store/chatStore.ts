@@ -23,6 +23,7 @@ export function handleChatInsert(payload: BroadcastPayload) {
     is_group: record.is_group,
     created_at: record.created_at,
     last_message_at: record.last_message_at,
+    contact_phone_number: record.contact_phone_number,
     last_message_content: null,
     last_message_timestamp: record.last_message_at,
     last_message_type: null,
@@ -42,6 +43,8 @@ export function handleChatUpdate(payload: BroadcastPayload) {
         ...c,
         name: record.name ?? c.name,
         is_group: record.is_group,
+        contact_phone_number:
+          record.contact_phone_number ?? c.contact_phone_number,
         last_message_at: record.last_message_at ?? c.last_message_at,
         last_message_timestamp:
           record.last_message_at ?? c.last_message_timestamp,

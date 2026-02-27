@@ -43,7 +43,7 @@ export function MessageView({
 
   // Fetch customer for private chats
   const isPrivateChat = chat && !chat.is_group
-  const phoneNumber = chat?.chat_id?.replace(/@s\.whatsapp\.net$/, '') ?? null
+  const phoneNumber = chat?.contact_phone_number ?? null
   useEffect(() => {
     if (!isPrivateChat || !phoneNumber) {
       setCustomer(null)
