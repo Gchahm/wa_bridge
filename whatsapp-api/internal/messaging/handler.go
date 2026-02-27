@@ -41,6 +41,14 @@ func handleMessage(client *whatsmeow.Client, cfg config.Config, db *store.Store,
 		return
 	}
 
+	// Skip sender key distribution messages that carry no user-visible content.
+	// These are internal Signal protocol key rotation events that sometimes
+	// piggyback on real messages. Only skip when no actual content is present.
+	if msg.Message.GetSenderKeyDistributionMessage() != nil && !hasUserContent(msg) {
+		log.Debug().Str("message_id", msg.Info.ID).Msg("skipping sender key distribution (no user content)")
+		return
+	}
+
 	payload := buildPayload(msg)
 	payload.ChatName = resolveChatName(client, msg)
 
@@ -98,6 +106,24 @@ func resolveSender(msg *events.Message) string {
 	default:
 		return msg.Info.Sender.User
 	}
+}
+
+// hasUserContent reports whether the message contains any user-visible content
+// (text, media, or other recognized message types) beyond protocol-level
+// metadata like SenderKeyDistributionMessage and MessageContextInfo.
+func hasUserContent(msg *events.Message) bool {
+	m := msg.Message
+	return m.GetConversation() != "" ||
+		m.ExtendedTextMessage != nil ||
+		m.ImageMessage != nil ||
+		m.VideoMessage != nil ||
+		m.AudioMessage != nil ||
+		m.DocumentMessage != nil ||
+		m.StickerMessage != nil ||
+		m.ContactMessage != nil ||
+		m.ContactsArrayMessage != nil ||
+		m.ReactionMessage != nil ||
+		m.ProtocolMessage != nil
 }
 
 // buildPayload derives a MessagePayload from the raw whatsmeow event.
