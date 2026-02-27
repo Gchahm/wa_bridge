@@ -28,8 +28,7 @@ import {
 } from '@/components/ui/table'
 import { supabase } from '@/lib/supabase'
 import type { Database } from '@/lib/database.types'
-import { RequestSheet } from './-components/RequestSheet'
-import { BookingSheet } from '@/routes/_authenticated/bookings/-components/BookingSheet'
+import { RequestBookingSheets } from './-components/RequestBookingSheets'
 
 type FlightRequestSummary =
   Database['public']['Views']['flight_requests_summary']['Row']
@@ -182,13 +181,6 @@ function RequestsPage() {
   const [editingCustomerId, setEditingCustomerId] = useState<string | null>(
     null,
   )
-  const [bookingSheetOpen, setBookingSheetOpen] = useState(false)
-  const [bookingFlightRequestId, setBookingFlightRequestId] = useState<
-    string | null
-  >(null)
-  const [bookingCustomerId, setBookingCustomerId] = useState<string | null>(
-    null,
-  )
 
   const filteredData = useMemo(() => {
     return requests.filter((r) => {
@@ -225,41 +217,6 @@ function RequestsPage() {
       setEditingCustomerId(summary.customer_id)
       setSheetOpen(true)
     }
-  }
-
-  async function handleDelete(id: string) {
-    const { error } = await supabase
-      .from('flight_requests')
-      .delete()
-      .eq('id', id)
-    if (error) {
-      console.error('Error deleting request:', error)
-      return
-    }
-    setSheetOpen(false)
-    setEditingRequest(null)
-    router.invalidate()
-  }
-
-  function handleSaved() {
-    setSheetOpen(false)
-    setEditingRequest(null)
-    router.invalidate()
-  }
-
-  function handleCreateBooking(flightRequestId: string, customerId: string) {
-    setSheetOpen(false)
-    setEditingRequest(null)
-    setBookingFlightRequestId(flightRequestId)
-    setBookingCustomerId(customerId)
-    setBookingSheetOpen(true)
-  }
-
-  function handleBookingSaved() {
-    setBookingSheetOpen(false)
-    setBookingFlightRequestId(null)
-    setBookingCustomerId(null)
-    router.invalidate()
   }
 
   return (
@@ -337,25 +294,15 @@ function RequestsPage() {
         </Table>
       </div>
 
-      {editingCustomerId && (
-        <RequestSheet
-          open={sheetOpen}
-          onOpenChange={setSheetOpen}
-          customerId={editingCustomerId}
-          request={editingRequest}
-          onSaved={handleSaved}
-          onDelete={handleDelete}
-          onCreateBooking={handleCreateBooking}
-        />
-      )}
-
-      <BookingSheet
-        open={bookingSheetOpen}
-        onOpenChange={setBookingSheetOpen}
-        customerId={bookingCustomerId}
-        booking={null}
-        flightRequestId={bookingFlightRequestId}
-        onSaved={handleBookingSaved}
+      <RequestBookingSheets
+        open={sheetOpen}
+        onOpenChange={setSheetOpen}
+        customerId={editingCustomerId}
+        request={editingRequest}
+        onChanged={() => {
+          setEditingRequest(null)
+          router.invalidate()
+        }}
       />
     </div>
   )

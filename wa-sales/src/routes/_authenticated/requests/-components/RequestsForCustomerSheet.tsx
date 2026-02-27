@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/sheet'
 import { supabase } from '@/lib/supabase'
 import type { Database } from '@/lib/database.types'
-import { RequestSheet } from './RequestSheet'
+import { RequestBookingSheets } from './RequestBookingSheets'
 
 type FlightRequest = Database['public']['Views']['flight_requests']['Row']
 
@@ -78,28 +78,6 @@ export function RequestsForCustomerSheet({
   function handleEdit(request: FlightRequest) {
     setEditingRequest(request)
     setRequestSheetOpen(true)
-  }
-
-  function handleSaved() {
-    setRequestSheetOpen(false)
-    setEditingRequest(null)
-    setRefreshKey((k) => k + 1)
-  }
-
-  async function handleDelete(id: string) {
-    const { error } = await supabase
-      .from('flight_requests')
-      .delete()
-      .eq('id', id)
-
-    if (error) {
-      console.error('Error deleting request:', error)
-      return
-    }
-
-    setRequestSheetOpen(false)
-    setEditingRequest(null)
-    setRefreshKey((k) => k + 1)
   }
 
   function formatDateRange(start: string | null, end: string | null) {
@@ -183,14 +161,16 @@ export function RequestsForCustomerSheet({
           ))}
         </div>
 
-        <RequestSheet
+        <RequestBookingSheets
           open={requestSheetOpen}
           onOpenChange={setRequestSheetOpen}
           customerId={customerId}
           chatId={chatId}
           request={editingRequest}
-          onSaved={handleSaved}
-          onDelete={handleDelete}
+          onChanged={() => {
+            setEditingRequest(null)
+            setRefreshKey((k) => k + 1)
+          }}
         />
       </SheetContent>
     </Sheet>
