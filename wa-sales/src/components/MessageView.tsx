@@ -1,10 +1,15 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
-import { Loader2, MessageSquare, Send } from 'lucide-react'
+import { Loader2, MessageSquare, Send, User, UserCheck } from 'lucide-react'
 import { MessageBubble, getMessageDateKey } from './MessageBubble'
 import { supabase } from '@/lib/supabase'
 import type { Database } from '@/lib/database.types'
 import type { Reaction } from '@/routes/_authenticated/chat/-hooks/useReactions'
+import { CustomerSheet } from '@/routes/_authenticated/customers/-components/CustomerSheet'
+import { Button } from '@/components/ui/button'
+
+type CustomerWithContact =
+  Database['public']['Views']['customers_with_contact']['Row']
 
 type Chat = Database['public']['Views']['chats']['Row']
 type Message = Database['public']['Views']['messages']['Row']
@@ -31,6 +36,43 @@ export function MessageView({
   const isNearBottomRef = useRef(true)
   const loadingOlderRef = useRef(false)
   const savedScrollRef = useRef<{ height: number; top: number } | null>(null)
+
+  // Customer sheet state
+  const [customerSheetOpen, setCustomerSheetOpen] = useState(false)
+  const [customer, setCustomer] = useState<CustomerWithContact | null>(null)
+
+  // Fetch customer for private chats
+  const isPrivateChat = chat && !chat.is_group
+  const phoneNumber = chat?.chat_id?.replace(/@s\.whatsapp\.net$/, '') ?? null
+  useEffect(() => {
+    if (!isPrivateChat || !phoneNumber) {
+      setCustomer(null)
+      return
+    }
+    supabase
+      .from('customers_with_contact')
+      .select('*')
+      .eq('phone_number', phoneNumber)
+      .maybeSingle()
+      .then(({ data }) => setCustomer(data))
+  }, [isPrivateChat, phoneNumber])
+
+  function handleCustomerSaved() {
+    setCustomerSheetOpen(false)
+    if (phoneNumber) {
+      supabase
+        .from('customers_with_contact')
+        .select('*')
+        .eq('phone_number', phoneNumber)
+        .maybeSingle()
+        .then(({ data }) => setCustomer(data))
+    }
+  }
+
+  function handleCustomerDelete(_id: string) {
+    setCustomer(null)
+    setCustomerSheetOpen(false)
+  }
 
   // Reset scroll anchor when chat changes
   const prevChatId = useRef(chat?.chat_id)
@@ -133,6 +175,21 @@ export function MessageView({
             {chat.is_group ? 'Group chat' : 'Private chat'}
           </p>
         </div>
+        {isPrivateChat && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="flex-shrink-0"
+            onClick={() => setCustomerSheetOpen(true)}
+            title={customer ? 'View customer' : 'Create customer'}
+          >
+            {customer ? (
+              <UserCheck className="size-5 text-[#00a884]" />
+            ) : (
+              <User className="size-5 text-gray-500" />
+            )}
+          </Button>
+        )}
       </div>
 
       {/* Messages area */}
@@ -193,6 +250,17 @@ export function MessageView({
 
       {/* Message input */}
       <MessageInput chatId={chat.chat_id!} />
+
+      {isPrivateChat && phoneNumber && (
+        <CustomerSheet
+          open={customerSheetOpen}
+          onOpenChange={setCustomerSheetOpen}
+          customer={customer}
+          defaultPhoneNumber={phoneNumber}
+          onSaved={handleCustomerSaved}
+          onDelete={handleCustomerDelete}
+        />
+      )}
     </div>
   )
 }

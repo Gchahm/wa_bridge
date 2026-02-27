@@ -96,6 +96,46 @@ export type Database = {
         }
         Relationships: []
       }
+      customer_passengers: {
+        Row: {
+          customer_id: string | null
+          label: string | null
+          passenger_id: string | null
+        }
+        Insert: {
+          customer_id?: string | null
+          label?: string | null
+          passenger_id?: string | null
+        }
+        Update: {
+          customer_id?: string | null
+          label?: string | null
+          passenger_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'fk_customer_passengers_customer'
+            columns: ['customer_id']
+            isOneToOne: false
+            referencedRelation: 'customers'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'fk_customer_passengers_customer'
+            columns: ['customer_id']
+            isOneToOne: false
+            referencedRelation: 'customers_with_contact'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'fk_customer_passengers_passenger'
+            columns: ['passenger_id']
+            isOneToOne: false
+            referencedRelation: 'passengers'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       customer_relationships: {
         Row: {
           customer_id: string | null
@@ -328,6 +368,51 @@ export type Database = {
           },
         ]
       }
+      passengers: {
+        Row: {
+          created_at: string | null
+          date_of_birth: string | null
+          document_number: string | null
+          document_type: string | null
+          frequent_flyer_airline: string | null
+          frequent_flyer_number: string | null
+          full_name: string | null
+          gender: string | null
+          id: string | null
+          nationality: string | null
+          notes: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          date_of_birth?: string | null
+          document_number?: string | null
+          document_type?: string | null
+          frequent_flyer_airline?: string | null
+          frequent_flyer_number?: string | null
+          full_name?: string | null
+          gender?: string | null
+          id?: string | null
+          nationality?: string | null
+          notes?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          date_of_birth?: string | null
+          document_number?: string | null
+          document_type?: string | null
+          frequent_flyer_airline?: string | null
+          frequent_flyer_number?: string | null
+          full_name?: string | null
+          gender?: string | null
+          id?: string | null
+          nationality?: string | null
+          notes?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       reactions: {
         Row: {
           chat_id: string | null
@@ -427,6 +512,39 @@ export type Database = {
           push_name?: string | null
         }
         Relationships: []
+      }
+      customer_passengers: {
+        Row: {
+          customer_id: string
+          label: string | null
+          passenger_id: string
+        }
+        Insert: {
+          customer_id: string
+          label?: string | null
+          passenger_id: string
+        }
+        Update: {
+          customer_id?: string
+          label?: string | null
+          passenger_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'fk_customer_passengers_customer'
+            columns: ['customer_id']
+            isOneToOne: false
+            referencedRelation: 'customers'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'fk_customer_passengers_passenger'
+            columns: ['passenger_id']
+            isOneToOne: false
+            referencedRelation: 'passengers'
+            referencedColumns: ['id']
+          },
+        ]
       }
       customer_relationships: {
         Row: {
@@ -608,6 +726,51 @@ export type Database = {
             referencedColumns: ['chat_id']
           },
         ]
+      }
+      passengers: {
+        Row: {
+          created_at: string | null
+          date_of_birth: string | null
+          document_number: string | null
+          document_type: string | null
+          frequent_flyer_airline: string | null
+          frequent_flyer_number: string | null
+          full_name: string
+          gender: string | null
+          id: string
+          nationality: string | null
+          notes: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          date_of_birth?: string | null
+          document_number?: string | null
+          document_type?: string | null
+          frequent_flyer_airline?: string | null
+          frequent_flyer_number?: string | null
+          full_name: string
+          gender?: string | null
+          id?: string
+          nationality?: string | null
+          notes?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          date_of_birth?: string | null
+          document_number?: string | null
+          document_type?: string | null
+          frequent_flyer_airline?: string | null
+          frequent_flyer_number?: string | null
+          full_name?: string
+          gender?: string | null
+          id?: string
+          nationality?: string | null
+          notes?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       reactions: {
         Row: {
