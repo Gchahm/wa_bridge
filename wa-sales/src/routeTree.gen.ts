@@ -15,9 +15,11 @@ import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedRequestsRouteImport } from './routes/_authenticated/requests'
 import { Route as AuthenticatedCustomersRouteImport } from './routes/_authenticated/customers'
 import { Route as AuthenticatedChatRouteImport } from './routes/_authenticated/chat'
+import { Route as AuthenticatedBookingsRouteImport } from './routes/_authenticated/bookings'
 import { Route as AuthenticatedRequestsIndexRouteImport } from './routes/_authenticated/requests/index'
 import { Route as AuthenticatedCustomersIndexRouteImport } from './routes/_authenticated/customers/index'
 import { Route as AuthenticatedChatIndexRouteImport } from './routes/_authenticated/chat/index'
+import { Route as AuthenticatedBookingsIndexRouteImport } from './routes/_authenticated/bookings/index'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -48,6 +50,11 @@ const AuthenticatedChatRoute = AuthenticatedChatRouteImport.update({
   path: '/chat',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedBookingsRoute = AuthenticatedBookingsRouteImport.update({
+  id: '/bookings',
+  path: '/bookings',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedRequestsIndexRoute =
   AuthenticatedRequestsIndexRouteImport.update({
     id: '/',
@@ -65,13 +72,21 @@ const AuthenticatedChatIndexRoute = AuthenticatedChatIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthenticatedChatRoute,
 } as any)
+const AuthenticatedBookingsIndexRoute =
+  AuthenticatedBookingsIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedBookingsRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
   '/login': typeof LoginRoute
+  '/bookings': typeof AuthenticatedBookingsRouteWithChildren
   '/chat': typeof AuthenticatedChatRouteWithChildren
   '/customers': typeof AuthenticatedCustomersRouteWithChildren
   '/requests': typeof AuthenticatedRequestsRouteWithChildren
+  '/bookings/': typeof AuthenticatedBookingsIndexRoute
   '/chat/': typeof AuthenticatedChatIndexRoute
   '/customers/': typeof AuthenticatedCustomersIndexRoute
   '/requests/': typeof AuthenticatedRequestsIndexRoute
@@ -79,6 +94,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/': typeof AuthenticatedIndexRoute
+  '/bookings': typeof AuthenticatedBookingsIndexRoute
   '/chat': typeof AuthenticatedChatIndexRoute
   '/customers': typeof AuthenticatedCustomersIndexRoute
   '/requests': typeof AuthenticatedRequestsIndexRoute
@@ -87,10 +103,12 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/login': typeof LoginRoute
+  '/_authenticated/bookings': typeof AuthenticatedBookingsRouteWithChildren
   '/_authenticated/chat': typeof AuthenticatedChatRouteWithChildren
   '/_authenticated/customers': typeof AuthenticatedCustomersRouteWithChildren
   '/_authenticated/requests': typeof AuthenticatedRequestsRouteWithChildren
   '/_authenticated/': typeof AuthenticatedIndexRoute
+  '/_authenticated/bookings/': typeof AuthenticatedBookingsIndexRoute
   '/_authenticated/chat/': typeof AuthenticatedChatIndexRoute
   '/_authenticated/customers/': typeof AuthenticatedCustomersIndexRoute
   '/_authenticated/requests/': typeof AuthenticatedRequestsIndexRoute
@@ -100,22 +118,26 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/login'
+    | '/bookings'
     | '/chat'
     | '/customers'
     | '/requests'
+    | '/bookings/'
     | '/chat/'
     | '/customers/'
     | '/requests/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/login' | '/' | '/chat' | '/customers' | '/requests'
+  to: '/login' | '/' | '/bookings' | '/chat' | '/customers' | '/requests'
   id:
     | '__root__'
     | '/_authenticated'
     | '/login'
+    | '/_authenticated/bookings'
     | '/_authenticated/chat'
     | '/_authenticated/customers'
     | '/_authenticated/requests'
     | '/_authenticated/'
+    | '/_authenticated/bookings/'
     | '/_authenticated/chat/'
     | '/_authenticated/customers/'
     | '/_authenticated/requests/'
@@ -170,6 +192,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedChatRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/bookings': {
+      id: '/_authenticated/bookings'
+      path: '/bookings'
+      fullPath: '/bookings'
+      preLoaderRoute: typeof AuthenticatedBookingsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/requests/': {
       id: '/_authenticated/requests/'
       path: '/'
@@ -191,8 +220,28 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedChatIndexRouteImport
       parentRoute: typeof AuthenticatedChatRoute
     }
+    '/_authenticated/bookings/': {
+      id: '/_authenticated/bookings/'
+      path: '/'
+      fullPath: '/bookings/'
+      preLoaderRoute: typeof AuthenticatedBookingsIndexRouteImport
+      parentRoute: typeof AuthenticatedBookingsRoute
+    }
   }
 }
+
+interface AuthenticatedBookingsRouteChildren {
+  AuthenticatedBookingsIndexRoute: typeof AuthenticatedBookingsIndexRoute
+}
+
+const AuthenticatedBookingsRouteChildren: AuthenticatedBookingsRouteChildren = {
+  AuthenticatedBookingsIndexRoute: AuthenticatedBookingsIndexRoute,
+}
+
+const AuthenticatedBookingsRouteWithChildren =
+  AuthenticatedBookingsRoute._addFileChildren(
+    AuthenticatedBookingsRouteChildren,
+  )
 
 interface AuthenticatedChatRouteChildren {
   AuthenticatedChatIndexRoute: typeof AuthenticatedChatIndexRoute
@@ -233,6 +282,7 @@ const AuthenticatedRequestsRouteWithChildren =
   )
 
 interface AuthenticatedRouteChildren {
+  AuthenticatedBookingsRoute: typeof AuthenticatedBookingsRouteWithChildren
   AuthenticatedChatRoute: typeof AuthenticatedChatRouteWithChildren
   AuthenticatedCustomersRoute: typeof AuthenticatedCustomersRouteWithChildren
   AuthenticatedRequestsRoute: typeof AuthenticatedRequestsRouteWithChildren
@@ -240,6 +290,7 @@ interface AuthenticatedRouteChildren {
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
+  AuthenticatedBookingsRoute: AuthenticatedBookingsRouteWithChildren,
   AuthenticatedChatRoute: AuthenticatedChatRouteWithChildren,
   AuthenticatedCustomersRoute: AuthenticatedCustomersRouteWithChildren,
   AuthenticatedRequestsRoute: AuthenticatedRequestsRouteWithChildren,

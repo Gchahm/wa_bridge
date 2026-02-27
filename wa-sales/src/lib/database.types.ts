@@ -37,6 +37,221 @@ export type Database = {
       [_ in never]: never
     }
     Views: {
+      booking_passengers: {
+        Row: {
+          booking_id: string | null
+          passenger_id: string | null
+          ticket_number: string | null
+        }
+        Insert: {
+          booking_id?: string | null
+          passenger_id?: string | null
+          ticket_number?: string | null
+        }
+        Update: {
+          booking_id?: string | null
+          passenger_id?: string | null
+          ticket_number?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'fk_booking_passengers_booking'
+            columns: ['booking_id']
+            isOneToOne: false
+            referencedRelation: 'bookings'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'fk_booking_passengers_booking'
+            columns: ['booking_id']
+            isOneToOne: false
+            referencedRelation: 'bookings_summary'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'fk_booking_passengers_passenger'
+            columns: ['passenger_id']
+            isOneToOne: false
+            referencedRelation: 'passengers'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      booking_segments: {
+        Row: {
+          airline: string | null
+          arrival_at: string | null
+          booking_id: string | null
+          cabin_class: string | null
+          departure_at: string | null
+          destination: string | null
+          flight_number: string | null
+          id: string | null
+          origin: string | null
+          segment_order: number | null
+        }
+        Insert: {
+          airline?: string | null
+          arrival_at?: string | null
+          booking_id?: string | null
+          cabin_class?: string | null
+          departure_at?: string | null
+          destination?: string | null
+          flight_number?: string | null
+          id?: string | null
+          origin?: string | null
+          segment_order?: number | null
+        }
+        Update: {
+          airline?: string | null
+          arrival_at?: string | null
+          booking_id?: string | null
+          cabin_class?: string | null
+          departure_at?: string | null
+          destination?: string | null
+          flight_number?: string | null
+          id?: string | null
+          origin?: string | null
+          segment_order?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'fk_booking_segments_booking'
+            columns: ['booking_id']
+            isOneToOne: false
+            referencedRelation: 'bookings'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'fk_booking_segments_booking'
+            columns: ['booking_id']
+            isOneToOne: false
+            referencedRelation: 'bookings_summary'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      bookings: {
+        Row: {
+          booking_source: string | null
+          created_at: string | null
+          currency: string | null
+          customer_id: string | null
+          flight_request_id: string | null
+          id: string | null
+          notes: string | null
+          pnr: string | null
+          status: string | null
+          total_price: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          booking_source?: string | null
+          created_at?: string | null
+          currency?: string | null
+          customer_id?: string | null
+          flight_request_id?: string | null
+          id?: string | null
+          notes?: string | null
+          pnr?: string | null
+          status?: string | null
+          total_price?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          booking_source?: string | null
+          created_at?: string | null
+          currency?: string | null
+          customer_id?: string | null
+          flight_request_id?: string | null
+          id?: string | null
+          notes?: string | null
+          pnr?: string | null
+          status?: string | null
+          total_price?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'fk_bookings_customer'
+            columns: ['customer_id']
+            isOneToOne: false
+            referencedRelation: 'customers'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'fk_bookings_customer'
+            columns: ['customer_id']
+            isOneToOne: false
+            referencedRelation: 'customers_with_contact'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'fk_bookings_flight_request'
+            columns: ['flight_request_id']
+            isOneToOne: false
+            referencedRelation: 'flight_requests'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'fk_bookings_flight_request'
+            columns: ['flight_request_id']
+            isOneToOne: false
+            referencedRelation: 'flight_requests_summary'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      bookings_summary: {
+        Row: {
+          booking_source: string | null
+          created_at: string | null
+          currency: string | null
+          customer_id: string | null
+          customer_name: string | null
+          departure_at_display: string | null
+          flight_request_id: string | null
+          id: string | null
+          notes: string | null
+          passenger_count: number | null
+          pnr: string | null
+          route_destination: string | null
+          route_origin: string | null
+          status: string | null
+          total_price: number | null
+          updated_at: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'fk_bookings_customer'
+            columns: ['customer_id']
+            isOneToOne: false
+            referencedRelation: 'customers'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'fk_bookings_customer'
+            columns: ['customer_id']
+            isOneToOne: false
+            referencedRelation: 'customers_with_contact'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'fk_bookings_flight_request'
+            columns: ['flight_request_id']
+            isOneToOne: false
+            referencedRelation: 'flight_requests'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'fk_bookings_flight_request'
+            columns: ['flight_request_id']
+            isOneToOne: false
+            referencedRelation: 'flight_requests_summary'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       chats: {
         Row: {
           chat_id: string | null
@@ -780,6 +995,143 @@ export type Database = {
   }
   wa_bridge: {
     Tables: {
+      booking_passengers: {
+        Row: {
+          booking_id: string
+          passenger_id: string
+          ticket_number: string | null
+        }
+        Insert: {
+          booking_id: string
+          passenger_id: string
+          ticket_number?: string | null
+        }
+        Update: {
+          booking_id?: string
+          passenger_id?: string
+          ticket_number?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'fk_booking_passengers_booking'
+            columns: ['booking_id']
+            isOneToOne: false
+            referencedRelation: 'bookings'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'fk_booking_passengers_passenger'
+            columns: ['passenger_id']
+            isOneToOne: false
+            referencedRelation: 'passengers'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      booking_segments: {
+        Row: {
+          airline: string | null
+          arrival_at: string | null
+          booking_id: string
+          cabin_class: string | null
+          departure_at: string | null
+          destination: string
+          flight_number: string | null
+          id: string
+          origin: string
+          segment_order: number
+        }
+        Insert: {
+          airline?: string | null
+          arrival_at?: string | null
+          booking_id: string
+          cabin_class?: string | null
+          departure_at?: string | null
+          destination: string
+          flight_number?: string | null
+          id?: string
+          origin: string
+          segment_order: number
+        }
+        Update: {
+          airline?: string | null
+          arrival_at?: string | null
+          booking_id?: string
+          cabin_class?: string | null
+          departure_at?: string | null
+          destination?: string
+          flight_number?: string | null
+          id?: string
+          origin?: string
+          segment_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'fk_booking_segments_booking'
+            columns: ['booking_id']
+            isOneToOne: false
+            referencedRelation: 'bookings'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      bookings: {
+        Row: {
+          booking_source: string | null
+          created_at: string | null
+          currency: string | null
+          customer_id: string
+          flight_request_id: string | null
+          id: string
+          notes: string | null
+          pnr: string | null
+          status: string
+          total_price: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          booking_source?: string | null
+          created_at?: string | null
+          currency?: string | null
+          customer_id: string
+          flight_request_id?: string | null
+          id?: string
+          notes?: string | null
+          pnr?: string | null
+          status?: string
+          total_price?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          booking_source?: string | null
+          created_at?: string | null
+          currency?: string | null
+          customer_id?: string
+          flight_request_id?: string | null
+          id?: string
+          notes?: string | null
+          pnr?: string | null
+          status?: string
+          total_price?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'fk_bookings_customer'
+            columns: ['customer_id']
+            isOneToOne: false
+            referencedRelation: 'customers'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'fk_bookings_flight_request'
+            columns: ['flight_request_id']
+            isOneToOne: false
+            referencedRelation: 'flight_requests'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       chats: {
         Row: {
           chat_id: string

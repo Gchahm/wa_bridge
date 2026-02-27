@@ -4,6 +4,7 @@ import {
   MessageSquare,
   LogOut,
   Plane,
+  TicketCheck,
   Users,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
@@ -38,6 +39,11 @@ const navItems = [
     title: 'Requests',
     icon: Plane,
     to: '/requests' as const,
+  },
+  {
+    title: 'Bookings',
+    icon: TicketCheck,
+    to: '/bookings' as const,
   },
 ]
 
