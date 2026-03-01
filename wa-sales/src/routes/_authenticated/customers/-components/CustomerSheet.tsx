@@ -296,6 +296,7 @@ function CustomerSheetForm({
         </div>
 
         <PassengerSheet
+          key={editingPassenger?.id ?? 'new-passenger'}
           open={passengerSheetOpen}
           onOpenChange={setPassengerSheetOpen}
           customerId={customer.id}
@@ -451,6 +452,7 @@ function CustomerSheetForm({
 
       {isEditing && customer.id && (
         <PassengerSheet
+          key={editingPassenger?.id ?? 'new-passenger'}
           open={passengerSheetOpen}
           onOpenChange={setPassengerSheetOpen}
           customerId={customer.id}

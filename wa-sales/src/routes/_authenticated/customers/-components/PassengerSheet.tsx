@@ -69,16 +69,16 @@ export function PassengerSheet({
 
   const form = useForm({
     defaultValues: {
-      full_name: '',
-      label: '',
-      date_of_birth: '',
-      gender: '',
-      nationality: '',
-      document_type: '',
-      document_number: '',
-      frequent_flyer_airline: '',
-      frequent_flyer_number: '',
-      notes: '',
+      full_name: passenger?.full_name ?? prefill?.full_name ?? '',
+      label: junctionLabel ?? prefill?.label ?? '',
+      date_of_birth: passenger?.date_of_birth ?? '',
+      gender: passenger?.gender ?? '',
+      nationality: passenger?.nationality ?? '',
+      document_type: passenger?.document_type ?? '',
+      document_number: passenger?.document_number ?? '',
+      frequent_flyer_airline: passenger?.frequent_flyer_airline ?? '',
+      frequent_flyer_number: passenger?.frequent_flyer_number ?? '',
+      notes: passenger?.notes ?? '',
     },
     onSubmit: async ({ value }) => {
       const parsed = passengerSchema.safeParse(value)
@@ -157,20 +157,8 @@ export function PassengerSheet({
   useEffect(() => {
     if (open) {
       setViewMode(passenger ? 'summary' : 'form')
-      form.reset({
-        full_name: passenger?.full_name ?? prefill?.full_name ?? '',
-        label: junctionLabel ?? prefill?.label ?? '',
-        date_of_birth: passenger?.date_of_birth ?? '',
-        gender: passenger?.gender ?? '',
-        nationality: passenger?.nationality ?? '',
-        document_type: passenger?.document_type ?? '',
-        document_number: passenger?.document_number ?? '',
-        frequent_flyer_airline: passenger?.frequent_flyer_airline ?? '',
-        frequent_flyer_number: passenger?.frequent_flyer_number ?? '',
-        notes: passenger?.notes ?? '',
-      })
     }
-  }, [open, passenger, junctionLabel, prefill])
+  }, [open, passenger])
 
   const genderLabels: Record<string, string> = {
     male: 'Male',
