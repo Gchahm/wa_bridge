@@ -26,6 +26,8 @@ import type { Database } from '@/lib/database.types'
 import { SegmentList } from './SegmentList'
 import { BookingPassengerList } from './BookingPassengerList'
 import { BookingPassengerSelect } from './BookingPassengerSelect'
+import { PaymentList } from './PaymentList'
+import { CommissionSection } from './CommissionSection'
 
 type Booking = Database['public']['Views']['bookings']['Row']
 type Customer = Database['public']['Views']['customers']['Row']
@@ -100,6 +102,8 @@ function BookingSheetForm({
   const [customers, setCustomers] = useState<Customer[]>([])
   const [passengerRefreshKey, setPassengerRefreshKey] = useState(0)
   const [segmentRefreshKey] = useState(0)
+  const [paymentRefreshKey] = useState(0)
+  const [commissionRefreshKey] = useState(0)
   const [linkedPassengerIds, setLinkedPassengerIds] = useState<string[]>([])
 
   // Load customers for the select dropdown (create mode only)
@@ -392,6 +396,40 @@ function BookingSheetForm({
                   onLinked={handlePassengerChanged}
                 />
               )}
+            </div>
+
+            <Separator />
+
+            <div className="flex flex-col gap-3">
+              <div>
+                <p className="text-sm font-medium">Payments</p>
+                <p className="text-muted-foreground text-xs">
+                  Payment records for this booking.
+                </p>
+              </div>
+
+              <PaymentList
+                bookingId={booking.id}
+                bookingTotalPrice={booking.total_price}
+                bookingCurrency={booking.currency}
+                refreshKey={paymentRefreshKey}
+              />
+            </div>
+
+            <Separator />
+
+            <div className="flex flex-col gap-3">
+              <div>
+                <p className="text-sm font-medium">Commission</p>
+                <p className="text-muted-foreground text-xs">
+                  Agent commission for this booking.
+                </p>
+              </div>
+
+              <CommissionSection
+                bookingId={booking.id}
+                refreshKey={commissionRefreshKey}
+              />
             </div>
           </>
         )}

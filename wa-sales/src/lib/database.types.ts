@@ -55,6 +55,13 @@ export type Database = {
             foreignKeyName: 'fk_booking_passengers_booking'
             columns: ['booking_id']
             isOneToOne: false
+            referencedRelation: 'booking_payment_summary'
+            referencedColumns: ['booking_id']
+          },
+          {
+            foreignKeyName: 'fk_booking_passengers_booking'
+            columns: ['booking_id']
+            isOneToOne: false
             referencedRelation: 'bookings'
             referencedColumns: ['id']
           },
@@ -112,6 +119,13 @@ export type Database = {
           segment_order?: number
         }
         Relationships: [
+          {
+            foreignKeyName: 'fk_booking_segments_booking'
+            columns: ['booking_id']
+            isOneToOne: false
+            referencedRelation: 'booking_payment_summary'
+            referencedColumns: ['booking_id']
+          },
           {
             foreignKeyName: 'fk_booking_segments_booking'
             columns: ['booking_id']
@@ -195,6 +209,61 @@ export type Database = {
             columns: ['flight_request_id']
             isOneToOne: false
             referencedRelation: 'flight_requests_summary'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      commissions: {
+        Row: {
+          amount: number
+          booking_id: string
+          created_at: string | null
+          currency: string | null
+          id: string
+          notes: string | null
+          received_at: string | null
+          status: string
+        }
+        Insert: {
+          amount: number
+          booking_id: string
+          created_at?: string | null
+          currency?: string | null
+          id?: string
+          notes?: string | null
+          received_at?: string | null
+          status?: string
+        }
+        Update: {
+          amount?: number
+          booking_id?: string
+          created_at?: string | null
+          currency?: string | null
+          id?: string
+          notes?: string | null
+          received_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'fk_commissions_booking'
+            columns: ['booking_id']
+            isOneToOne: false
+            referencedRelation: 'booking_payment_summary'
+            referencedColumns: ['booking_id']
+          },
+          {
+            foreignKeyName: 'fk_commissions_booking'
+            columns: ['booking_id']
+            isOneToOne: false
+            referencedRelation: 'bookings'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'fk_commissions_booking'
+            columns: ['booking_id']
+            isOneToOne: false
+            referencedRelation: 'bookings_summary'
             referencedColumns: ['id']
           },
         ]
@@ -514,6 +583,76 @@ export type Database = {
         }
         Relationships: []
       }
+      payments: {
+        Row: {
+          amount: number
+          booking_id: string
+          created_at: string | null
+          currency: string | null
+          due_date: string | null
+          id: string
+          installments: number | null
+          notes: string | null
+          paid_at: string | null
+          payment_method: string | null
+          reference: string | null
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          amount: number
+          booking_id: string
+          created_at?: string | null
+          currency?: string | null
+          due_date?: string | null
+          id?: string
+          installments?: number | null
+          notes?: string | null
+          paid_at?: string | null
+          payment_method?: string | null
+          reference?: string | null
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          amount?: number
+          booking_id?: string
+          created_at?: string | null
+          currency?: string | null
+          due_date?: string | null
+          id?: string
+          installments?: number | null
+          notes?: string | null
+          paid_at?: string | null
+          payment_method?: string | null
+          reference?: string | null
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'fk_payments_booking'
+            columns: ['booking_id']
+            isOneToOne: false
+            referencedRelation: 'booking_payment_summary'
+            referencedColumns: ['booking_id']
+          },
+          {
+            foreignKeyName: 'fk_payments_booking'
+            columns: ['booking_id']
+            isOneToOne: false
+            referencedRelation: 'bookings'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'fk_payments_booking'
+            columns: ['booking_id']
+            isOneToOne: false
+            referencedRelation: 'bookings_summary'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       quote_options: {
         Row: {
           created_at: string | null
@@ -570,6 +709,19 @@ export type Database = {
       }
     }
     Views: {
+      booking_payment_summary: {
+        Row: {
+          booking_id: string | null
+          commission_amount: number | null
+          commission_status: string | null
+          currency: string | null
+          total_paid: number | null
+          total_pending: number | null
+          total_price: number | null
+          total_refunded: number | null
+        }
+        Relationships: []
+      }
       bookings_summary: {
         Row: {
           booking_source: string | null
