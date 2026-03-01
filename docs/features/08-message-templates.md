@@ -11,7 +11,7 @@ The agent types the same messages repeatedly: "What are your travel dates?", "He
 
 ### Data Model
 
-Create `wa_bridge.message_templates` table:
+Create `public.message_templates` table:
 
 | Column | Type | Notes |
 |--------|------|-------|
@@ -45,7 +45,7 @@ Variables are resolved client-side when the template is inserted. Unresolvable v
 
 ### Views
 
-- `public.message_templates` — pass-through
+No proxy views needed — table is in `public` and served directly by PostgREST.
 
 ### Frontend
 

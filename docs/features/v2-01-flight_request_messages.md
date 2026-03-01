@@ -15,7 +15,7 @@
 
 ### 1. `flight_request_messages` junction table
 
-Create `wa_bridge.flight_request_messages` to link specific messages to a request, giving the agent a way to bookmark the conversation context that prompted the request.
+Create `public.flight_request_messages` to link specific messages to a request, giving the agent a way to bookmark the conversation context that prompted the request.
 
 | Column | Type | Notes |
 |--------|------|-------|
@@ -26,8 +26,8 @@ Create `wa_bridge.flight_request_messages` to link specific messages to a reques
 - Composite PK `(flight_request_id, message_id, chat_id)`
 - Composite FK `(message_id, chat_id)` → `wa_bridge.messages(message_id, chat_id)`
 - ON DELETE CASCADE for both FKs
-- RLS + grants: same pattern as other flight request tables (`wa_bridge_app` ALL, `authenticated` ALL, `n8n_app` SELECT)
-- Public pass-through view `public.flight_request_messages`
+- RLS + grants: same pattern as other app tables (`wa_bridge_app` ALL, `authenticated` ALL, `n8n_app` SELECT)
+- No proxy view needed — table is in `public` and served directly by PostgREST
 
 ### 2. Message selection mode in chat
 

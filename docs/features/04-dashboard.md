@@ -37,16 +37,16 @@ Replace the current `/_authenticated/index.tsx` (which redirects to `/chat`) wit
 
 ### Data
 
-No new tables needed. All data comes from existing views:
-- `flight_requests` (grouped by status)
-- `customers_with_contact` + `chats_with_preview` (recent activity)
-- `contacts` + `customers` (unlinked contacts)
+No new tables needed. All data comes from existing views/tables:
+- `public.flight_requests` (grouped by status)
+- `public.customers_with_contact` + `public.chats_with_preview` (recent activity)
+- `wa_bridge.contacts` + `public.customers` (unlinked contacts)
 
-A database view `public.unlinked_contacts` could simplify the query:
+The `public.unlinked_contacts` view simplifies the unlinked contacts query:
 ```sql
 SELECT c.phone_number, c.push_name, c.last_seen_at
 FROM wa_bridge.contacts c
-LEFT JOIN wa_bridge.customers cu ON cu.phone_number = c.phone_number
+LEFT JOIN public.customers cu ON cu.phone_number = c.phone_number
 WHERE cu.id IS NULL
 ORDER BY c.last_seen_at DESC NULLS LAST;
 ```

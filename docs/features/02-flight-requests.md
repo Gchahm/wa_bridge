@@ -11,13 +11,13 @@ When a customer messages "I need 2 tickets SAO to MIA in July", the agent has no
 
 ### Data Model
 
-Create `wa_bridge.flight_requests` table:
+Create `public.flight_requests` table:
 
 | Column | Type | Notes |
 |--------|------|-------|
 | `id` | uuid PK | `DEFAULT gen_random_uuid()` |
 | `customer_id` | uuid FK → customers NOT NULL | Who made the request |
-| `chat_id` | text FK → chats | Which WhatsApp chat the request came from |
+| `chat_id` | text FK → wa_bridge.chats | Which WhatsApp chat the request came from |
 | `status` | text NOT NULL DEFAULT 'new' | CHECK IN ('new', 'quoted', 'accepted', 'booked', 'completed', 'cancelled') |
 | `origin` | text | Airport/city code or free text |
 | `destination` | text | Airport/city code or free text |
@@ -36,14 +36,14 @@ Create `wa_bridge.flight_requests` table:
 | `created_at` | timestamp | DEFAULT now() |
 | `updated_at` | timestamp | DEFAULT now(), trigger-managed |
 
-Create `wa_bridge.flight_request_passengers` junction table:
+Create `public.flight_request_passengers` junction table:
 
 | Column | Type | Notes |
 |--------|------|-------|
 | `flight_request_id` | uuid FK → flight_requests | Part of composite PK |
 | `passenger_id` | uuid FK → passengers | Part of composite PK |
 
-Create `wa_bridge.quote_options` table:
+Create `public.quote_options` table:
 
 | Column | Type | Notes |
 |--------|------|-------|
@@ -65,10 +65,10 @@ Same pattern as customers:
 
 ### Views
 
-- `public.flight_requests` — pass-through
-- `public.flight_request_passengers` — pass-through
-- `public.quote_options` — pass-through
-- `public.flight_requests_summary` — enriched view joining customer name, passenger count, selected quote price
+No proxy views needed — tables are in `public` and served directly by PostgREST.
+
+Enriched view still required:
+- `public.flight_requests_summary` — joins customer name, passenger count, and selected quote price/description
 
 ### Frontend
 

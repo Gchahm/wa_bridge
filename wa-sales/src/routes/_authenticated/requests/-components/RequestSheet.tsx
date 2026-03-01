@@ -469,7 +469,7 @@ function RequestSheetForm({
                 <Button
                   type="button"
                   variant="destructive"
-                  onClick={() => onDelete(request.id!)}
+                  onClick={() => onDelete(request.id)}
                 >
                   Delete
                 </Button>
@@ -481,7 +481,7 @@ function RequestSheetForm({
                   <Button
                     type="button"
                     variant="secondary"
-                    onClick={() => onCreateBooking(request.id!, customerId)}
+                    onClick={() => onCreateBooking(request.id, customerId)}
                   >
                     <TicketCheck className="size-4" />
                     Create Booking

@@ -11,7 +11,7 @@ Customers send passport photos, ID scans, and payment receipts via WhatsApp. The
 
 ### Data Model
 
-Create `wa_bridge.documents` table:
+Create `public.documents` table:
 
 | Column | Type | Notes |
 |--------|------|-------|
@@ -37,7 +37,7 @@ Create `wa_bridge.documents` table:
 
 ### Views
 
-- `public.documents` — pass-through
+No proxy views needed — table is in `public` and served directly by PostgREST.
 
 ### Frontend
 

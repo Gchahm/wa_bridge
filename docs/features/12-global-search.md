@@ -13,7 +13,7 @@ The agent needs to quickly find information scattered across the system: "What w
 
 Add Postgres full-text search using `tsvector` columns and GIN indexes:
 
-**Messages:**
+**Messages** (WA table — stays in `wa_bridge`):
 ```sql
 ALTER TABLE wa_bridge.messages ADD COLUMN search_vector tsvector
   GENERATED ALWAYS AS (to_tsvector('portuguese', coalesce(content, ''))) STORED;
@@ -22,29 +22,29 @@ CREATE INDEX idx_messages_search ON wa_bridge.messages USING GIN (search_vector)
 
 **Customers:**
 ```sql
-ALTER TABLE wa_bridge.customers ADD COLUMN search_vector tsvector
+ALTER TABLE public.customers ADD COLUMN search_vector tsvector
   GENERATED ALWAYS AS (to_tsvector('portuguese',
     coalesce(name, '') || ' ' || coalesce(email, '') || ' ' || coalesce(phone, '') || ' ' || coalesce(notes, '')
   )) STORED;
-CREATE INDEX idx_customers_search ON wa_bridge.customers USING GIN (search_vector);
+CREATE INDEX idx_customers_search ON public.customers USING GIN (search_vector);
 ```
 
 **Passengers:**
 ```sql
-ALTER TABLE wa_bridge.passengers ADD COLUMN search_vector tsvector
+ALTER TABLE public.passengers ADD COLUMN search_vector tsvector
   GENERATED ALWAYS AS (to_tsvector('portuguese',
     coalesce(full_name, '') || ' ' || coalesce(document_number, '') || ' ' || coalesce(notes, '')
   )) STORED;
-CREATE INDEX idx_passengers_search ON wa_bridge.passengers USING GIN (search_vector);
+CREATE INDEX idx_passengers_search ON public.passengers USING GIN (search_vector);
 ```
 
 **Bookings:**
 ```sql
-ALTER TABLE wa_bridge.bookings ADD COLUMN search_vector tsvector
+ALTER TABLE public.bookings ADD COLUMN search_vector tsvector
   GENERATED ALWAYS AS (to_tsvector('portuguese',
     coalesce(pnr, '') || ' ' || coalesce(booking_source, '') || ' ' || coalesce(notes, '')
   )) STORED;
-CREATE INDEX idx_bookings_search ON wa_bridge.bookings USING GIN (search_vector);
+CREATE INDEX idx_bookings_search ON public.bookings USING GIN (search_vector);
 ```
 
 ### Search API

@@ -34,23 +34,20 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
-    }
-    Views: {
       booking_passengers: {
         Row: {
-          booking_id: string | null
-          passenger_id: string | null
+          booking_id: string
+          passenger_id: string
           ticket_number: string | null
         }
         Insert: {
-          booking_id?: string | null
-          passenger_id?: string | null
+          booking_id: string
+          passenger_id: string
           ticket_number?: string | null
         }
         Update: {
-          booking_id?: string | null
-          passenger_id?: string | null
+          booking_id?: string
+          passenger_id?: string
           ticket_number?: string | null
         }
         Relationships: [
@@ -81,38 +78,38 @@ export type Database = {
         Row: {
           airline: string | null
           arrival_at: string | null
-          booking_id: string | null
+          booking_id: string
           cabin_class: string | null
           departure_at: string | null
-          destination: string | null
+          destination: string
           flight_number: string | null
-          id: string | null
-          origin: string | null
-          segment_order: number | null
+          id: string
+          origin: string
+          segment_order: number
         }
         Insert: {
           airline?: string | null
           arrival_at?: string | null
-          booking_id?: string | null
+          booking_id: string
           cabin_class?: string | null
           departure_at?: string | null
-          destination?: string | null
+          destination: string
           flight_number?: string | null
-          id?: string | null
-          origin?: string | null
-          segment_order?: number | null
+          id?: string
+          origin: string
+          segment_order: number
         }
         Update: {
           airline?: string | null
           arrival_at?: string | null
-          booking_id?: string | null
+          booking_id?: string
           cabin_class?: string | null
           departure_at?: string | null
-          destination?: string | null
+          destination?: string
           flight_number?: string | null
-          id?: string | null
-          origin?: string | null
-          segment_order?: number | null
+          id?: string
+          origin?: string
+          segment_order?: number
         }
         Relationships: [
           {
@@ -136,12 +133,12 @@ export type Database = {
           booking_source: string | null
           created_at: string | null
           currency: string | null
-          customer_id: string | null
+          customer_id: string
           flight_request_id: string | null
-          id: string | null
+          id: string
           notes: string | null
           pnr: string | null
-          status: string | null
+          status: string
           total_price: number | null
           updated_at: string | null
         }
@@ -149,12 +146,12 @@ export type Database = {
           booking_source?: string | null
           created_at?: string | null
           currency?: string | null
-          customer_id?: string | null
+          customer_id: string
           flight_request_id?: string | null
-          id?: string | null
+          id?: string
           notes?: string | null
           pnr?: string | null
-          status?: string | null
+          status?: string
           total_price?: number | null
           updated_at?: string | null
         }
@@ -162,12 +159,12 @@ export type Database = {
           booking_source?: string | null
           created_at?: string | null
           currency?: string | null
-          customer_id?: string | null
+          customer_id?: string
           flight_request_id?: string | null
-          id?: string | null
+          id?: string
           notes?: string | null
           pnr?: string | null
-          status?: string | null
+          status?: string
           total_price?: number | null
           updated_at?: string | null
         }
@@ -202,6 +199,377 @@ export type Database = {
           },
         ]
       }
+      customer_passengers: {
+        Row: {
+          customer_id: string
+          label: string | null
+          passenger_id: string
+        }
+        Insert: {
+          customer_id: string
+          label?: string | null
+          passenger_id: string
+        }
+        Update: {
+          customer_id?: string
+          label?: string | null
+          passenger_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'fk_customer_passengers_customer'
+            columns: ['customer_id']
+            isOneToOne: false
+            referencedRelation: 'customers'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'fk_customer_passengers_customer'
+            columns: ['customer_id']
+            isOneToOne: false
+            referencedRelation: 'customers_with_contact'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'fk_customer_passengers_passenger'
+            columns: ['passenger_id']
+            isOneToOne: false
+            referencedRelation: 'passengers'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      customer_relationships: {
+        Row: {
+          customer_id: string
+          related_customer_id: string
+          relationship_type: string
+        }
+        Insert: {
+          customer_id: string
+          related_customer_id: string
+          relationship_type: string
+        }
+        Update: {
+          customer_id?: string
+          related_customer_id?: string
+          relationship_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'fk_customer_relationships_customer'
+            columns: ['customer_id']
+            isOneToOne: false
+            referencedRelation: 'customers'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'fk_customer_relationships_customer'
+            columns: ['customer_id']
+            isOneToOne: false
+            referencedRelation: 'customers_with_contact'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'fk_customer_relationships_related'
+            columns: ['related_customer_id']
+            isOneToOne: false
+            referencedRelation: 'customers'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'fk_customer_relationships_related'
+            columns: ['related_customer_id']
+            isOneToOne: false
+            referencedRelation: 'customers_with_contact'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      customers: {
+        Row: {
+          created_at: string | null
+          email: string | null
+          id: string
+          name: string
+          notes: string | null
+          phone: string | null
+          phone_number: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          phone?: string | null
+          phone_number?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          phone_number?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'fk_customers_contact'
+            columns: ['phone_number']
+            isOneToOne: false
+            referencedRelation: 'contacts'
+            referencedColumns: ['phone_number']
+          },
+          {
+            foreignKeyName: 'fk_customers_contact'
+            columns: ['phone_number']
+            isOneToOne: false
+            referencedRelation: 'unlinked_contacts'
+            referencedColumns: ['phone_number']
+          },
+        ]
+      }
+      flight_request_passengers: {
+        Row: {
+          flight_request_id: string
+          passenger_id: string
+        }
+        Insert: {
+          flight_request_id: string
+          passenger_id: string
+        }
+        Update: {
+          flight_request_id?: string
+          passenger_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'fk_flight_request_passengers_passenger'
+            columns: ['passenger_id']
+            isOneToOne: false
+            referencedRelation: 'passengers'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'fk_flight_request_passengers_request'
+            columns: ['flight_request_id']
+            isOneToOne: false
+            referencedRelation: 'flight_requests'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'fk_flight_request_passengers_request'
+            columns: ['flight_request_id']
+            isOneToOne: false
+            referencedRelation: 'flight_requests_summary'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      flight_requests: {
+        Row: {
+          adults: number | null
+          budget_currency: string | null
+          budget_max: number | null
+          budget_min: number | null
+          cabin_class: string | null
+          chat_id: string | null
+          children: number | null
+          created_at: string | null
+          customer_id: string
+          departure_date_end: string | null
+          departure_date_start: string | null
+          destination: string | null
+          id: string
+          infants: number | null
+          notes: string | null
+          origin: string | null
+          return_date_end: string | null
+          return_date_start: string | null
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          adults?: number | null
+          budget_currency?: string | null
+          budget_max?: number | null
+          budget_min?: number | null
+          cabin_class?: string | null
+          chat_id?: string | null
+          children?: number | null
+          created_at?: string | null
+          customer_id: string
+          departure_date_end?: string | null
+          departure_date_start?: string | null
+          destination?: string | null
+          id?: string
+          infants?: number | null
+          notes?: string | null
+          origin?: string | null
+          return_date_end?: string | null
+          return_date_start?: string | null
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          adults?: number | null
+          budget_currency?: string | null
+          budget_max?: number | null
+          budget_min?: number | null
+          cabin_class?: string | null
+          chat_id?: string | null
+          children?: number | null
+          created_at?: string | null
+          customer_id?: string
+          departure_date_end?: string | null
+          departure_date_start?: string | null
+          destination?: string | null
+          id?: string
+          infants?: number | null
+          notes?: string | null
+          origin?: string | null
+          return_date_end?: string | null
+          return_date_start?: string | null
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'fk_flight_requests_chat'
+            columns: ['chat_id']
+            isOneToOne: false
+            referencedRelation: 'chats'
+            referencedColumns: ['chat_id']
+          },
+          {
+            foreignKeyName: 'fk_flight_requests_chat'
+            columns: ['chat_id']
+            isOneToOne: false
+            referencedRelation: 'chats_with_preview'
+            referencedColumns: ['chat_id']
+          },
+          {
+            foreignKeyName: 'fk_flight_requests_customer'
+            columns: ['customer_id']
+            isOneToOne: false
+            referencedRelation: 'customers'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'fk_flight_requests_customer'
+            columns: ['customer_id']
+            isOneToOne: false
+            referencedRelation: 'customers_with_contact'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      passengers: {
+        Row: {
+          created_at: string | null
+          date_of_birth: string | null
+          document_number: string | null
+          document_type: string | null
+          frequent_flyer_airline: string | null
+          frequent_flyer_number: string | null
+          full_name: string
+          gender: string | null
+          id: string
+          nationality: string | null
+          notes: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          date_of_birth?: string | null
+          document_number?: string | null
+          document_type?: string | null
+          frequent_flyer_airline?: string | null
+          frequent_flyer_number?: string | null
+          full_name: string
+          gender?: string | null
+          id?: string
+          nationality?: string | null
+          notes?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          date_of_birth?: string | null
+          document_number?: string | null
+          document_type?: string | null
+          frequent_flyer_airline?: string | null
+          frequent_flyer_number?: string | null
+          full_name?: string
+          gender?: string | null
+          id?: string
+          nationality?: string | null
+          notes?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      quote_options: {
+        Row: {
+          created_at: string | null
+          currency: string | null
+          departure_date: string | null
+          description: string
+          flight_request_id: string
+          id: string
+          is_selected: boolean | null
+          notes: string | null
+          price: number | null
+          return_date: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          currency?: string | null
+          departure_date?: string | null
+          description: string
+          flight_request_id: string
+          id?: string
+          is_selected?: boolean | null
+          notes?: string | null
+          price?: number | null
+          return_date?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          currency?: string | null
+          departure_date?: string | null
+          description?: string
+          flight_request_id?: string
+          id?: string
+          is_selected?: boolean | null
+          notes?: string | null
+          price?: number | null
+          return_date?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'fk_quote_options_flight_request'
+            columns: ['flight_request_id']
+            isOneToOne: false
+            referencedRelation: 'flight_requests'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'fk_quote_options_flight_request'
+            columns: ['flight_request_id']
+            isOneToOne: false
+            referencedRelation: 'flight_requests_summary'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+    }
+    Views: {
       bookings_summary: {
         Row: {
           booking_source: string | null
@@ -345,141 +713,6 @@ export type Database = {
         }
         Relationships: []
       }
-      customer_passengers: {
-        Row: {
-          customer_id: string | null
-          label: string | null
-          passenger_id: string | null
-        }
-        Insert: {
-          customer_id?: string | null
-          label?: string | null
-          passenger_id?: string | null
-        }
-        Update: {
-          customer_id?: string | null
-          label?: string | null
-          passenger_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: 'fk_customer_passengers_customer'
-            columns: ['customer_id']
-            isOneToOne: false
-            referencedRelation: 'customers'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'fk_customer_passengers_customer'
-            columns: ['customer_id']
-            isOneToOne: false
-            referencedRelation: 'customers_with_contact'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'fk_customer_passengers_passenger'
-            columns: ['passenger_id']
-            isOneToOne: false
-            referencedRelation: 'passengers'
-            referencedColumns: ['id']
-          },
-        ]
-      }
-      customer_relationships: {
-        Row: {
-          customer_id: string | null
-          related_customer_id: string | null
-          relationship_type: string | null
-        }
-        Insert: {
-          customer_id?: string | null
-          related_customer_id?: string | null
-          relationship_type?: string | null
-        }
-        Update: {
-          customer_id?: string | null
-          related_customer_id?: string | null
-          relationship_type?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: 'fk_customer_relationships_customer'
-            columns: ['customer_id']
-            isOneToOne: false
-            referencedRelation: 'customers'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'fk_customer_relationships_customer'
-            columns: ['customer_id']
-            isOneToOne: false
-            referencedRelation: 'customers_with_contact'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'fk_customer_relationships_related'
-            columns: ['related_customer_id']
-            isOneToOne: false
-            referencedRelation: 'customers'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'fk_customer_relationships_related'
-            columns: ['related_customer_id']
-            isOneToOne: false
-            referencedRelation: 'customers_with_contact'
-            referencedColumns: ['id']
-          },
-        ]
-      }
-      customers: {
-        Row: {
-          created_at: string | null
-          email: string | null
-          id: string | null
-          name: string | null
-          notes: string | null
-          phone: string | null
-          phone_number: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          email?: string | null
-          id?: string | null
-          name?: string | null
-          notes?: string | null
-          phone?: string | null
-          phone_number?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          email?: string | null
-          id?: string | null
-          name?: string | null
-          notes?: string | null
-          phone?: string | null
-          phone_number?: string | null
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: 'fk_customers_contact'
-            columns: ['phone_number']
-            isOneToOne: false
-            referencedRelation: 'contacts'
-            referencedColumns: ['phone_number']
-          },
-          {
-            foreignKeyName: 'fk_customers_contact'
-            columns: ['phone_number']
-            isOneToOne: false
-            referencedRelation: 'unlinked_contacts'
-            referencedColumns: ['phone_number']
-          },
-        ]
-      }
       customers_with_contact: {
         Row: {
           created_at: string | null
@@ -507,141 +740,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: 'unlinked_contacts'
             referencedColumns: ['phone_number']
-          },
-        ]
-      }
-      flight_request_passengers: {
-        Row: {
-          flight_request_id: string | null
-          passenger_id: string | null
-        }
-        Insert: {
-          flight_request_id?: string | null
-          passenger_id?: string | null
-        }
-        Update: {
-          flight_request_id?: string | null
-          passenger_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: 'fk_flight_request_passengers_passenger'
-            columns: ['passenger_id']
-            isOneToOne: false
-            referencedRelation: 'passengers'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'fk_flight_request_passengers_request'
-            columns: ['flight_request_id']
-            isOneToOne: false
-            referencedRelation: 'flight_requests'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'fk_flight_request_passengers_request'
-            columns: ['flight_request_id']
-            isOneToOne: false
-            referencedRelation: 'flight_requests_summary'
-            referencedColumns: ['id']
-          },
-        ]
-      }
-      flight_requests: {
-        Row: {
-          adults: number | null
-          budget_currency: string | null
-          budget_max: number | null
-          budget_min: number | null
-          cabin_class: string | null
-          chat_id: string | null
-          children: number | null
-          created_at: string | null
-          customer_id: string | null
-          departure_date_end: string | null
-          departure_date_start: string | null
-          destination: string | null
-          id: string | null
-          infants: number | null
-          notes: string | null
-          origin: string | null
-          return_date_end: string | null
-          return_date_start: string | null
-          status: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          adults?: number | null
-          budget_currency?: string | null
-          budget_max?: number | null
-          budget_min?: number | null
-          cabin_class?: string | null
-          chat_id?: string | null
-          children?: number | null
-          created_at?: string | null
-          customer_id?: string | null
-          departure_date_end?: string | null
-          departure_date_start?: string | null
-          destination?: string | null
-          id?: string | null
-          infants?: number | null
-          notes?: string | null
-          origin?: string | null
-          return_date_end?: string | null
-          return_date_start?: string | null
-          status?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          adults?: number | null
-          budget_currency?: string | null
-          budget_max?: number | null
-          budget_min?: number | null
-          cabin_class?: string | null
-          chat_id?: string | null
-          children?: number | null
-          created_at?: string | null
-          customer_id?: string | null
-          departure_date_end?: string | null
-          departure_date_start?: string | null
-          destination?: string | null
-          id?: string | null
-          infants?: number | null
-          notes?: string | null
-          origin?: string | null
-          return_date_end?: string | null
-          return_date_start?: string | null
-          status?: string | null
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: 'fk_flight_requests_chat'
-            columns: ['chat_id']
-            isOneToOne: false
-            referencedRelation: 'chats'
-            referencedColumns: ['chat_id']
-          },
-          {
-            foreignKeyName: 'fk_flight_requests_chat'
-            columns: ['chat_id']
-            isOneToOne: false
-            referencedRelation: 'chats_with_preview'
-            referencedColumns: ['chat_id']
-          },
-          {
-            foreignKeyName: 'fk_flight_requests_customer'
-            columns: ['customer_id']
-            isOneToOne: false
-            referencedRelation: 'customers'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'fk_flight_requests_customer'
-            columns: ['customer_id']
-            isOneToOne: false
-            referencedRelation: 'customers_with_contact'
-            referencedColumns: ['id']
           },
         ]
       }
@@ -712,6 +810,8 @@ export type Database = {
           content: string | null
           created_at: string | null
           description: string | null
+          edit_history: Json | null
+          edited_at: string | null
           is_agent: boolean | null
           is_from_me: boolean | null
           media_path: string | null
@@ -728,6 +828,8 @@ export type Database = {
           content?: string | null
           created_at?: string | null
           description?: string | null
+          edit_history?: Json | null
+          edited_at?: string | null
           is_agent?: boolean | null
           is_from_me?: boolean | null
           media_path?: string | null
@@ -744,6 +846,8 @@ export type Database = {
           content?: string | null
           created_at?: string | null
           description?: string | null
+          edit_history?: Json | null
+          edited_at?: string | null
           is_agent?: boolean | null
           is_from_me?: boolean | null
           media_path?: string | null
@@ -834,105 +938,6 @@ export type Database = {
           },
         ]
       }
-      passengers: {
-        Row: {
-          created_at: string | null
-          date_of_birth: string | null
-          document_number: string | null
-          document_type: string | null
-          frequent_flyer_airline: string | null
-          frequent_flyer_number: string | null
-          full_name: string | null
-          gender: string | null
-          id: string | null
-          nationality: string | null
-          notes: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          date_of_birth?: string | null
-          document_number?: string | null
-          document_type?: string | null
-          frequent_flyer_airline?: string | null
-          frequent_flyer_number?: string | null
-          full_name?: string | null
-          gender?: string | null
-          id?: string | null
-          nationality?: string | null
-          notes?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          date_of_birth?: string | null
-          document_number?: string | null
-          document_type?: string | null
-          frequent_flyer_airline?: string | null
-          frequent_flyer_number?: string | null
-          full_name?: string | null
-          gender?: string | null
-          id?: string | null
-          nationality?: string | null
-          notes?: string | null
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
-      quote_options: {
-        Row: {
-          created_at: string | null
-          currency: string | null
-          departure_date: string | null
-          description: string | null
-          flight_request_id: string | null
-          id: string | null
-          is_selected: boolean | null
-          notes: string | null
-          price: number | null
-          return_date: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          currency?: string | null
-          departure_date?: string | null
-          description?: string | null
-          flight_request_id?: string | null
-          id?: string | null
-          is_selected?: boolean | null
-          notes?: string | null
-          price?: number | null
-          return_date?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          currency?: string | null
-          departure_date?: string | null
-          description?: string | null
-          flight_request_id?: string | null
-          id?: string | null
-          is_selected?: boolean | null
-          notes?: string | null
-          price?: number | null
-          return_date?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: 'fk_quote_options_flight_request'
-            columns: ['flight_request_id']
-            isOneToOne: false
-            referencedRelation: 'flight_requests'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'fk_quote_options_flight_request'
-            columns: ['flight_request_id']
-            isOneToOne: false
-            referencedRelation: 'flight_requests_summary'
-            referencedColumns: ['id']
-          },
-        ]
-      }
       reactions: {
         Row: {
           chat_id: string | null
@@ -1003,143 +1008,6 @@ export type Database = {
   }
   wa_bridge: {
     Tables: {
-      booking_passengers: {
-        Row: {
-          booking_id: string
-          passenger_id: string
-          ticket_number: string | null
-        }
-        Insert: {
-          booking_id: string
-          passenger_id: string
-          ticket_number?: string | null
-        }
-        Update: {
-          booking_id?: string
-          passenger_id?: string
-          ticket_number?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: 'fk_booking_passengers_booking'
-            columns: ['booking_id']
-            isOneToOne: false
-            referencedRelation: 'bookings'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'fk_booking_passengers_passenger'
-            columns: ['passenger_id']
-            isOneToOne: false
-            referencedRelation: 'passengers'
-            referencedColumns: ['id']
-          },
-        ]
-      }
-      booking_segments: {
-        Row: {
-          airline: string | null
-          arrival_at: string | null
-          booking_id: string
-          cabin_class: string | null
-          departure_at: string | null
-          destination: string
-          flight_number: string | null
-          id: string
-          origin: string
-          segment_order: number
-        }
-        Insert: {
-          airline?: string | null
-          arrival_at?: string | null
-          booking_id: string
-          cabin_class?: string | null
-          departure_at?: string | null
-          destination: string
-          flight_number?: string | null
-          id?: string
-          origin: string
-          segment_order: number
-        }
-        Update: {
-          airline?: string | null
-          arrival_at?: string | null
-          booking_id?: string
-          cabin_class?: string | null
-          departure_at?: string | null
-          destination?: string
-          flight_number?: string | null
-          id?: string
-          origin?: string
-          segment_order?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: 'fk_booking_segments_booking'
-            columns: ['booking_id']
-            isOneToOne: false
-            referencedRelation: 'bookings'
-            referencedColumns: ['id']
-          },
-        ]
-      }
-      bookings: {
-        Row: {
-          booking_source: string | null
-          created_at: string | null
-          currency: string | null
-          customer_id: string
-          flight_request_id: string | null
-          id: string
-          notes: string | null
-          pnr: string | null
-          status: string
-          total_price: number | null
-          updated_at: string | null
-        }
-        Insert: {
-          booking_source?: string | null
-          created_at?: string | null
-          currency?: string | null
-          customer_id: string
-          flight_request_id?: string | null
-          id?: string
-          notes?: string | null
-          pnr?: string | null
-          status?: string
-          total_price?: number | null
-          updated_at?: string | null
-        }
-        Update: {
-          booking_source?: string | null
-          created_at?: string | null
-          currency?: string | null
-          customer_id?: string
-          flight_request_id?: string | null
-          id?: string
-          notes?: string | null
-          pnr?: string | null
-          status?: string
-          total_price?: number | null
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: 'fk_bookings_customer'
-            columns: ['customer_id']
-            isOneToOne: false
-            referencedRelation: 'customers'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'fk_bookings_flight_request'
-            columns: ['flight_request_id']
-            isOneToOne: false
-            referencedRelation: 'flight_requests'
-            referencedColumns: ['id']
-          },
-        ]
-      }
       chats: {
         Row: {
           chat_id: string
@@ -1196,233 +1064,14 @@ export type Database = {
         }
         Relationships: []
       }
-      customer_passengers: {
-        Row: {
-          customer_id: string
-          label: string | null
-          passenger_id: string
-        }
-        Insert: {
-          customer_id: string
-          label?: string | null
-          passenger_id: string
-        }
-        Update: {
-          customer_id?: string
-          label?: string | null
-          passenger_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: 'fk_customer_passengers_customer'
-            columns: ['customer_id']
-            isOneToOne: false
-            referencedRelation: 'customers'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'fk_customer_passengers_passenger'
-            columns: ['passenger_id']
-            isOneToOne: false
-            referencedRelation: 'passengers'
-            referencedColumns: ['id']
-          },
-        ]
-      }
-      customer_relationships: {
-        Row: {
-          customer_id: string
-          related_customer_id: string
-          relationship_type: string
-        }
-        Insert: {
-          customer_id: string
-          related_customer_id: string
-          relationship_type: string
-        }
-        Update: {
-          customer_id?: string
-          related_customer_id?: string
-          relationship_type?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: 'fk_customer_relationships_customer'
-            columns: ['customer_id']
-            isOneToOne: false
-            referencedRelation: 'customers'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'fk_customer_relationships_related'
-            columns: ['related_customer_id']
-            isOneToOne: false
-            referencedRelation: 'customers'
-            referencedColumns: ['id']
-          },
-        ]
-      }
-      customers: {
-        Row: {
-          created_at: string | null
-          email: string | null
-          id: string
-          name: string
-          notes: string | null
-          phone: string | null
-          phone_number: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          email?: string | null
-          id?: string
-          name: string
-          notes?: string | null
-          phone?: string | null
-          phone_number?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          email?: string | null
-          id?: string
-          name?: string
-          notes?: string | null
-          phone?: string | null
-          phone_number?: string | null
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: 'fk_customers_contact'
-            columns: ['phone_number']
-            isOneToOne: false
-            referencedRelation: 'contacts'
-            referencedColumns: ['phone_number']
-          },
-        ]
-      }
-      flight_request_passengers: {
-        Row: {
-          flight_request_id: string
-          passenger_id: string
-        }
-        Insert: {
-          flight_request_id: string
-          passenger_id: string
-        }
-        Update: {
-          flight_request_id?: string
-          passenger_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: 'fk_flight_request_passengers_passenger'
-            columns: ['passenger_id']
-            isOneToOne: false
-            referencedRelation: 'passengers'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'fk_flight_request_passengers_request'
-            columns: ['flight_request_id']
-            isOneToOne: false
-            referencedRelation: 'flight_requests'
-            referencedColumns: ['id']
-          },
-        ]
-      }
-      flight_requests: {
-        Row: {
-          adults: number | null
-          budget_currency: string | null
-          budget_max: number | null
-          budget_min: number | null
-          cabin_class: string | null
-          chat_id: string | null
-          children: number | null
-          created_at: string | null
-          customer_id: string
-          departure_date_end: string | null
-          departure_date_start: string | null
-          destination: string | null
-          id: string
-          infants: number | null
-          notes: string | null
-          origin: string | null
-          return_date_end: string | null
-          return_date_start: string | null
-          status: string
-          updated_at: string | null
-        }
-        Insert: {
-          adults?: number | null
-          budget_currency?: string | null
-          budget_max?: number | null
-          budget_min?: number | null
-          cabin_class?: string | null
-          chat_id?: string | null
-          children?: number | null
-          created_at?: string | null
-          customer_id: string
-          departure_date_end?: string | null
-          departure_date_start?: string | null
-          destination?: string | null
-          id?: string
-          infants?: number | null
-          notes?: string | null
-          origin?: string | null
-          return_date_end?: string | null
-          return_date_start?: string | null
-          status?: string
-          updated_at?: string | null
-        }
-        Update: {
-          adults?: number | null
-          budget_currency?: string | null
-          budget_max?: number | null
-          budget_min?: number | null
-          cabin_class?: string | null
-          chat_id?: string | null
-          children?: number | null
-          created_at?: string | null
-          customer_id?: string
-          departure_date_end?: string | null
-          departure_date_start?: string | null
-          destination?: string | null
-          id?: string
-          infants?: number | null
-          notes?: string | null
-          origin?: string | null
-          return_date_end?: string | null
-          return_date_start?: string | null
-          status?: string
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: 'fk_flight_requests_chat'
-            columns: ['chat_id']
-            isOneToOne: false
-            referencedRelation: 'chats'
-            referencedColumns: ['chat_id']
-          },
-          {
-            foreignKeyName: 'fk_flight_requests_customer'
-            columns: ['customer_id']
-            isOneToOne: false
-            referencedRelation: 'customers'
-            referencedColumns: ['id']
-          },
-        ]
-      }
       messages: {
         Row: {
           chat_id: string
           content: string | null
           created_at: string | null
           description: string | null
+          edit_history: Json | null
+          edited_at: string | null
           is_agent: boolean
           is_from_me: boolean
           media_path: string | null
@@ -1439,6 +1088,8 @@ export type Database = {
           content?: string | null
           created_at?: string | null
           description?: string | null
+          edit_history?: Json | null
+          edited_at?: string | null
           is_agent?: boolean
           is_from_me?: boolean
           media_path?: string | null
@@ -1455,6 +1106,8 @@ export type Database = {
           content?: string | null
           created_at?: string | null
           description?: string | null
+          edit_history?: Json | null
+          edited_at?: string | null
           is_agent?: boolean
           is_from_me?: boolean
           media_path?: string | null
@@ -1521,98 +1174,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: 'chats'
             referencedColumns: ['chat_id']
-          },
-        ]
-      }
-      passengers: {
-        Row: {
-          created_at: string | null
-          date_of_birth: string | null
-          document_number: string | null
-          document_type: string | null
-          frequent_flyer_airline: string | null
-          frequent_flyer_number: string | null
-          full_name: string
-          gender: string | null
-          id: string
-          nationality: string | null
-          notes: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          date_of_birth?: string | null
-          document_number?: string | null
-          document_type?: string | null
-          frequent_flyer_airline?: string | null
-          frequent_flyer_number?: string | null
-          full_name: string
-          gender?: string | null
-          id?: string
-          nationality?: string | null
-          notes?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          date_of_birth?: string | null
-          document_number?: string | null
-          document_type?: string | null
-          frequent_flyer_airline?: string | null
-          frequent_flyer_number?: string | null
-          full_name?: string
-          gender?: string | null
-          id?: string
-          nationality?: string | null
-          notes?: string | null
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
-      quote_options: {
-        Row: {
-          created_at: string | null
-          currency: string | null
-          departure_date: string | null
-          description: string
-          flight_request_id: string
-          id: string
-          is_selected: boolean | null
-          notes: string | null
-          price: number | null
-          return_date: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          currency?: string | null
-          departure_date?: string | null
-          description: string
-          flight_request_id: string
-          id?: string
-          is_selected?: boolean | null
-          notes?: string | null
-          price?: number | null
-          return_date?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          currency?: string | null
-          departure_date?: string | null
-          description?: string
-          flight_request_id?: string
-          id?: string
-          is_selected?: boolean | null
-          notes?: string | null
-          price?: number | null
-          return_date?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: 'fk_quote_options_flight_request'
-            columns: ['flight_request_id']
-            isOneToOne: false
-            referencedRelation: 'flight_requests'
-            referencedColumns: ['id']
           },
         ]
       }

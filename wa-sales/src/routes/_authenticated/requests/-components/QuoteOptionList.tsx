@@ -346,7 +346,7 @@ export function QuoteOptionList({
                 type="button"
                 variant="ghost"
                 size="icon"
-                onClick={() => handleToggleSelected(option.id!)}
+                onClick={() => handleToggleSelected(option.id)}
                 title={option.is_selected ? 'Unselect' : 'Mark as selected'}
               >
                 <Check
@@ -377,7 +377,7 @@ export function QuoteOptionList({
                 type="button"
                 variant="ghost"
                 size="icon"
-                onClick={() => handleDelete(option.id!)}
+                onClick={() => handleDelete(option.id)}
               >
                 <X className="size-4" />
               </Button>

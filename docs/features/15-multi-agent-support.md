@@ -11,7 +11,7 @@ The system currently assumes a single sales agent. If the business grows — a s
 
 ### Data Model
 
-Create `wa_bridge.agents` table:
+Create `public.agents` table:
 
 | Column | Type | Notes |
 |--------|------|-------|
@@ -22,14 +22,14 @@ Create `wa_bridge.agents` table:
 | `created_at` | timestamp | DEFAULT now() |
 
 Modify `wa_bridge.chats`:
-- Add `assigned_agent_id uuid FK → agents` (nullable)
+- Add `assigned_agent_id uuid FK → public.agents` (nullable)
 
-Create `wa_bridge.internal_notes` table:
+Create `public.internal_notes` table:
 
 | Column | Type | Notes |
 |--------|------|-------|
 | `id` | uuid PK | `DEFAULT gen_random_uuid()` |
-| `chat_id` | text FK → chats NOT NULL | |
+| `chat_id` | text FK → wa_bridge.chats NOT NULL | |
 | `agent_id` | uuid FK → agents NOT NULL | Who wrote the note |
 | `content` | text NOT NULL | |
 | `created_at` | timestamp | DEFAULT now() |
@@ -50,8 +50,8 @@ This is the most significant change — RLS policies need to become agent-aware:
 - Can only see internal notes they wrote (or in their assigned chats)
 
 Implementation approach:
-- Create a helper function `wa_bridge.current_agent_id()` that returns the agent ID for the current auth user
-- Create a helper function `wa_bridge.is_admin()` that checks the current user's role
+- Create a helper function `public.current_agent_id()` that returns the agent ID for the current auth user
+- Create a helper function `public.is_admin()` that checks the current user's role
 - Update RLS policies to use these functions
 
 ### Frontend
@@ -104,7 +104,7 @@ On first login, if no agent record exists for the Supabase auth user, auto-creat
 - This feature touches RLS policies across all tables — it's a significant migration
 - Consider implementing as an opt-in feature: if no agents table exists or only one agent, skip all agent-scoped logic
 - The `agents` table references `auth.users(id)` which requires a FK to the Supabase auth schema
-- Internal notes are never exposed via the public views that n8n reads
+- Internal notes are never exposed via the n8n read paths
 
 ## Files to Create/Modify
 

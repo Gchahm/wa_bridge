@@ -11,7 +11,7 @@ After a customer accepts a quote and the agent books the flight, there's nowhere
 
 ### Data Model
 
-Create `wa_bridge.bookings` table:
+Create `public.bookings` table:
 
 | Column | Type | Notes |
 |--------|------|-------|
@@ -27,7 +27,7 @@ Create `wa_bridge.bookings` table:
 | `created_at` | timestamp | DEFAULT now() |
 | `updated_at` | timestamp | DEFAULT now(), trigger-managed |
 
-Create `wa_bridge.booking_segments` table:
+Create `public.booking_segments` table:
 
 | Column | Type | Notes |
 |--------|------|-------|
@@ -42,7 +42,7 @@ Create `wa_bridge.booking_segments` table:
 | `arrival_at` | timestamp | |
 | `cabin_class` | text | |
 
-Create `wa_bridge.booking_passengers` junction table:
+Create `public.booking_passengers` junction table:
 
 | Column | Type | Notes |
 |--------|------|-------|
@@ -59,8 +59,10 @@ Same pattern as other tables:
 
 ### Views
 
-- `public.bookings`, `public.booking_segments`, `public.booking_passengers` — pass-through
-- `public.bookings_summary` — enriched: customer name, route (first origin → last destination), departure date, passenger count, status
+No proxy views needed — tables are in `public` and served directly by PostgREST.
+
+Enriched view still required:
+- `public.bookings_summary` — joins customer name, route (first origin → last destination), departure date, passenger count, and status
 
 ### Frontend
 

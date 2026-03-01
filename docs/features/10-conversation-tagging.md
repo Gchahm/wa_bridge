@@ -11,7 +11,7 @@ The agent juggles dozens of conversations and needs a way to quickly classify an
 
 ### Data Model
 
-Create `wa_bridge.tags` table:
+Create `public.tags` table:
 
 | Column | Type | Notes |
 |--------|------|-------|
@@ -20,20 +20,20 @@ Create `wa_bridge.tags` table:
 | `color` | text | Hex color for badge display, e.g. "#ef4444" |
 | `sort_order` | integer DEFAULT 0 | |
 
-Create `wa_bridge.chat_tags` junction table:
+Create `public.chat_tags` junction table:
 
 | Column | Type | Notes |
 |--------|------|-------|
-| `chat_id` | text FK → chats | Part of composite PK |
+| `chat_id` | text FK → wa_bridge.chats | Part of composite PK |
 | `tag_id` | uuid FK → tags | Part of composite PK |
 | `created_at` | timestamp DEFAULT now() | |
 
-Create `wa_bridge.chat_notes` table:
+Create `public.chat_notes` table:
 
 | Column | Type | Notes |
 |--------|------|-------|
 | `id` | uuid PK | `DEFAULT gen_random_uuid()` |
-| `chat_id` | text FK → chats NOT NULL | |
+| `chat_id` | text FK → wa_bridge.chats NOT NULL | |
 | `content` | text NOT NULL | |
 | `is_pinned` | boolean DEFAULT false | Pinned notes show in the chat header |
 | `created_at` | timestamp | DEFAULT now() |
@@ -47,7 +47,9 @@ Create `wa_bridge.chat_notes` table:
 
 ### Views
 
-- `public.tags`, `public.chat_tags`, `public.chat_notes` — pass-through
+No proxy views needed — tables are in `public` and served directly by PostgREST.
+
+Enriched view still required:
 - Modify `public.chats_with_preview` to include tags (array aggregate) — or create a new view `public.chats_with_tags`
 
 ### Frontend

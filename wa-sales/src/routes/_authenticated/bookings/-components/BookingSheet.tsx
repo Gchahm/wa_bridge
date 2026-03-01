@@ -402,7 +402,7 @@ function BookingSheetForm({
               <Button
                 type="button"
                 variant="destructive"
-                onClick={() => onDelete(booking.id!)}
+                onClick={() => onDelete(booking.id)}
               >
                 Delete
               </Button>

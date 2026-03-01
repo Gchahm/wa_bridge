@@ -33,7 +33,7 @@ Build n8n workflows that listen for database changes and send WhatsApp messages 
 
 ### Data Model
 
-Create `wa_bridge.notification_log` table:
+Create `public.notification_log` table:
 
 | Column | Type | Notes |
 |--------|------|-------|
@@ -41,7 +41,7 @@ Create `wa_bridge.notification_log` table:
 | `notification_type` | text NOT NULL | e.g. 'booking_confirmation', 'payment_reminder', 'flight_reminder', 'follow_up' |
 | `customer_id` | uuid FK → customers | |
 | `booking_id` | uuid FK → bookings | Nullable |
-| `outgoing_message_id` | bigint FK → outgoing_messages | The actual message sent |
+| `outgoing_message_id` | bigint FK → wa_bridge.outgoing_messages | The actual message sent |
 | `sent_at` | timestamp DEFAULT now() | |
 
 This prevents duplicate notifications (check log before sending).
@@ -51,11 +51,11 @@ This prevents duplicate notifications (check log before sending).
 Each workflow follows the same pattern:
 
 1. **Trigger**: Postgres trigger (via webhook from Go service) or scheduled (cron)
-2. **Query**: Fetch relevant data from wa_bridge tables (n8n_app has SELECT access)
+2. **Query**: Fetch relevant data from public/wa_bridge tables (n8n_app has SELECT access)
 3. **Check**: Query notification_log to avoid duplicates
 4. **Compose**: Build message from template + data
 5. **Send**: INSERT into `wa_bridge.outgoing_messages` via n8n Postgres node
-6. **Log**: INSERT into `wa_bridge.notification_log`
+6. **Log**: INSERT into `public.notification_log`
 
 ### Go Service Changes
 
@@ -70,7 +70,7 @@ Alternatively, use a Postgres trigger + NOTIFY channel that n8n listens to.
 - `wa_bridge_app`: ALL on notification_log
 - `authenticated`: SELECT on notification_log (read-only in frontend)
 - `n8n_app`: SELECT, INSERT on notification_log
-- `n8n_app`: INSERT on outgoing_messages (needs new grant)
+- `n8n_app`: INSERT on wa_bridge.outgoing_messages (needs new grant)
 
 ### Frontend
 

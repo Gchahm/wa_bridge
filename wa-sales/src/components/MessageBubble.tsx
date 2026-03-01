@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { ChevronDown, ChevronUp } from 'lucide-react'
+import { ChevronDown, ChevronUp, Pencil } from 'lucide-react'
 import type { Database } from '@/lib/database.types'
 import { AudioPlayer } from '@/components/AudioPlayer'
 import { MessageImage } from '@/components/MessageImage'
@@ -142,6 +142,20 @@ export function MessageBubble({
             <DescriptionToggle description={message.description} />
           )}
 
+          {/* Edit history toggle */}
+          {message.edit_history &&
+            Array.isArray(message.edit_history) &&
+            message.edit_history.length > 0 && (
+              <EditHistoryToggle
+                editHistory={
+                  message.edit_history as {
+                    content: string
+                    edited_at: string
+                  }[]
+                }
+              />
+            )}
+
           {/* Reactions */}
           {reactions && reactions.length > 0 && (
             <ReactionBadges reactions={reactions} />
@@ -151,6 +165,7 @@ export function MessageBubble({
           <div
             className={`flex items-center gap-1 mt-1 ${isFromMe ? 'justify-end' : 'justify-start'}`}
           >
+            {message.edited_at && <Pencil className="size-2.5 text-gray-400" />}
             <span className="text-[10px] text-gray-500 leading-none">
               {time}
             </span>
@@ -214,6 +229,55 @@ function DescriptionToggle({ description }: { description: string }) {
         <p className="mt-1 text-xs text-gray-600 whitespace-pre-wrap break-words">
           {description}
         </p>
+      )}
+    </div>
+  )
+}
+
+function EditHistoryToggle({
+  editHistory,
+}: {
+  editHistory: { content: string; edited_at: string }[]
+}) {
+  const [open, setOpen] = useState(false)
+  return (
+    <div className="mt-1">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="flex items-center gap-1 text-[11px] text-gray-500 hover:text-gray-700 transition-colors"
+      >
+        {open ? (
+          <ChevronUp className="size-3" />
+        ) : (
+          <ChevronDown className="size-3" />
+        )}
+        <span>
+          Edited {editHistory.length}{' '}
+          {editHistory.length === 1 ? 'time' : 'times'}
+        </span>
+      </button>
+      {open && (
+        <div className="mt-1 space-y-1.5">
+          {[...editHistory].reverse().map((entry, i) => (
+            <div key={i} className="text-xs text-gray-600">
+              <span className="text-[10px] text-gray-400">
+                {new Date(entry.edited_at).toLocaleString('en-US', {
+                  month: 'short',
+                  day: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  hour12: false,
+                })}
+              </span>
+              <p className="whitespace-pre-wrap break-words">
+                {entry.content || (
+                  <span className="italic text-gray-400">(empty)</span>
+                )}
+              </p>
+            </div>
+          ))}
+        </div>
       )}
     </div>
   )

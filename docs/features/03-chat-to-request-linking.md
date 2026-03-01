@@ -11,7 +11,7 @@ The agent reads a WhatsApp conversation, mentally extracts the trip details, the
 
 ### Data Model
 
-Create `wa_bridge.flight_request_messages` junction table:
+Create `public.flight_request_messages` junction table:
 
 | Column | Type | Notes |
 |--------|------|-------|

@@ -21,7 +21,7 @@ Use the existing webhook infrastructure (Go service → n8n) to process inbound 
 
 ### Data Model
 
-Create `wa_bridge.extracted_requests` table:
+Create `public.extracted_requests` table:
 
 | Column | Type | Notes |
 |--------|------|-------|
@@ -71,7 +71,7 @@ If the message is NOT a flight request (e.g., "bom dia", "obrigado"), return {"c
 3. LLM call: send message text with extraction prompt
 4. Filter: skip if confidence < 0.5
 5. Resolve customer: query customers by phone_number matching sender_id
-6. Write: INSERT into extracted_requests
+6. Write: INSERT into `public.extracted_requests`
 7. Optional: send a Supabase Realtime broadcast to notify the frontend
 
 ### Frontend

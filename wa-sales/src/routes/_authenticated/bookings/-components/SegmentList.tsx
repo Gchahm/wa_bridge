@@ -346,7 +346,7 @@ export function SegmentList({ bookingId, refreshKey }: SegmentListProps) {
                 type="button"
                 variant="ghost"
                 size="icon"
-                onClick={() => handleDelete(segment.id!)}
+                onClick={() => handleDelete(segment.id)}
               >
                 <X className="size-4" />
               </Button>

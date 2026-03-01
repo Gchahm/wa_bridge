@@ -11,7 +11,7 @@ Customers book flights for people who may not have WhatsApp — spouses, childre
 
 ### Data Model
 
-Create `wa_bridge.passengers` table:
+Create `public.passengers` table:
 
 | Column | Type | Notes |
 |--------|------|-------|
@@ -28,7 +28,7 @@ Create `wa_bridge.passengers` table:
 | `created_at` | timestamp | DEFAULT now() |
 | `updated_at` | timestamp | DEFAULT now(), trigger-managed |
 
-Create `wa_bridge.customer_passengers` junction table (many-to-many):
+Create `public.customer_passengers` junction table (many-to-many):
 
 | Column | Type | Notes |
 |--------|------|-------|
@@ -49,8 +49,7 @@ Follow existing patterns from `20260227000000_add_customers.sql`:
 
 ### Views
 
-- `public.passengers` — pass-through, `security_invoker = on`
-- `public.customer_passengers` — pass-through, `security_invoker = on`
+No proxy views needed — tables are in `public` and served directly by PostgREST.
 
 ### Frontend
 

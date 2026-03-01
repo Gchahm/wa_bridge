@@ -11,7 +11,7 @@ The agent needs to know which bookings are paid, which are pending, and how much
 
 ### Data Model
 
-Create `wa_bridge.payments` table:
+Create `public.payments` table:
 
 | Column | Type | Notes |
 |--------|------|-------|
@@ -29,7 +29,7 @@ Create `wa_bridge.payments` table:
 | `created_at` | timestamp | DEFAULT now() |
 | `updated_at` | timestamp | DEFAULT now(), trigger-managed |
 
-Create `wa_bridge.commissions` table:
+Create `public.commissions` table:
 
 | Column | Type | Notes |
 |--------|------|-------|
@@ -50,7 +50,9 @@ Create `wa_bridge.commissions` table:
 
 ### Views
 
-- `public.payments`, `public.commissions` — pass-through
+No proxy views needed — tables are in `public` and served directly by PostgREST.
+
+Enriched view still required:
 - `public.booking_payment_summary` — per-booking: total_paid, total_pending, total_refunded, commission_amount
 
 ### Frontend
