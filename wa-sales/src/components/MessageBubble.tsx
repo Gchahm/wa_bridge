@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { ChevronDown, ChevronUp, Pencil } from 'lucide-react'
+import { ChevronDown, ChevronUp, Pencil, Tag } from 'lucide-react'
 import type { Database } from '@/lib/database.types'
 import { AudioPlayer } from '@/components/AudioPlayer'
 import { MessageImage } from '@/components/MessageImage'
@@ -50,6 +50,8 @@ type MessageBubbleProps = {
   reactions?: Reaction[]
   isGroup: boolean
   showDateSeparator: boolean
+  onTagDocument?: (message: Message) => void
+  isTagged?: boolean
 }
 
 export function MessageBubble({
@@ -58,6 +60,8 @@ export function MessageBubble({
   reactions,
   isGroup,
   showDateSeparator,
+  onTagDocument,
+  isTagged,
 }: MessageBubbleProps) {
   const isFromMe = message.is_from_me ?? false
   const time = formatMessageTime(message.timestamp)
@@ -165,6 +169,24 @@ export function MessageBubble({
           <div
             className={`flex items-center gap-1 mt-1 ${isFromMe ? 'justify-end' : 'justify-start'}`}
           >
+            {!!message.media_path &&
+              (message.media_type === 'image' ||
+                message.media_type === 'video' ||
+                message.media_type === 'document') &&
+              (isTagged ? (
+                <Tag className="size-3 text-[#00a884]" />
+              ) : (
+                onTagDocument && (
+                  <button
+                    type="button"
+                    onClick={() => onTagDocument(message)}
+                    className="text-gray-400 hover:text-gray-600 transition-colors"
+                    title="Tag document"
+                  >
+                    <Tag className="size-3" />
+                  </button>
+                )
+              ))}
             {message.edited_at && <Pencil className="size-2.5 text-gray-400" />}
             <span className="text-[10px] text-gray-500 leading-none">
               {time}

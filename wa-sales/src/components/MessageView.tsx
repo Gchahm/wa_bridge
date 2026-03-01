@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import {
+  FileText,
   Loader2,
   MessageSquare,
   Plane,
@@ -9,6 +10,8 @@ import {
   UserCheck,
 } from 'lucide-react'
 import { MessageBubble, getMessageDateKey } from './MessageBubble'
+import { DocumentTagForm } from './DocumentTagForm'
+import { ChatDocumentsSheet } from './ChatDocumentsSheet'
 import { supabase } from '@/lib/supabase'
 import type { Database } from '@/lib/database.types'
 import type { Reaction } from '@/routes/_authenticated/chat/-hooks/useReactions'
@@ -50,6 +53,14 @@ export function MessageView({
   const [customer, setCustomer] = useState<CustomerWithContact | null>(null)
   const [requestsSheetOpen, setRequestsSheetOpen] = useState(false)
 
+  // Document tagging state
+  const [taggingMessage, setTaggingMessage] = useState<Message | null>(null)
+  const [documentsSheetOpen, setDocumentsSheetOpen] = useState(false)
+  const [taggedMessageIds, setTaggedMessageIds] = useState<Set<string>>(
+    new Set(),
+  )
+  const [documentRefreshKey, setDocumentRefreshKey] = useState(0)
+
   // Fetch customer for private chats
   const isPrivateChat = chat && !chat.is_group
   const phoneNumber = chat?.contact_phone_number ?? null
@@ -82,6 +93,26 @@ export function MessageView({
     setCustomer(null)
     setCustomerSheetOpen(false)
   }
+
+  // Fetch tagged message IDs for this chat
+  useEffect(() => {
+    if (!chat?.chat_id) {
+      setTaggedMessageIds(new Set())
+      return
+    }
+    supabase
+      .from('documents')
+      .select('message_id')
+      .eq('chat_id', chat.chat_id)
+      .then(({ data }) => {
+        const ids = new Set(
+          (data ?? [])
+            .map((d) => d.message_id)
+            .filter((id): id is string => id !== null),
+        )
+        setTaggedMessageIds(ids)
+      })
+  }, [chat?.chat_id, documentRefreshKey])
 
   // Reset scroll anchor when chat changes
   const prevChatId = useRef(chat?.chat_id)
@@ -210,6 +241,19 @@ export function MessageView({
             <Plane className="size-5 text-gray-500" />
           </Button>
         )}
+        {isPrivateChat && customer && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="flex-shrink-0"
+            onClick={() => setDocumentsSheetOpen(true)}
+            title="Documents"
+          >
+            <FileText
+              className={`size-5 ${taggedMessageIds.size > 0 ? 'text-[#00a884]' : 'text-gray-500'}`}
+            />
+          </Button>
+        )}
       </div>
 
       {/* Messages area */}
@@ -260,6 +304,11 @@ export function MessageView({
                   }
                   isGroup={chat.is_group ?? false}
                   showDateSeparator={showDateSeparator}
+                  onTagDocument={customer ? setTaggingMessage : undefined}
+                  isTagged={
+                    !!message.message_id &&
+                    taggedMessageIds.has(message.message_id)
+                  }
                 />
               )
             })}
@@ -288,6 +337,30 @@ export function MessageView({
           onOpenChange={setRequestsSheetOpen}
           customerId={customer.id}
           chatId={chat.chat_id}
+        />
+      )}
+
+      {customer?.id && (
+        <DocumentTagForm
+          message={taggingMessage}
+          customerId={customer.id}
+          open={!!taggingMessage}
+          onOpenChange={(open) => {
+            if (!open) {
+              setTaggingMessage(null)
+              setDocumentRefreshKey((k) => k + 1)
+            }
+          }}
+        />
+      )}
+
+      {isPrivateChat && customer && chat.chat_id && (
+        <ChatDocumentsSheet
+          open={documentsSheetOpen}
+          onOpenChange={setDocumentsSheetOpen}
+          chatId={chat.chat_id}
+          refreshKey={documentRefreshKey}
+          onChanged={() => setDocumentRefreshKey((k) => k + 1)}
         />
       )}
     </div>

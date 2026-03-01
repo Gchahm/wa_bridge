@@ -403,6 +403,95 @@ export type Database = {
           },
         ]
       }
+      documents: {
+        Row: {
+          booking_id: string | null
+          chat_id: string | null
+          created_at: string | null
+          customer_id: string | null
+          document_type: string
+          id: string
+          label: string | null
+          message_id: string | null
+          passenger_id: string | null
+          storage_path: string
+        }
+        Insert: {
+          booking_id?: string | null
+          chat_id?: string | null
+          created_at?: string | null
+          customer_id?: string | null
+          document_type: string
+          id?: string
+          label?: string | null
+          message_id?: string | null
+          passenger_id?: string | null
+          storage_path: string
+        }
+        Update: {
+          booking_id?: string | null
+          chat_id?: string | null
+          created_at?: string | null
+          customer_id?: string | null
+          document_type?: string
+          id?: string
+          label?: string | null
+          message_id?: string | null
+          passenger_id?: string | null
+          storage_path?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'fk_documents_booking'
+            columns: ['booking_id']
+            isOneToOne: false
+            referencedRelation: 'booking_payment_summary'
+            referencedColumns: ['booking_id']
+          },
+          {
+            foreignKeyName: 'fk_documents_booking'
+            columns: ['booking_id']
+            isOneToOne: false
+            referencedRelation: 'bookings'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'fk_documents_booking'
+            columns: ['booking_id']
+            isOneToOne: false
+            referencedRelation: 'bookings_summary'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'fk_documents_customer'
+            columns: ['customer_id']
+            isOneToOne: false
+            referencedRelation: 'customers'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'fk_documents_customer'
+            columns: ['customer_id']
+            isOneToOne: false
+            referencedRelation: 'customers_with_contact'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'fk_documents_message'
+            columns: ['message_id', 'chat_id']
+            isOneToOne: false
+            referencedRelation: 'messages'
+            referencedColumns: ['message_id', 'chat_id']
+          },
+          {
+            foreignKeyName: 'fk_documents_passenger'
+            columns: ['passenger_id']
+            isOneToOne: false
+            referencedRelation: 'passengers'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       flight_request_passengers: {
         Row: {
           flight_request_id: string

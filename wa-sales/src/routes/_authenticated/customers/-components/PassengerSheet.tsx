@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { Separator } from '@/components/ui/separator'
 import {
   Sheet,
   SheetContent,
@@ -22,6 +23,7 @@ import {
 } from '@/components/ui/select'
 import { supabase } from '@/lib/supabase'
 import type { Database } from '@/lib/database.types'
+import { DocumentList } from '@/components/DocumentList'
 
 type Passenger = Database['public']['Views']['passengers']['Row']
 
@@ -364,6 +366,24 @@ export function PassengerSheet({
               </div>
             )}
           </form.Field>
+
+          {isEditing && passenger?.id && (
+            <>
+              <Separator />
+              <div className="flex flex-col gap-3">
+                <div>
+                  <p className="text-sm font-medium">Documents</p>
+                  <p className="text-muted-foreground text-xs">
+                    Tagged documents for this passenger.
+                  </p>
+                </div>
+                <DocumentList
+                  passengerId={passenger.id as string}
+                  refreshKey={0}
+                />
+              </div>
+            </>
+          )}
 
           <SheetFooter className="mt-auto px-0">
             <div className="flex w-full items-center justify-between">
