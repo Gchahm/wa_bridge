@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Pencil, X, UserPlus, Plus } from 'lucide-react'
+import { X, UserPlus, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { supabase } from '@/lib/supabase'
@@ -132,9 +132,11 @@ export function PassengerList({
       )}
 
       {rows.map(({ passenger, label }) => (
-        <div
+        <button
+          type="button"
           key={passenger.id}
-          className="flex items-start justify-between rounded-md border p-3"
+          className="flex w-full cursor-pointer items-start justify-between rounded-md border p-3 text-left hover:bg-muted/50 transition-colors"
+          onClick={() => onEdit(passenger, label)}
         >
           <div className="flex flex-col gap-1">
             <div className="flex items-center gap-2">
@@ -158,20 +160,15 @@ export function PassengerList({
               type="button"
               variant="ghost"
               size="icon"
-              onClick={() => onEdit(passenger, label)}
-            >
-              <Pencil className="size-4" />
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              onClick={() => handleUnlink(passenger.id as string)}
+              onClick={(e) => {
+                e.stopPropagation()
+                handleUnlink(passenger.id as string)
+              }}
             >
               <X className="size-4" />
             </Button>
           </div>
-        </div>
+        </button>
       ))}
 
       <div className="flex flex-wrap gap-2 pt-1">

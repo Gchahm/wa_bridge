@@ -1,6 +1,7 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm } from '@tanstack/react-form'
 import { z } from 'zod'
+import { ArrowLeft, Pencil } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -62,6 +63,9 @@ export function PassengerSheet({
   onDelete,
 }: PassengerSheetProps) {
   const isEditing = !!passenger
+  const [viewMode, setViewMode] = useState<'summary' | 'form'>(
+    passenger ? 'summary' : 'form',
+  )
 
   const form = useForm({
     defaultValues: {
@@ -152,6 +156,7 @@ export function PassengerSheet({
 
   useEffect(() => {
     if (open) {
+      setViewMode(passenger ? 'summary' : 'form')
       form.reset({
         full_name: passenger?.full_name ?? prefill?.full_name ?? '',
         label: junctionLabel ?? prefill?.label ?? '',
@@ -167,6 +172,134 @@ export function PassengerSheet({
     }
   }, [open, passenger, junctionLabel, prefill])
 
+  const genderLabels: Record<string, string> = {
+    male: 'Male',
+    female: 'Female',
+  }
+
+  const docTypeLabels: Record<string, string> = {
+    cpf: 'CPF',
+    rg: 'RG',
+    passport: 'Passport',
+    other: 'Other',
+  }
+
+  // Summary mode for existing passenger
+  if (isEditing && viewMode === 'summary' && passenger.id) {
+    return (
+      <Sheet open={open} onOpenChange={onOpenChange}>
+        <SheetContent className="flex flex-col overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>Passenger</SheetTitle>
+            <SheetDescription>
+              Passenger details and documents.
+            </SheetDescription>
+          </SheetHeader>
+
+          <div className="flex flex-1 flex-col gap-4 px-4">
+            {/* Passenger summary card */}
+            <div className="bg-muted/50 flex flex-col gap-2 rounded-lg border p-4">
+              <p className="text-lg font-semibold">
+                {passenger.full_name || 'Unnamed'}
+              </p>
+
+              {junctionLabel && (
+                <p className="text-muted-foreground text-sm">
+                  Label: {junctionLabel}
+                </p>
+              )}
+              {passenger.date_of_birth && (
+                <p className="text-muted-foreground text-sm">
+                  Date of birth: {passenger.date_of_birth}
+                </p>
+              )}
+              {passenger.gender && (
+                <p className="text-muted-foreground text-sm">
+                  Gender: {genderLabels[passenger.gender] || passenger.gender}
+                </p>
+              )}
+              {passenger.nationality && (
+                <p className="text-muted-foreground text-sm">
+                  Nationality: {passenger.nationality}
+                </p>
+              )}
+              {passenger.document_type && (
+                <p className="text-muted-foreground text-sm">
+                  Document:{' '}
+                  {docTypeLabels[passenger.document_type] ||
+                    passenger.document_type}
+                  {passenger.document_number
+                    ? ` — ${passenger.document_number}`
+                    : ''}
+                </p>
+              )}
+              {passenger.frequent_flyer_airline && (
+                <p className="text-muted-foreground text-sm">
+                  Frequent flyer: {passenger.frequent_flyer_airline}
+                  {passenger.frequent_flyer_number
+                    ? ` — ${passenger.frequent_flyer_number}`
+                    : ''}
+                </p>
+              )}
+              {passenger.notes && (
+                <p className="text-muted-foreground text-sm">
+                  {passenger.notes}
+                </p>
+              )}
+
+              <div className="flex justify-end">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setViewMode('form')}
+                >
+                  <Pencil className="size-3" />
+                  Edit
+                </Button>
+              </div>
+            </div>
+
+            {/* Documents */}
+            <Separator />
+            <div className="flex flex-col gap-3">
+              <div>
+                <p className="text-sm font-medium">Documents</p>
+                <p className="text-muted-foreground text-xs">
+                  Tagged documents for this passenger.
+                </p>
+              </div>
+              <DocumentList
+                passengerId={passenger.id as string}
+                refreshKey={0}
+              />
+            </div>
+
+            {/* Footer */}
+            <SheetFooter className="mt-auto px-0">
+              <div className="flex w-full items-center justify-between">
+                <Button
+                  type="button"
+                  variant="destructive"
+                  onClick={() => onDelete(passenger.id as string)}
+                >
+                  Delete
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => onOpenChange(false)}
+                >
+                  Close
+                </Button>
+              </div>
+            </SheetFooter>
+          </div>
+        </SheetContent>
+      </Sheet>
+    )
+  }
+
+  // Form mode (create or edit-form)
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="flex flex-col overflow-y-auto">
@@ -189,6 +322,19 @@ export function PassengerSheet({
             form.handleSubmit()
           }}
         >
+          {isEditing && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="self-start"
+              onClick={() => setViewMode('summary')}
+            >
+              <ArrowLeft className="size-3" />
+              Back to summary
+            </Button>
+          )}
+
           <form.Field name="full_name">
             {(field) => (
               <div className="flex flex-col gap-2">
@@ -367,42 +513,16 @@ export function PassengerSheet({
             )}
           </form.Field>
 
-          {isEditing && passenger?.id && (
-            <>
-              <Separator />
-              <div className="flex flex-col gap-3">
-                <div>
-                  <p className="text-sm font-medium">Documents</p>
-                  <p className="text-muted-foreground text-xs">
-                    Tagged documents for this passenger.
-                  </p>
-                </div>
-                <DocumentList
-                  passengerId={passenger.id as string}
-                  refreshKey={0}
-                />
-              </div>
-            </>
-          )}
-
           <SheetFooter className="mt-auto px-0">
             <div className="flex w-full items-center justify-between">
-              {isEditing && passenger.id ? (
-                <Button
-                  type="button"
-                  variant="destructive"
-                  onClick={() => onDelete(passenger.id as string)}
-                >
-                  Delete
-                </Button>
-              ) : (
-                <div />
-              )}
+              <div />
               <div className="flex gap-2">
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => onOpenChange(false)}
+                  onClick={() =>
+                    isEditing ? setViewMode('summary') : onOpenChange(false)
+                  }
                 >
                   Cancel
                 </Button>

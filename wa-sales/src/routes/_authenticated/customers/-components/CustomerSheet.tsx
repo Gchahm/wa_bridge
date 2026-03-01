@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useForm } from '@tanstack/react-form'
 import { z } from 'zod'
+import { ArrowLeft, Pencil } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -83,6 +84,9 @@ function CustomerSheetForm({
   onDelete: (id: string) => void
 }) {
   const isEditing = !!customer
+  const [viewMode, setViewMode] = useState<'summary' | 'form'>(
+    customer ? 'summary' : 'form',
+  )
 
   // Passenger state
   const [passengerSheetOpen, setPassengerSheetOpen] = useState(false)
@@ -180,6 +184,134 @@ function CustomerSheetForm({
     setPassengerRefreshKey((k) => k + 1)
   }
 
+  // Summary mode for existing customer
+  if (isEditing && viewMode === 'summary' && customer.id) {
+    return (
+      <>
+        <SheetHeader>
+          <SheetTitle>Customer</SheetTitle>
+          <SheetDescription>Customer details and passengers.</SheetDescription>
+        </SheetHeader>
+
+        <div className="flex flex-1 flex-col gap-4 px-4">
+          {/* Customer summary card */}
+          <div className="bg-muted/50 flex flex-col gap-2 rounded-lg border p-4">
+            <p className="text-lg font-semibold">
+              {customer.name || 'Unnamed'}
+            </p>
+
+            {customer.email && (
+              <p className="text-muted-foreground text-sm">
+                Email: {customer.email}
+              </p>
+            )}
+            {customer.phone && (
+              <p className="text-muted-foreground text-sm">
+                Phone: {customer.phone}
+              </p>
+            )}
+            {(customer.phone_number || defaultPhoneNumber) && (
+              <p className="text-muted-foreground text-sm">
+                WhatsApp: {customer.phone_number || defaultPhoneNumber}
+              </p>
+            )}
+            {customer.notes && (
+              <p className="text-muted-foreground text-sm">{customer.notes}</p>
+            )}
+
+            <div className="flex justify-end">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setViewMode('form')}
+              >
+                <Pencil className="size-3" />
+                Edit
+              </Button>
+            </div>
+          </div>
+
+          {/* Passengers */}
+          <Separator />
+
+          <div className="flex flex-col gap-3">
+            <div>
+              <p className="text-sm font-medium">Passengers</p>
+              <p className="text-muted-foreground text-xs">
+                People who travel with this customer.
+              </p>
+            </div>
+
+            <PassengerList
+              customerId={customer.id}
+              refreshKey={passengerRefreshKey}
+              onEdit={(passenger, label) => {
+                setEditingPassenger(passenger)
+                setPassengerJunctionLabel(label)
+                setPassengerPrefill(null)
+                setPassengerSheetOpen(true)
+              }}
+              onAdd={() => {
+                setEditingPassenger(null)
+                setPassengerJunctionLabel(null)
+                setPassengerPrefill(null)
+                setPassengerSheetOpen(true)
+              }}
+              onAddSelf={() => {
+                setEditingPassenger(null)
+                setPassengerJunctionLabel(null)
+                setPassengerPrefill({
+                  full_name: customer.name ?? '',
+                  label: 'self',
+                })
+                setPassengerSheetOpen(true)
+              }}
+              showAddSelf={showAddSelf}
+            />
+
+            <PassengerSelect
+              customerId={customer.id}
+              excludeIds={linkedPassengerIds}
+              onLinked={() => setPassengerRefreshKey((k) => k + 1)}
+            />
+          </div>
+
+          {/* Footer */}
+          <SheetFooter className="mt-auto px-0">
+            <div className="flex w-full items-center justify-between">
+              <Button
+                type="button"
+                variant="destructive"
+                onClick={() => onDelete(customer.id!)}
+              >
+                Delete
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+              >
+                Close
+              </Button>
+            </div>
+          </SheetFooter>
+        </div>
+
+        <PassengerSheet
+          open={passengerSheetOpen}
+          onOpenChange={setPassengerSheetOpen}
+          customerId={customer.id}
+          passenger={editingPassenger}
+          junctionLabel={passengerJunctionLabel}
+          prefill={passengerPrefill}
+          onSaved={handlePassengerSaved}
+          onDelete={handlePassengerDelete}
+        />
+      </>
+    )
+  }
+
+  // Form mode (create or edit-form)
   return (
     <>
       <SheetHeader>
@@ -199,6 +331,19 @@ function CustomerSheetForm({
           form.handleSubmit()
         }}
       >
+        {isEditing && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="self-start"
+            onClick={() => setViewMode('summary')}
+          >
+            <ArrowLeft className="size-3" />
+            Back to summary
+          </Button>
+        )}
+
         <form.Field name="name">
           {(field) => (
             <div className="flex flex-col gap-2">
@@ -287,72 +432,16 @@ function CustomerSheetForm({
           )}
         </form.Field>
 
-        {isEditing && customer.id && (
-          <>
-            <Separator />
-
-            <div className="flex flex-col gap-3">
-              <div>
-                <p className="text-sm font-medium">Passengers</p>
-                <p className="text-muted-foreground text-xs">
-                  People who travel with this customer.
-                </p>
-              </div>
-
-              <PassengerList
-                customerId={customer.id}
-                refreshKey={passengerRefreshKey}
-                onEdit={(passenger, label) => {
-                  setEditingPassenger(passenger)
-                  setPassengerJunctionLabel(label)
-                  setPassengerPrefill(null)
-                  setPassengerSheetOpen(true)
-                }}
-                onAdd={() => {
-                  setEditingPassenger(null)
-                  setPassengerJunctionLabel(null)
-                  setPassengerPrefill(null)
-                  setPassengerSheetOpen(true)
-                }}
-                onAddSelf={() => {
-                  setEditingPassenger(null)
-                  setPassengerJunctionLabel(null)
-                  setPassengerPrefill({
-                    full_name: customer.name ?? '',
-                    label: 'self',
-                  })
-                  setPassengerSheetOpen(true)
-                }}
-                showAddSelf={showAddSelf}
-              />
-
-              <PassengerSelect
-                customerId={customer.id}
-                excludeIds={linkedPassengerIds}
-                onLinked={() => setPassengerRefreshKey((k) => k + 1)}
-              />
-            </div>
-          </>
-        )}
-
         <SheetFooter className="mt-auto px-0">
           <div className="flex w-full items-center justify-between">
-            {isEditing && customer.id ? (
-              <Button
-                type="button"
-                variant="destructive"
-                onClick={() => onDelete(customer.id!)}
-              >
-                Delete
-              </Button>
-            ) : (
-              <div />
-            )}
+            <div />
             <div className="flex gap-2">
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => onOpenChange(false)}
+                onClick={() =>
+                  isEditing ? setViewMode('summary') : onOpenChange(false)
+                }
               >
                 Cancel
               </Button>
