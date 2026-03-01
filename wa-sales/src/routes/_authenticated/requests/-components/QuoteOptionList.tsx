@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Check, Pencil, Plus, Send, X } from 'lucide-react'
+import { Check, Pencil, Plus, Send } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -99,17 +99,6 @@ export function QuoteOptionList({
     setNewDepartureDate('')
     setNewReturnDate('')
     setShowAddForm(false)
-  }
-
-  async function handleDelete(id: string) {
-    const { error } = await supabase.from('quote_options').delete().eq('id', id)
-
-    if (error) {
-      console.error('Error deleting quote option:', error)
-      return
-    }
-
-    setOptions((prev) => prev.filter((o) => o.id !== id))
   }
 
   async function handleToggleSelected(id: string) {
@@ -372,14 +361,6 @@ export function QuoteOptionList({
                 onClick={() => startEdit(option)}
               >
                 <Pencil className="size-4" />
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                onClick={() => handleDelete(option.id)}
-              >
-                <X className="size-4" />
               </Button>
             </div>
           </div>

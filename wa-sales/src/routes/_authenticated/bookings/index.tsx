@@ -171,17 +171,6 @@ function BookingsPage() {
     }
   }
 
-  async function handleDelete(id: string) {
-    const { error } = await supabase.from('bookings').delete().eq('id', id)
-    if (error) {
-      console.error('Error deleting booking:', error)
-      return
-    }
-    setSheetOpen(false)
-    setEditingBooking(null)
-    router.invalidate()
-  }
-
   function handleSaved() {
     setSheetOpen(false)
     setEditingBooking(null)
@@ -276,7 +265,6 @@ function BookingsPage() {
         customerId={editingCustomerId}
         booking={editingBooking}
         onSaved={handleSaved}
-        onDelete={handleDelete}
       />
     </div>
   )

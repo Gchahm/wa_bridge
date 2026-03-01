@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Check, Pencil, Plus, RotateCcw, X } from 'lucide-react'
+import { Check, Pencil, Plus, RotateCcw } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -122,18 +122,6 @@ export function PaymentList({
 
     setPayments((prev) => [...prev, data])
     resetAddForm()
-  }
-
-  // --- Delete ---
-  async function handleDelete(id: string) {
-    const { error } = await supabase.from('payments').delete().eq('id', id)
-
-    if (error) {
-      console.error('Error deleting payment:', error)
-      return
-    }
-
-    setPayments((prev) => prev.filter((p) => p.id !== id))
   }
 
   // --- Edit ---
@@ -461,14 +449,6 @@ export function PaymentList({
                 onClick={() => startEdit(payment)}
               >
                 <Pencil className="size-4" />
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                onClick={() => handleDelete(payment.id)}
-              >
-                <X className="size-4" />
               </Button>
             </div>
           </div>

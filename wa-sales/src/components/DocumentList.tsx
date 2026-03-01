@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { ExternalLink, X } from 'lucide-react'
+import { ExternalLink } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { useMediaUrl } from '@/hooks/useMediaUrl'
@@ -74,16 +74,6 @@ export function DocumentList({
     }
   }, [passengerId, chatId, refreshKey])
 
-  async function handleDelete(id: string) {
-    const { error } = await supabase.from('documents').delete().eq('id', id)
-    if (error) {
-      console.error('Error deleting document:', error)
-      return
-    }
-    setDocuments((prev) => prev.filter((d) => d.id !== id))
-    onChanged?.()
-  }
-
   if (loading) {
     return <p className="text-muted-foreground text-sm">Loading documents...</p>
   }
@@ -97,19 +87,13 @@ export function DocumentList({
   return (
     <div className="flex flex-col gap-2">
       {documents.map((doc) => (
-        <DocumentRow key={doc.id} document={doc} onDelete={handleDelete} />
+        <DocumentRow key={doc.id} document={doc} />
       ))}
     </div>
   )
 }
 
-function DocumentRow({
-  document: doc,
-  onDelete,
-}: {
-  document: Document
-  onDelete: (id: string) => void
-}) {
+function DocumentRow({ document: doc }: { document: Document }) {
   const isImage = doc.storage_path.match(/\.(jpg|jpeg|png|webp|gif)$/i)
   const { url } = useMediaUrl(doc.storage_path)
 
@@ -158,15 +142,6 @@ function DocumentRow({
             </a>
           </Button>
         )}
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          onClick={() => onDelete(doc.id)}
-          title="Remove tag"
-        >
-          <X className="size-4" />
-        </Button>
       </div>
     </div>
   )

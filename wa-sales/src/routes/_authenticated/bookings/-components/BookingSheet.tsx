@@ -48,7 +48,6 @@ interface BookingSheetProps {
   booking: Booking | null
   flightRequestId?: string | null
   onSaved: () => void
-  onDelete?: (id: string) => void
 }
 
 export function BookingSheet({
@@ -58,7 +57,6 @@ export function BookingSheet({
   booking,
   flightRequestId,
   onSaved,
-  onDelete,
 }: BookingSheetProps) {
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -71,7 +69,6 @@ export function BookingSheet({
             booking={booking}
             onOpenChange={onOpenChange}
             onSaved={onSaved}
-            onDelete={onDelete}
           />
         )}
       </SheetContent>
@@ -85,14 +82,12 @@ function BookingSheetForm({
   booking,
   onOpenChange,
   onSaved,
-  onDelete,
 }: {
   customerId: string | null
   flightRequestId?: string | null
   booking: Booking | null
   onOpenChange: (open: boolean) => void
   onSaved: () => void
-  onDelete?: (id: string) => void
 }) {
   const isEditing = !!booking
 
@@ -431,18 +426,7 @@ function BookingSheetForm({
         )}
 
         <SheetFooter className="mt-auto px-0">
-          <div className="flex w-full items-center justify-between">
-            {isEditing && booking.id && onDelete ? (
-              <Button
-                type="button"
-                variant="destructive"
-                onClick={() => onDelete(booking.id)}
-              >
-                Delete
-              </Button>
-            ) : (
-              <div />
-            )}
+          <div className="flex w-full items-center justify-end">
             <div className="flex gap-2">
               <Button
                 type="button"

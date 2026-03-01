@@ -1,6 +1,4 @@
 import { useEffect, useState } from 'react'
-import { X } from 'lucide-react'
-import { Button } from '@/components/ui/button'
 import { supabase } from '@/lib/supabase'
 import type { Database } from '@/lib/database.types'
 
@@ -66,22 +64,6 @@ export function RequestPassengerList({
     }
   }, [flightRequestId, refreshKey])
 
-  async function handleUnlink(passengerId: string) {
-    const { error } = await supabase
-      .from('flight_request_passengers')
-      .delete()
-      .eq('flight_request_id', flightRequestId)
-      .eq('passenger_id', passengerId)
-
-    if (error) {
-      console.error('Error unlinking passenger:', error)
-      return
-    }
-
-    setPassengers((prev) => prev.filter((p) => p.id !== passengerId))
-    onUnlinked()
-  }
-
   if (loading) {
     return (
       <p className="text-muted-foreground text-sm">Loading passengers...</p>
@@ -102,14 +84,6 @@ export function RequestPassengerList({
           className="flex items-center justify-between rounded-md border p-2"
         >
           <span className="text-sm font-medium">{passenger.full_name}</span>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            onClick={() => handleUnlink(passenger.id)}
-          >
-            <X className="size-4" />
-          </Button>
         </div>
       ))}
     </div>

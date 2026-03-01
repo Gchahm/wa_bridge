@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { X, UserPlus, Plus } from 'lucide-react'
+import { UserPlus, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { supabase } from '@/lib/supabase'
@@ -87,16 +87,6 @@ export function PassengerList({
     }
   }, [customerId, refreshKey])
 
-  async function handleUnlink(passengerId: string) {
-    await supabase
-      .from('customer_passengers')
-      .delete()
-      .eq('customer_id', customerId)
-      .eq('passenger_id', passengerId)
-
-    setRows((prev) => prev.filter((r) => r.passenger.id !== passengerId))
-  }
-
   function formatDocument(passenger: Passenger) {
     if (!passenger.document_type && !passenger.document_number) return null
     const parts: string[] = []
@@ -151,20 +141,6 @@ export function PassengerList({
                 DOB: {formatDob(passenger.date_of_birth)}
               </span>
             )}
-          </div>
-
-          <div className="flex shrink-0 gap-1">
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              onClick={(e) => {
-                e.stopPropagation()
-                handleUnlink(passenger.id)
-              }}
-            >
-              <X className="size-4" />
-            </Button>
           </div>
         </button>
       ))}

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Pencil, Plus, X } from 'lucide-react'
+import { Pencil, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -102,20 +102,6 @@ export function SegmentList({ bookingId, refreshKey }: SegmentListProps) {
 
     setSegments((prev) => [...prev, data])
     resetAddForm()
-  }
-
-  async function handleDelete(id: string) {
-    const { error } = await supabase
-      .from('booking_segments')
-      .delete()
-      .eq('id', id)
-
-    if (error) {
-      console.error('Error deleting segment:', error)
-      return
-    }
-
-    setSegments((prev) => prev.filter((s) => s.id !== id))
   }
 
   function startEdit(segment: BookingSegment) {
@@ -341,14 +327,6 @@ export function SegmentList({ bookingId, refreshKey }: SegmentListProps) {
                 onClick={() => startEdit(segment)}
               >
                 <Pencil className="size-4" />
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                onClick={() => handleDelete(segment.id)}
-              >
-                <X className="size-4" />
               </Button>
             </div>
           </div>

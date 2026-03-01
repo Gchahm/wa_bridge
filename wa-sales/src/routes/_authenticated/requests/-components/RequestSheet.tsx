@@ -78,7 +78,6 @@ interface RequestSheetProps {
   chatId?: string | null
   request: FlightRequest | null
   onSaved: () => void
-  onDelete?: (id: string) => void
   onCreateBooking?: (flightRequestId: string, customerId: string) => void
 }
 
@@ -89,7 +88,6 @@ export function RequestSheet({
   chatId,
   request,
   onSaved,
-  onDelete,
   onCreateBooking,
 }: RequestSheetProps) {
   return (
@@ -103,7 +101,6 @@ export function RequestSheet({
             request={request}
             onOpenChange={onOpenChange}
             onSaved={onSaved}
-            onDelete={onDelete}
             onCreateBooking={onCreateBooking}
           />
         )}
@@ -135,7 +132,6 @@ function RequestSheetForm({
   request: requestProp,
   onOpenChange,
   onSaved,
-  onDelete,
   onCreateBooking,
 }: {
   customerId: string
@@ -143,7 +139,6 @@ function RequestSheetForm({
   request: FlightRequest | null
   onOpenChange: (open: boolean) => void
   onSaved: () => void
-  onDelete?: (id: string) => void
   onCreateBooking?: (flightRequestId: string, customerId: string) => void
 }) {
   const [createdRequest, setCreatedRequest] = useState<FlightRequest | null>(
@@ -460,18 +455,7 @@ function RequestSheetForm({
 
           {/* Footer */}
           <SheetFooter className="mt-auto px-0">
-            <div className="flex w-full items-center justify-between">
-              {onDelete ? (
-                <Button
-                  type="button"
-                  variant="destructive"
-                  onClick={() => onDelete(request.id)}
-                >
-                  Delete
-                </Button>
-              ) : (
-                <div />
-              )}
+            <div className="flex w-full items-center justify-end">
               <div className="flex gap-2">
                 {onCreateBooking && ['accepted', 'booked'].includes(status) && (
                   <Button

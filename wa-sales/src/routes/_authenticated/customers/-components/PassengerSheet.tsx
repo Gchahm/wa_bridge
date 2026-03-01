@@ -49,7 +49,6 @@ interface PassengerSheetProps {
   junctionLabel: string | null
   prefill: { full_name?: string; label?: string } | null
   onSaved: () => void
-  onDelete: (id: string) => void
 }
 
 export function PassengerSheet({
@@ -60,7 +59,6 @@ export function PassengerSheet({
   junctionLabel,
   prefill,
   onSaved,
-  onDelete,
 }: PassengerSheetProps) {
   const isEditing = !!passenger
   const [viewMode, setViewMode] = useState<'summary' | 'form'>(
@@ -261,14 +259,7 @@ export function PassengerSheet({
 
             {/* Footer */}
             <SheetFooter className="mt-auto px-0">
-              <div className="flex w-full items-center justify-between">
-                <Button
-                  type="button"
-                  variant="destructive"
-                  onClick={() => onDelete(passenger.id)}
-                >
-                  Delete
-                </Button>
+              <div className="flex w-full items-center justify-end">
                 <Button
                   type="button"
                   variant="outline"

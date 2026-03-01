@@ -103,17 +103,6 @@ function CustomersPage() {
     setSheetOpen(true)
   }
 
-  const handleDelete = async (id: string) => {
-    const { error } = await supabase.from('customers').delete().eq('id', id)
-    if (error) {
-      console.error('Error deleting customer:', error)
-      return
-    }
-    setSheetOpen(false)
-    setEditingCustomer(null)
-    router.invalidate()
-  }
-
   const handleSaved = () => {
     setSheetOpen(false)
     setEditingCustomer(null)
@@ -192,7 +181,6 @@ function CustomersPage() {
         onOpenChange={setSheetOpen}
         customer={editingCustomer}
         onSaved={handleSaved}
-        onDelete={handleDelete}
       />
     </div>
   )

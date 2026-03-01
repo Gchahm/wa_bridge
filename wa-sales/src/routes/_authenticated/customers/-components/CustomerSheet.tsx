@@ -40,7 +40,6 @@ interface CustomerSheetProps {
   onOpenChange: (open: boolean) => void
   customer: Customer | null
   onSaved: () => void
-  onDelete: (id: string) => void
   defaultPhoneNumber?: string
 }
 
@@ -49,7 +48,6 @@ export function CustomerSheet({
   onOpenChange,
   customer,
   onSaved,
-  onDelete,
   defaultPhoneNumber,
 }: CustomerSheetProps) {
   return (
@@ -62,7 +60,6 @@ export function CustomerSheet({
             defaultPhoneNumber={defaultPhoneNumber}
             onOpenChange={onOpenChange}
             onSaved={onSaved}
-            onDelete={onDelete}
           />
         )}
       </SheetContent>
@@ -75,13 +72,11 @@ function CustomerSheetForm({
   defaultPhoneNumber,
   onOpenChange,
   onSaved,
-  onDelete,
 }: {
   customer: Customer | null
   defaultPhoneNumber?: string
   onOpenChange: (open: boolean) => void
   onSaved: () => void
-  onDelete: (id: string) => void
 }) {
   const isEditing = !!customer
   const [viewMode, setViewMode] = useState<'summary' | 'form'>(
@@ -163,21 +158,6 @@ function CustomerSheetForm({
   }, [isEditing, customer?.id, passengerRefreshKey])
 
   function handlePassengerSaved() {
-    setPassengerSheetOpen(false)
-    setPassengerRefreshKey((k) => k + 1)
-  }
-
-  async function handlePassengerDelete(passengerId: string) {
-    const { error } = await supabase
-      .from('passengers')
-      .delete()
-      .eq('id', passengerId)
-
-    if (error) {
-      console.error('Error deleting passenger:', error)
-      return
-    }
-
     setPassengerSheetOpen(false)
     setPassengerRefreshKey((k) => k + 1)
   }
@@ -276,14 +256,7 @@ function CustomerSheetForm({
 
           {/* Footer */}
           <SheetFooter className="mt-auto px-0">
-            <div className="flex w-full items-center justify-between">
-              <Button
-                type="button"
-                variant="destructive"
-                onClick={() => onDelete(customer.id!)}
-              >
-                Delete
-              </Button>
+            <div className="flex w-full items-center justify-end">
               <Button
                 type="button"
                 variant="outline"
@@ -304,7 +277,6 @@ function CustomerSheetForm({
           junctionLabel={passengerJunctionLabel}
           prefill={passengerPrefill}
           onSaved={handlePassengerSaved}
-          onDelete={handlePassengerDelete}
         />
       </>
     )
@@ -460,7 +432,6 @@ function CustomerSheetForm({
           junctionLabel={passengerJunctionLabel}
           prefill={passengerPrefill}
           onSaved={handlePassengerSaved}
-          onDelete={handlePassengerDelete}
         />
       )}
     </>

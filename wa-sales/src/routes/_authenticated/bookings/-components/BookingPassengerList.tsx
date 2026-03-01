@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Pencil, X } from 'lucide-react'
+import { Pencil } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { supabase } from '@/lib/supabase'
@@ -80,22 +80,6 @@ export function BookingPassengerList({
       ctrl.cancelled = true
     }
   }, [bookingId, refreshKey])
-
-  async function handleUnlink(passengerId: string) {
-    const { error } = await supabase
-      .from('booking_passengers')
-      .delete()
-      .eq('booking_id', bookingId)
-      .eq('passenger_id', passengerId)
-
-    if (error) {
-      console.error('Error unlinking passenger:', error)
-      return
-    }
-
-    setPassengers((prev) => prev.filter((p) => p.id !== passengerId))
-    onUnlinked()
-  }
 
   function startEditTicket(passenger: PassengerWithTicket) {
     setEditingTicketId(passenger.id)
@@ -187,14 +171,6 @@ export function BookingPassengerList({
               title="Edit ticket number"
             >
               <Pencil className="size-4" />
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              onClick={() => handleUnlink(passenger.id)}
-            >
-              <X className="size-4" />
             </Button>
           </div>
         </div>

@@ -28,12 +28,14 @@ This is a WhatsApp bridge monorepo with three main components:
 
 **You MUST use these agents when their domain applies.** Do not attempt to do the work directly - always delegate to the appropriate agent:
 
+- **fe-agent** — **ALL work inside `wa-sales/`** goes through this agent. This includes ANY file reading, editing, creating, deleting, or refactoring under the `wa-sales/` directory. Whether it's a simple one-line change, removing buttons, adding features, fixing bugs, or restructuring code — if the file is in `wa-sales/`, delegate to fe-agent. No exceptions.
 - **go-app-architect** — Go service changes (`whatsapp-api/`): handlers, store, config, messaging
 - **postgresql-supabase-expert** — Database migrations, schema design, RLS policies
 - **supabase-data-layer** — Extracting business logic (calculations, transformations)
-- **fe-agent** — Implementing features (routes, forms, tables) and frontend architecture in `wa-sales/`
-- **shadcn-component-creator** — Creating new custom UI components in `wa-sales/`
-- **i18n-patterns** — Translations with Lingui (use after adding new Trans/t`` strings)
+### Slash Commands
+
+- `/shadcn` — Guide for creating new shadcn/ui components (CVA variants, Radix primitives, accessibility)
+- `/i18n` — Guide for Lingui translation patterns (`<Trans>`, `t` template, extraction workflow)
 
 ## After Database Schema Changes
 

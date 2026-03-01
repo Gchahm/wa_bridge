@@ -89,11 +89,6 @@ export function MessageView({
     }
   }
 
-  function handleCustomerDelete(_id: string) {
-    setCustomer(null)
-    setCustomerSheetOpen(false)
-  }
-
   // Fetch tagged message IDs for this chat
   useEffect(() => {
     if (!chat?.chat_id) {
@@ -327,7 +322,6 @@ export function MessageView({
           customer={customer}
           defaultPhoneNumber={phoneNumber}
           onSaved={handleCustomerSaved}
-          onDelete={handleCustomerDelete}
         />
       )}
 

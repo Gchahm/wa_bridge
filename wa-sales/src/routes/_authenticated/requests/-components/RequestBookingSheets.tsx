@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { supabase } from '@/lib/supabase'
 import type { Database } from '@/lib/database.types'
 import { RequestSheet } from './RequestSheet'
 import { BookingSheet } from '@/routes/_authenticated/bookings/-components/BookingSheet'
@@ -41,19 +40,6 @@ export function RequestBookingSheets({
     onChanged()
   }
 
-  async function handleDelete(id: string) {
-    const { error } = await supabase
-      .from('flight_requests')
-      .delete()
-      .eq('id', id)
-    if (error) {
-      console.error('Error deleting request:', error)
-      return
-    }
-    onOpenChange(false)
-    onChanged()
-  }
-
   function handleCreateBooking(flightRequestId: string, forCustomerId: string) {
     onOpenChange(false)
     setBookingFlightRequestId(flightRequestId)
@@ -78,7 +64,6 @@ export function RequestBookingSheets({
           chatId={chatId}
           request={request}
           onSaved={handleSaved}
-          onDelete={handleDelete}
           onCreateBooking={handleCreateBooking}
         />
       )}

@@ -216,7 +216,6 @@ function Dashboard() {
           setCustomerSheetOpen(false)
           setSelectedPhoneNumber(null)
         }}
-        onDelete={() => {}}
         defaultPhoneNumber={selectedPhoneNumber ?? undefined}
       />
     </div>

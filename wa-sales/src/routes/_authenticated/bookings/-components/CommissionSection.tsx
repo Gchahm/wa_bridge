@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Check, Pencil, Plus, X } from 'lucide-react'
+import { Check, Pencil, Plus } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -123,23 +123,6 @@ export function CommissionSection({
     setIsEditing(false)
   }
 
-  async function handleDelete() {
-    if (!commission) return
-
-    const { error } = await supabase
-      .from('commissions')
-      .delete()
-      .eq('id', commission.id)
-
-    if (error) {
-      console.error('Error deleting commission:', error)
-      return
-    }
-
-    setCommission(null)
-    setIsEditing(false)
-  }
-
   async function markReceived() {
     if (!commission) return
     const now = new Date().toISOString()
@@ -207,17 +190,6 @@ export function CommissionSection({
         </div>
 
         <div className="flex justify-end gap-2">
-          {commission && (
-            <Button
-              type="button"
-              variant="destructive"
-              size="sm"
-              onClick={handleDelete}
-            >
-              Delete
-            </Button>
-          )}
-          <div className="flex-1" />
           <Button
             type="button"
             variant="outline"
@@ -290,14 +262,6 @@ export function CommissionSection({
           onClick={() => startEdit(commission)}
         >
           <Pencil className="size-4" />
-        </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          onClick={handleDelete}
-        >
-          <X className="size-4" />
         </Button>
       </div>
     </div>
