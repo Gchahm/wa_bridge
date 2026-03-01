@@ -1,6 +1,6 @@
 ---
 name: fe-agent
-description: "Use this agent when working on the wa-sales frontend application (React + TanStack + Vite) and you need guidance on project architecture, conventions, libraries, or patterns. This is a reference agent for understanding the frontend tech stack, directory structure, routing, state management, forms, UI components, styling, and i18n setup.\n\n<example>\nContext: User needs to understand the frontend architecture.\nuser: \"How does routing work in the frontend?\"\nassistant: \"I'll use the fe-agent to look up the routing conventions and patterns.\"\n</example>\n\n<example>\nContext: User wants to know what libraries are used.\nuser: \"What form library does the frontend use?\"\nassistant: \"I'll use the fe-agent to check the tech stack and form patterns.\"\n</example>"
+description: "Use this agent when working on the wa-sales frontend application (React + TanStack + Vite). This covers project architecture, conventions, libraries, patterns, AND implementing features — routes, forms, data tables, Sheet-based CRUD, or any frontend feature work.\n\n<example>\nContext: User needs to understand the frontend architecture.\nuser: \"How does routing work in the frontend?\"\nassistant: \"I'll use the fe-agent to look up the routing conventions and patterns.\"\n</example>\n\n<example>\nContext: User wants to know what libraries are used.\nuser: \"What form library does the frontend use?\"\nassistant: \"I'll use the fe-agent to check the tech stack and form patterns.\"\n</example>\n\n<example>\nContext: User needs to add a new feature with a form.\nuser: \"I need to add a form to create new projects\"\nassistant: \"I'll use the fe-agent to implement the form following the codebase patterns.\"\n</example>\n\n<example>\nContext: User needs to create a new route with data loading.\nuser: \"Create a new reports page that shows employee summaries\"\nassistant: \"I'll use the fe-agent to set up the route, loader, and component.\"\n</example>"
 model: sonnet
 color: blue
 memory: project
@@ -591,6 +591,154 @@ Company-specific overrides in `src/config/theme.css`, imported last in `styles.c
 
 Inter Variable via `@fontsource-variable/inter`, set as `--font-sans`.
 
+## Feature Implementation Patterns
+
+### Sheet-based CRUD in List Pages
+
+Wire up create/edit modals using Sheet + state:
+
+```tsx
+function ListPage() {
+  const { items } = Route.useLoaderData()
+  const router = useRouter()
+
+  const [sheetOpen, setSheetOpen] = useState(false)
+  const [editingItem, setEditingItem] = useState<Item | null>(null)
+
+  const openCreateSheet = () => {
+    setEditingItem(null)
+    setSheetOpen(true)
+  }
+
+  const openEditSheet = (item: Item) => {
+    setEditingItem(item)
+    setSheetOpen(true)
+  }
+
+  return (
+    <>
+      <Button onClick={openCreateSheet}>
+        <Plus className="size-4" />
+        Add Item
+      </Button>
+
+      <DataTable columns={columns} data={items} />
+
+      <ExampleForm
+        open={sheetOpen}
+        onOpenChange={setSheetOpen}
+        item={editingItem}
+        onSuccess={() => router.invalidate()}
+      />
+    </>
+  )
+}
+```
+
+### Sheet Form with View/Summary Mode
+
+For existing entities, open in read-only summary mode first. Edit button switches to form mode:
+
+```tsx
+function EntitySheetForm({ entity, onOpenChange, onSaved, onDelete }) {
+  const isEditing = !!entity
+  const [viewMode, setViewMode] = useState<'summary' | 'form'>(
+    entity ? 'summary' : 'form',
+  )
+
+  // Reset viewMode when sheet opens with different entity
+  useEffect(() => {
+    setViewMode(entity ? 'summary' : 'form')
+  }, [entity])
+
+  // Summary mode: read-only card + Edit button
+  if (isEditing && viewMode === 'summary') {
+    return (
+      <>
+        <SheetHeader>...</SheetHeader>
+        <div className="bg-muted/50 rounded-lg border p-4">
+          {/* Read-only fields */}
+          <Button variant="ghost" size="sm" onClick={() => setViewMode('form')}>
+            <Pencil className="size-3" /> Edit
+          </Button>
+        </div>
+        {/* Related lists (passengers, documents, etc.) */}
+        <SheetFooter>
+          <Button variant="destructive" onClick={() => onDelete(entity.id)}>Delete</Button>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Close</Button>
+        </SheetFooter>
+      </>
+    )
+  }
+
+  // Form mode
+  return (
+    <form ...>
+      {isEditing && (
+        <Button variant="ghost" size="sm" onClick={() => setViewMode('summary')}>
+          <ArrowLeft className="size-3" /> Back to summary
+        </Button>
+      )}
+      {/* Form fields */}
+      <SheetFooter>
+        <Button variant="outline"
+          onClick={() => isEditing ? setViewMode('summary') : onOpenChange(false)}>
+          Cancel
+        </Button>
+        <Button type="submit">{isEditing ? 'Save' : 'Create'}</Button>
+      </SheetFooter>
+    </form>
+  )
+}
+```
+
+### DataTable with Action Columns
+
+```tsx
+const columns = useMemo<ColumnDef<Item>[]>(
+  () => [
+    { accessorKey: 'name', header: 'Name' },
+    {
+      accessorKey: 'status',
+      header: 'Status',
+      cell: ({ row }) => (
+        <Badge variant={row.getValue('status') === 'active' ? 'default' : 'secondary'}>
+          {row.getValue('status') as string}
+        </Badge>
+      ),
+    },
+    {
+      accessorKey: 'amount',
+      header: 'Amount',
+      cell: ({ row }) => {
+        const amount = row.getValue('amount') as number | null
+        if (amount == null) return '-'
+        return new Intl.NumberFormat('pt-BR', {
+          style: 'currency',
+          currency: 'BRL',
+        }).format(amount)
+      },
+    },
+    {
+      id: 'actions',
+      header: '',
+      cell: ({ row }) => (
+        <div className="flex gap-1">
+          <Button variant="ghost" size="icon" onClick={() => openEditSheet(row.original)}>
+            <Pencil className="size-4" />
+          </Button>
+          <Button variant="ghost" size="icon" onClick={() => handleDelete(row.original.id)}>
+            <X className="size-4" />
+          </Button>
+        </div>
+      ),
+      enableHiding: false,
+    },
+  ],
+  [],
+)
+```
+
 ## Code Quality (REQUIRED)
 
 **After writing or modifying ANY code, you MUST run:**
@@ -603,10 +751,10 @@ This runs `prettier --write . && eslint --fix`. If errors remain after auto-fix,
 
 ## Checklist for New Features
 
-1. **Route file**: Create in `src/routes/_authenticated/dashboard/` following file-based conventions
+1. **Route file**: Create in `src/routes/_authenticated/` following file-based conventions
 2. **Loader**: Fetch data with Supabase in the `loader` function
 3. **Component**: Use `Route.useLoaderData()` to access data
-4. **Forms**: TanStack Form with `useAppForm` + Zod validation + Supabase mutation + `router.invalidate()`
+4. **Forms**: TanStack Form with Zod validation + Supabase mutation + `router.invalidate()`
 5. **State**: Router loaders for static data, TanStack Store for dynamic/ephemeral state
 6. **UI**: Use existing `src/components/ui/` components, follow shadcn patterns
 7. **Icons**: Use `lucide-react`
@@ -614,6 +762,14 @@ This runs `prettier --write . && eslint --fix`. If errors remain after auto-fix,
 9. **Types**: After schema changes run `pnpm supabase:types`
 10. **Styling**: Tailwind CSS v4 utility classes, semantic color tokens
 11. **Lint/Format**: Run `pnpm check` to auto-fix formatting and lint issues. Fix any remaining errors manually.
+
+### Quality Details
+
+- Form state must sync with props using `useEffect` (useState only sets initial value on mount)
+- All buttons inside `<form>` must have `type="button"` except the submit button
+- Success triggers `router.invalidate()` or callback to refresh data
+- Currency/dates formatted consistently (pt-BR locale)
+- Table columns wrapped in `useMemo` for stable references
 
 ## Update Your Agent Memory
 

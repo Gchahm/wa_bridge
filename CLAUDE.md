@@ -31,7 +31,7 @@ This is a WhatsApp bridge monorepo with three main components:
 - **go-app-architect** — Go service changes (`whatsapp-api/`): handlers, store, config, messaging
 - **postgresql-supabase-expert** — Database migrations, schema design, RLS policies
 - **supabase-data-layer** — Extracting business logic (calculations, transformations)
-- **route-feature-patterns** — Implementing features (routes, forms, tables) in `wa-sales/`
+- **fe-agent** — Implementing features (routes, forms, tables) and frontend architecture in `wa-sales/`
 - **shadcn-component-creator** — Creating new custom UI components in `wa-sales/`
 - **i18n-patterns** — Translations with Lingui (use after adding new Trans/t`` strings)
 
