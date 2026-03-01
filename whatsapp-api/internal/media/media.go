@@ -34,6 +34,9 @@ func FromMessage(msg *events.Message) *Info {
 	if doc := msg.Message.GetDocumentMessage(); doc != nil {
 		return &Info{Downloadable: doc, MimeType: doc.GetMimetype()}
 	}
+	if stk := msg.Message.GetStickerMessage(); stk != nil {
+		return &Info{Downloadable: stk, MimeType: stk.GetMimetype()}
+	}
 	return nil
 }
 

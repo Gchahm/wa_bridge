@@ -177,6 +177,10 @@ func buildPayload(msg *events.Message) store.MessagePayload {
 		payload.MediaType = "document"
 		payload.Text = msg.Message.DocumentMessage.GetCaption()
 		payload.ReplyToMessageID = msg.Message.DocumentMessage.GetContextInfo().GetStanzaID()
+	case msg.Message.StickerMessage != nil:
+		payload.MessageType = "media"
+		payload.MediaType = "sticker"
+		payload.ReplyToMessageID = msg.Message.StickerMessage.GetContextInfo().GetStanzaID()
 	default:
 		payload.MessageType = "other"
 	}
