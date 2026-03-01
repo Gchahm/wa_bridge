@@ -50,6 +50,13 @@ func handleMessage(client *whatsmeow.Client, cfg config.Config, db *store.Store,
 		return
 	}
 
+	// Skip album messages — they are grouping metadata only. The actual
+	// images/videos arrive as separate events that are already handled.
+	if msg.Message.GetAlbumMessage() != nil {
+		log.Debug().Str("message_id", msg.Info.ID).Msg("skipping album message (media arrives separately)")
+		return
+	}
+
 	// Handle protocol messages (edits, revocations, etc.) before building
 	// the regular payload. These are not user-visible content rows.
 	if proto := msg.Message.GetProtocolMessage(); proto != nil {
