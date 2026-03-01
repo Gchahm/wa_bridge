@@ -6,6 +6,7 @@ package messaging
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"go.mau.fi/whatsmeow"
 	"go.mau.fi/whatsmeow/proto/waE2E"
@@ -46,6 +47,15 @@ func handleMessage(client *whatsmeow.Client, cfg config.Config, db *store.Store,
 	// piggyback on real messages. Only skip when no actual content is present.
 	if msg.Message.GetSenderKeyDistributionMessage() != nil && !hasUserContent(msg) {
 		log.Debug().Str("message_id", msg.Info.ID).Msg("skipping sender key distribution (no user content)")
+		return
+	}
+
+	// Handle protocol messages (edits, revocations, etc.) before building
+	// the regular payload. These are not user-visible content rows.
+	if proto := msg.Message.GetProtocolMessage(); proto != nil {
+		if proto.GetType() == waE2E.ProtocolMessage_MESSAGE_EDIT {
+			go handleMessageEdit(db, msg, proto)
+		}
 		return
 	}
 
@@ -210,6 +220,54 @@ func handleReaction(db *store.Store, msg *events.Message, reaction *waE2E.Reacti
 		log.Error().Err(err).Str("target_message_id", targetID).Str("emoji", reaction.GetText()).Msg("failed to upsert reaction")
 	} else {
 		log.Debug().Str("target_message_id", targetID).Str("emoji", reaction.GetText()).Str("sender_id", senderID).Msg("reaction saved")
+	}
+}
+
+// handleMessageEdit processes a MESSAGE_EDIT protocol message by extracting
+// the new content and applying it to the original message with edit history.
+func handleMessageEdit(db *store.Store, msg *events.Message, proto *waE2E.ProtocolMessage) {
+	targetID := proto.GetKey().GetID()
+	if targetID == "" {
+		log.Warn().Msg("edit protocol message has no target message ID")
+		return
+	}
+
+	chatID := msg.Info.Chat.String()
+	if proto.GetKey().GetRemoteJID() != "" {
+		chatID = proto.GetKey().GetRemoteJID()
+	}
+
+	edited := proto.GetEditedMessage()
+	if edited == nil {
+		log.Warn().Str("target_message_id", targetID).Msg("edit protocol message has no edited message")
+		return
+	}
+
+	// Extract new content using the same priority as buildPayload.
+	var newContent string
+	switch {
+	case edited.GetConversation() != "":
+		newContent = edited.GetConversation()
+	case edited.ExtendedTextMessage != nil:
+		newContent = edited.ExtendedTextMessage.GetText()
+	case edited.ImageMessage != nil:
+		newContent = edited.ImageMessage.GetCaption()
+	case edited.VideoMessage != nil:
+		newContent = edited.VideoMessage.GetCaption()
+	case edited.DocumentMessage != nil:
+		newContent = edited.DocumentMessage.GetCaption()
+	}
+
+	editedAt := msg.Info.Timestamp
+	if tsMS := proto.GetTimestampMS(); tsMS > 0 {
+		editedAt = time.UnixMilli(tsMS)
+	}
+
+	ctx := context.Background()
+	if err := db.ApplyMessageEdit(ctx, targetID, chatID, newContent, editedAt); err != nil {
+		log.Error().Err(err).Str("target_message_id", targetID).Msg("failed to apply message edit")
+	} else {
+		log.Debug().Str("target_message_id", targetID).Msg("message edit applied")
 	}
 }
 

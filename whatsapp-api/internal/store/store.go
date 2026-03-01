@@ -257,6 +257,23 @@ func (s *Store) DeleteReaction(ctx context.Context, messageID, chatID, senderID 
 	return err
 }
 
+// ApplyMessageEdit atomically updates a message's content and appends the
+// previous version to the edit_history JSONB array.
+func (s *Store) ApplyMessageEdit(ctx context.Context, messageID, chatID, newContent string, editedAt time.Time) error {
+	_, err := s.db.ExecContext(ctx,
+		`UPDATE wa_bridge.messages
+		 SET
+		   edit_history = COALESCE(edit_history, '[]'::jsonb) || jsonb_build_array(jsonb_build_object(
+		     'content', content,
+		     'edited_at', COALESCE(edited_at, timestamp)
+		   )),
+		   content = $3,
+		   edited_at = $4
+		 WHERE message_id = $1 AND chat_id = $2`,
+		messageID, chatID, newContent, editedAt)
+	return err
+}
+
 // EnsureCustomer creates a customer record for the given phone number if one
 // does not already exist. It uses the push name as the customer name, falling
 // back to the phone number itself when push name is empty.
