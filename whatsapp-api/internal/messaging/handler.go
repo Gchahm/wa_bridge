@@ -6,6 +6,7 @@ package messaging
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"go.mau.fi/whatsmeow"
@@ -188,6 +189,16 @@ func buildPayload(msg *events.Message) store.MessagePayload {
 		payload.MessageType = "media"
 		payload.MediaType = "sticker"
 		payload.ReplyToMessageID = msg.Message.StickerMessage.GetContextInfo().GetStanzaID()
+	case msg.Message.ContactMessage != nil:
+		payload.MessageType = "contact"
+		payload.Text = msg.Message.ContactMessage.GetDisplayName()
+	case msg.Message.ContactsArrayMessage != nil:
+		payload.MessageType = "contact"
+		names := make([]string, 0, len(msg.Message.ContactsArrayMessage.GetContacts()))
+		for _, c := range msg.Message.ContactsArrayMessage.GetContacts() {
+			names = append(names, c.GetDisplayName())
+		}
+		payload.Text = strings.Join(names, ", ")
 	default:
 		payload.MessageType = "other"
 	}
