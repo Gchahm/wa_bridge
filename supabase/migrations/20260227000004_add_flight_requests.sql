@@ -1,9 +1,9 @@
 -- =============================================================================
 -- Migration: add_flight_requests
--- Purpose:   Add flight request management tables (wa_bridge.flight_requests,
---            wa_bridge.flight_request_passengers, wa_bridge.quote_options)
---            with RLS policies, grants, updated_at trigger reuse, and public
---            views for PostgREST access.
+-- Purpose:   Add flight request management tables (public.flight_requests,
+--            public.flight_request_passengers, public.quote_options)
+--            with RLS policies, grants, updated_at trigger reuse, and an
+--            enriched summary view for PostgREST access.
 --
 --            flight_requests captures a customer's travel intent (origin,
 --            destination, dates, pax counts, cabin class, budget). The
@@ -21,7 +21,7 @@
 -- =============================================================================
 
 -- -----------------------------------------------------------------------------
--- wa_bridge.flight_requests
+-- public.flight_requests
 --
 -- One row per travel enquiry from a customer. Optionally linked to the
 -- originating WhatsApp chat via chat_id (ON DELETE SET NULL so the request
@@ -29,7 +29,7 @@
 -- enquiry through to completion or cancellation.
 -- -----------------------------------------------------------------------------
 
-CREATE TABLE "wa_bridge"."flight_requests" (
+CREATE TABLE "public"."flight_requests" (
     "id"                   uuid                        NOT NULL DEFAULT gen_random_uuid(),
     "customer_id"          uuid                        NOT NULL,
     "chat_id"              text,
@@ -54,70 +54,70 @@ CREATE TABLE "wa_bridge"."flight_requests" (
     "updated_at"           timestamp without time zone          DEFAULT now()
 );
 
-ALTER TABLE "wa_bridge"."flight_requests" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "public"."flight_requests" ENABLE ROW LEVEL SECURITY;
 
-CREATE UNIQUE INDEX flight_requests_pkey ON wa_bridge.flight_requests USING btree (id);
+CREATE UNIQUE INDEX flight_requests_pkey ON public.flight_requests USING btree (id);
 
-ALTER TABLE "wa_bridge"."flight_requests"
+ALTER TABLE "public"."flight_requests"
     ADD CONSTRAINT "flight_requests_pkey" PRIMARY KEY USING INDEX "flight_requests_pkey";
 
 -- customer_id is required; deleting the customer removes all their requests.
-ALTER TABLE "wa_bridge"."flight_requests"
+ALTER TABLE "public"."flight_requests"
     ADD CONSTRAINT "fk_flight_requests_customer"
-    FOREIGN KEY (customer_id) REFERENCES wa_bridge.customers (id)
+    FOREIGN KEY (customer_id) REFERENCES public.customers (id)
     ON DELETE CASCADE
     NOT VALID;
-ALTER TABLE "wa_bridge"."flight_requests" VALIDATE CONSTRAINT "fk_flight_requests_customer";
+ALTER TABLE "public"."flight_requests" VALIDATE CONSTRAINT "fk_flight_requests_customer";
 
 -- chat_id links to the originating WhatsApp chat. Set to NULL if the chat is
 -- deleted so the flight request record is preserved.
-ALTER TABLE "wa_bridge"."flight_requests"
+ALTER TABLE "public"."flight_requests"
     ADD CONSTRAINT "fk_flight_requests_chat"
     FOREIGN KEY (chat_id) REFERENCES wa_bridge.chats (chat_id)
     ON DELETE SET NULL
     NOT VALID;
-ALTER TABLE "wa_bridge"."flight_requests" VALIDATE CONSTRAINT "fk_flight_requests_chat";
+ALTER TABLE "public"."flight_requests" VALIDATE CONSTRAINT "fk_flight_requests_chat";
 
 -- Support filtering and listing requests by customer and by status.
-CREATE INDEX idx_flight_requests_customer_id ON wa_bridge.flight_requests (customer_id);
-CREATE INDEX idx_flight_requests_status      ON wa_bridge.flight_requests (status);
+CREATE INDEX idx_flight_requests_customer_id ON public.flight_requests (customer_id);
+CREATE INDEX idx_flight_requests_status      ON public.flight_requests (status);
 
 -- -----------------------------------------------------------------------------
--- wa_bridge.flight_request_passengers
+-- public.flight_request_passengers
 --
 -- Junction table associating specific passenger profiles with a flight request.
 -- Deleting the request or the passenger cascades to remove the association row.
 -- -----------------------------------------------------------------------------
 
-CREATE TABLE "wa_bridge"."flight_request_passengers" (
+CREATE TABLE "public"."flight_request_passengers" (
     "flight_request_id" uuid NOT NULL,
     "passenger_id"      uuid NOT NULL
 );
 
-ALTER TABLE "wa_bridge"."flight_request_passengers" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "public"."flight_request_passengers" ENABLE ROW LEVEL SECURITY;
 
-ALTER TABLE "wa_bridge"."flight_request_passengers"
+ALTER TABLE "public"."flight_request_passengers"
     ADD CONSTRAINT "flight_request_passengers_pkey"
     PRIMARY KEY (flight_request_id, passenger_id);
 
-ALTER TABLE "wa_bridge"."flight_request_passengers"
+ALTER TABLE "public"."flight_request_passengers"
     ADD CONSTRAINT "fk_flight_request_passengers_request"
-    FOREIGN KEY (flight_request_id) REFERENCES wa_bridge.flight_requests (id)
+    FOREIGN KEY (flight_request_id) REFERENCES public.flight_requests (id)
     ON DELETE CASCADE
     NOT VALID;
-ALTER TABLE "wa_bridge"."flight_request_passengers"
+ALTER TABLE "public"."flight_request_passengers"
     VALIDATE CONSTRAINT "fk_flight_request_passengers_request";
 
-ALTER TABLE "wa_bridge"."flight_request_passengers"
+ALTER TABLE "public"."flight_request_passengers"
     ADD CONSTRAINT "fk_flight_request_passengers_passenger"
-    FOREIGN KEY (passenger_id) REFERENCES wa_bridge.passengers (id)
+    FOREIGN KEY (passenger_id) REFERENCES public.passengers (id)
     ON DELETE CASCADE
     NOT VALID;
-ALTER TABLE "wa_bridge"."flight_request_passengers"
+ALTER TABLE "public"."flight_request_passengers"
     VALIDATE CONSTRAINT "fk_flight_request_passengers_passenger";
 
 -- -----------------------------------------------------------------------------
--- wa_bridge.quote_options
+-- public.quote_options
 --
 -- One or more priced alternatives per flight request. is_selected marks the
 -- option the customer accepted; only one option per request should be selected
@@ -125,7 +125,7 @@ ALTER TABLE "wa_bridge"."flight_request_passengers"
 -- to remove all associated quotes.
 -- -----------------------------------------------------------------------------
 
-CREATE TABLE "wa_bridge"."quote_options" (
+CREATE TABLE "public"."quote_options" (
     "id"                uuid                        NOT NULL DEFAULT gen_random_uuid(),
     "flight_request_id" uuid                        NOT NULL,
     "description"       text                        NOT NULL,
@@ -136,22 +136,22 @@ CREATE TABLE "wa_bridge"."quote_options" (
     "created_at"        timestamp without time zone          DEFAULT now()
 );
 
-ALTER TABLE "wa_bridge"."quote_options" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "public"."quote_options" ENABLE ROW LEVEL SECURITY;
 
-CREATE UNIQUE INDEX quote_options_pkey ON wa_bridge.quote_options USING btree (id);
+CREATE UNIQUE INDEX quote_options_pkey ON public.quote_options USING btree (id);
 
-ALTER TABLE "wa_bridge"."quote_options"
+ALTER TABLE "public"."quote_options"
     ADD CONSTRAINT "quote_options_pkey" PRIMARY KEY USING INDEX "quote_options_pkey";
 
-ALTER TABLE "wa_bridge"."quote_options"
+ALTER TABLE "public"."quote_options"
     ADD CONSTRAINT "fk_quote_options_flight_request"
-    FOREIGN KEY (flight_request_id) REFERENCES wa_bridge.flight_requests (id)
+    FOREIGN KEY (flight_request_id) REFERENCES public.flight_requests (id)
     ON DELETE CASCADE
     NOT VALID;
-ALTER TABLE "wa_bridge"."quote_options" VALIDATE CONSTRAINT "fk_quote_options_flight_request";
+ALTER TABLE "public"."quote_options" VALIDATE CONSTRAINT "fk_quote_options_flight_request";
 
 -- Support fetching all quotes for a given request efficiently.
-CREATE INDEX idx_quote_options_flight_request_id ON wa_bridge.quote_options (flight_request_id);
+CREATE INDEX idx_quote_options_flight_request_id ON public.quote_options (flight_request_id);
 
 -- =============================================================================
 -- RLS POLICIES
@@ -162,21 +162,21 @@ CREATE INDEX idx_quote_options_flight_request_id ON wa_bridge.quote_options (fli
 -- -----------------------------------------------------------------------------
 
 CREATE POLICY "wa_bridge_app_flight_requests"
-    ON "wa_bridge"."flight_requests"
+    ON "public"."flight_requests"
     AS PERMISSIVE FOR ALL
     TO wa_bridge_app
     USING (true)
     WITH CHECK (true);
 
 CREATE POLICY "wa_bridge_app_flight_request_passengers"
-    ON "wa_bridge"."flight_request_passengers"
+    ON "public"."flight_request_passengers"
     AS PERMISSIVE FOR ALL
     TO wa_bridge_app
     USING (true)
     WITH CHECK (true);
 
 CREATE POLICY "wa_bridge_app_quote_options"
-    ON "wa_bridge"."quote_options"
+    ON "public"."quote_options"
     AS PERMISSIVE FOR ALL
     TO wa_bridge_app
     USING (true)
@@ -187,21 +187,21 @@ CREATE POLICY "wa_bridge_app_quote_options"
 -- -----------------------------------------------------------------------------
 
 CREATE POLICY "authenticated_flight_requests"
-    ON "wa_bridge"."flight_requests"
+    ON "public"."flight_requests"
     AS PERMISSIVE FOR ALL
     TO authenticated
     USING (true)
     WITH CHECK (true);
 
 CREATE POLICY "authenticated_flight_request_passengers"
-    ON "wa_bridge"."flight_request_passengers"
+    ON "public"."flight_request_passengers"
     AS PERMISSIVE FOR ALL
     TO authenticated
     USING (true)
     WITH CHECK (true);
 
 CREATE POLICY "authenticated_quote_options"
-    ON "wa_bridge"."quote_options"
+    ON "public"."quote_options"
     AS PERMISSIVE FOR ALL
     TO authenticated
     USING (true)
@@ -212,19 +212,19 @@ CREATE POLICY "authenticated_quote_options"
 -- =============================================================================
 
 -- Bridge application needs full DML on all flight-request tables.
-GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE "wa_bridge"."flight_requests"           TO "wa_bridge_app";
-GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE "wa_bridge"."flight_request_passengers" TO "wa_bridge_app";
-GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE "wa_bridge"."quote_options"             TO "wa_bridge_app";
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE "public"."flight_requests"           TO "wa_bridge_app";
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE "public"."flight_request_passengers" TO "wa_bridge_app";
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE "public"."quote_options"             TO "wa_bridge_app";
 
 -- Authenticated users have full CRUD (flight data is user-managed).
-GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE "wa_bridge"."flight_requests"           TO "authenticated";
-GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE "wa_bridge"."flight_request_passengers" TO "authenticated";
-GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE "wa_bridge"."quote_options"             TO "authenticated";
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE "public"."flight_requests"           TO "authenticated";
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE "public"."flight_request_passengers" TO "authenticated";
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE "public"."quote_options"             TO "authenticated";
 
 -- n8n workflows can read flight data (n8n_app bypasses RLS via role attribute).
-GRANT SELECT ON TABLE "wa_bridge"."flight_requests"           TO "n8n_app";
-GRANT SELECT ON TABLE "wa_bridge"."flight_request_passengers" TO "n8n_app";
-GRANT SELECT ON TABLE "wa_bridge"."quote_options"             TO "n8n_app";
+GRANT SELECT ON TABLE "public"."flight_requests"           TO "n8n_app";
+GRANT SELECT ON TABLE "public"."flight_request_passengers" TO "n8n_app";
+GRANT SELECT ON TABLE "public"."quote_options"             TO "n8n_app";
 
 -- =============================================================================
 -- TRIGGERS
@@ -235,36 +235,12 @@ GRANT SELECT ON TABLE "wa_bridge"."quote_options"             TO "n8n_app";
 -- quote_options has no updated_at column so no trigger is needed there.
 
 CREATE TRIGGER trg_flight_requests_updated_at
-    BEFORE UPDATE ON wa_bridge.flight_requests
+    BEFORE UPDATE ON public.flight_requests
     FOR EACH ROW EXECUTE FUNCTION wa_bridge.set_updated_at();
 
 -- =============================================================================
--- VIEWS (public schema)
+-- ENRICHED VIEW (public schema)
 -- =============================================================================
-
--- -----------------------------------------------------------------------------
--- public.flight_requests — direct projection of wa_bridge.flight_requests
--- -----------------------------------------------------------------------------
-
-CREATE OR REPLACE VIEW public.flight_requests
-    WITH (security_invoker = on)
-    AS SELECT * FROM wa_bridge.flight_requests;
-
--- -----------------------------------------------------------------------------
--- public.flight_request_passengers — direct projection of wa_bridge.flight_request_passengers
--- -----------------------------------------------------------------------------
-
-CREATE OR REPLACE VIEW public.flight_request_passengers
-    WITH (security_invoker = on)
-    AS SELECT * FROM wa_bridge.flight_request_passengers;
-
--- -----------------------------------------------------------------------------
--- public.quote_options — direct projection of wa_bridge.quote_options
--- -----------------------------------------------------------------------------
-
-CREATE OR REPLACE VIEW public.quote_options
-    WITH (security_invoker = on)
-    AS SELECT * FROM wa_bridge.quote_options;
 
 -- -----------------------------------------------------------------------------
 -- public.flight_requests_summary
@@ -281,24 +257,18 @@ CREATE OR REPLACE VIEW public.flight_requests_summary
 SELECT
     fr.*,
     c.name                                                                              AS customer_name,
-    (SELECT count(*) FROM wa_bridge.flight_request_passengers frp
+    (SELECT count(*) FROM public.flight_request_passengers frp
      WHERE frp.flight_request_id = fr.id)                                              AS passenger_count,
     sq.price                                                                            AS selected_quote_price,
     sq.currency                                                                         AS selected_quote_currency,
     sq.description                                                                      AS selected_quote_description
-FROM wa_bridge.flight_requests fr
-JOIN  wa_bridge.customers     c  ON c.id = fr.customer_id
-LEFT JOIN wa_bridge.quote_options sq ON sq.flight_request_id = fr.id AND sq.is_selected = true;
+FROM public.flight_requests fr
+JOIN  public.customers     c  ON c.id = fr.customer_id
+LEFT JOIN public.quote_options sq ON sq.flight_request_id = fr.id AND sq.is_selected = true;
 
 -- =============================================================================
 -- VIEW GRANTS
 -- =============================================================================
 
--- Pass-through views support full CRUD; security is enforced by the underlying
--- table grants and RLS policies.
-GRANT SELECT, INSERT, UPDATE, DELETE ON public.flight_requests           TO authenticated;
-GRANT SELECT, INSERT, UPDATE, DELETE ON public.flight_request_passengers TO authenticated;
-GRANT SELECT, INSERT, UPDATE, DELETE ON public.quote_options             TO authenticated;
-
--- Summary view is read-only (joins multiple tables; mutations target base views).
+-- Summary view is read-only (joins multiple tables; mutations target base tables directly).
 GRANT SELECT ON public.flight_requests_summary TO authenticated;

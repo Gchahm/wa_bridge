@@ -1,8 +1,8 @@
 -- =============================================================================
 -- Migration: add_passengers
--- Purpose:   Add passenger management tables (wa_bridge.passengers and
---            wa_bridge.customer_passengers) with RLS policies, grants,
---            an updated_at trigger, and public views for PostgREST access.
+-- Purpose:   Add passenger management tables (public.passengers and
+--            public.customer_passengers) with RLS policies, grants,
+--            and an updated_at trigger for PostgREST access.
 --
 --            Passengers represent individual travellers stored independently of
 --            customers. The customer_passengers junction table associates any
@@ -17,14 +17,14 @@
 -- =============================================================================
 
 -- -----------------------------------------------------------------------------
--- wa_bridge.passengers
+-- public.passengers
 --
 -- One row per traveller profile. Stores identity and travel-document details
 -- independently of any customer link so that the same passenger can be shared
 -- across multiple customers if needed.
 -- -----------------------------------------------------------------------------
 
-CREATE TABLE "wa_bridge"."passengers" (
+CREATE TABLE "public"."passengers" (
     "id"                      uuid                        NOT NULL DEFAULT gen_random_uuid(),
     "full_name"               text                        NOT NULL,
     "date_of_birth"           date,
@@ -41,15 +41,15 @@ CREATE TABLE "wa_bridge"."passengers" (
     "updated_at"              timestamp without time zone          DEFAULT now()
 );
 
-ALTER TABLE "wa_bridge"."passengers" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "public"."passengers" ENABLE ROW LEVEL SECURITY;
 
-CREATE UNIQUE INDEX passengers_pkey ON wa_bridge.passengers USING btree (id);
+CREATE UNIQUE INDEX passengers_pkey ON public.passengers USING btree (id);
 
-ALTER TABLE "wa_bridge"."passengers"
+ALTER TABLE "public"."passengers"
     ADD CONSTRAINT "passengers_pkey" PRIMARY KEY USING INDEX "passengers_pkey";
 
 -- -----------------------------------------------------------------------------
--- wa_bridge.customer_passengers
+-- public.customer_passengers
 --
 -- Junction table linking customers to their associated passengers.
 -- The optional label column describes the relationship from the customer's
@@ -57,32 +57,32 @@ ALTER TABLE "wa_bridge"."passengers"
 -- to remove the association row automatically.
 -- -----------------------------------------------------------------------------
 
-CREATE TABLE "wa_bridge"."customer_passengers" (
+CREATE TABLE "public"."customer_passengers" (
     "customer_id"  uuid NOT NULL,
     "passenger_id" uuid NOT NULL,
     "label"        text
 );
 
-ALTER TABLE "wa_bridge"."customer_passengers" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "public"."customer_passengers" ENABLE ROW LEVEL SECURITY;
 
-ALTER TABLE "wa_bridge"."customer_passengers"
+ALTER TABLE "public"."customer_passengers"
     ADD CONSTRAINT "customer_passengers_pkey"
     PRIMARY KEY (customer_id, passenger_id);
 
-ALTER TABLE "wa_bridge"."customer_passengers"
+ALTER TABLE "public"."customer_passengers"
     ADD CONSTRAINT "fk_customer_passengers_customer"
-    FOREIGN KEY (customer_id) REFERENCES wa_bridge.customers (id)
+    FOREIGN KEY (customer_id) REFERENCES public.customers (id)
     ON DELETE CASCADE
     NOT VALID;
-ALTER TABLE "wa_bridge"."customer_passengers"
+ALTER TABLE "public"."customer_passengers"
     VALIDATE CONSTRAINT "fk_customer_passengers_customer";
 
-ALTER TABLE "wa_bridge"."customer_passengers"
+ALTER TABLE "public"."customer_passengers"
     ADD CONSTRAINT "fk_customer_passengers_passenger"
-    FOREIGN KEY (passenger_id) REFERENCES wa_bridge.passengers (id)
+    FOREIGN KEY (passenger_id) REFERENCES public.passengers (id)
     ON DELETE CASCADE
     NOT VALID;
-ALTER TABLE "wa_bridge"."customer_passengers"
+ALTER TABLE "public"."customer_passengers"
     VALIDATE CONSTRAINT "fk_customer_passengers_passenger";
 
 -- =============================================================================
@@ -94,14 +94,14 @@ ALTER TABLE "wa_bridge"."customer_passengers"
 -- -----------------------------------------------------------------------------
 
 CREATE POLICY "wa_bridge_app_passengers"
-    ON "wa_bridge"."passengers"
+    ON "public"."passengers"
     AS PERMISSIVE FOR ALL
     TO wa_bridge_app
     USING (true)
     WITH CHECK (true);
 
 CREATE POLICY "wa_bridge_app_customer_passengers"
-    ON "wa_bridge"."customer_passengers"
+    ON "public"."customer_passengers"
     AS PERMISSIVE FOR ALL
     TO wa_bridge_app
     USING (true)
@@ -112,14 +112,14 @@ CREATE POLICY "wa_bridge_app_customer_passengers"
 -- -----------------------------------------------------------------------------
 
 CREATE POLICY "authenticated_passengers"
-    ON "wa_bridge"."passengers"
+    ON "public"."passengers"
     AS PERMISSIVE FOR ALL
     TO authenticated
     USING (true)
     WITH CHECK (true);
 
 CREATE POLICY "authenticated_customer_passengers"
-    ON "wa_bridge"."customer_passengers"
+    ON "public"."customer_passengers"
     AS PERMISSIVE FOR ALL
     TO authenticated
     USING (true)
@@ -130,16 +130,16 @@ CREATE POLICY "authenticated_customer_passengers"
 -- =============================================================================
 
 -- Bridge application needs full DML on passenger tables.
-GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE "wa_bridge"."passengers"          TO "wa_bridge_app";
-GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE "wa_bridge"."customer_passengers" TO "wa_bridge_app";
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE "public"."passengers"          TO "wa_bridge_app";
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE "public"."customer_passengers" TO "wa_bridge_app";
 
 -- Authenticated users have full CRUD (passenger data is user-managed).
-GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE "wa_bridge"."passengers"          TO "authenticated";
-GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE "wa_bridge"."customer_passengers" TO "authenticated";
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE "public"."passengers"          TO "authenticated";
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE "public"."customer_passengers" TO "authenticated";
 
 -- n8n workflows can read passenger data (n8n_app bypasses RLS via role attribute).
-GRANT SELECT ON TABLE "wa_bridge"."passengers"          TO "n8n_app";
-GRANT SELECT ON TABLE "wa_bridge"."customer_passengers" TO "n8n_app";
+GRANT SELECT ON TABLE "public"."passengers"          TO "n8n_app";
+GRANT SELECT ON TABLE "public"."customer_passengers" TO "n8n_app";
 
 -- =============================================================================
 -- TRIGGERS
@@ -149,34 +149,5 @@ GRANT SELECT ON TABLE "wa_bridge"."customer_passengers" TO "n8n_app";
 -- Register it on the passengers table so updated_at stays current on every UPDATE.
 
 CREATE TRIGGER trg_passengers_updated_at
-    BEFORE UPDATE ON wa_bridge.passengers
+    BEFORE UPDATE ON public.passengers
     FOR EACH ROW EXECUTE FUNCTION wa_bridge.set_updated_at();
-
--- =============================================================================
--- VIEWS (public schema)
--- =============================================================================
-
--- -----------------------------------------------------------------------------
--- public.passengers — direct projection of wa_bridge.passengers
--- -----------------------------------------------------------------------------
-
-CREATE OR REPLACE VIEW public.passengers
-    WITH (security_invoker = on)
-    AS SELECT * FROM wa_bridge.passengers;
-
--- -----------------------------------------------------------------------------
--- public.customer_passengers — direct projection of wa_bridge.customer_passengers
--- -----------------------------------------------------------------------------
-
-CREATE OR REPLACE VIEW public.customer_passengers
-    WITH (security_invoker = on)
-    AS SELECT * FROM wa_bridge.customer_passengers;
-
--- =============================================================================
--- VIEW GRANTS
--- =============================================================================
-
--- Authenticated users have full CRUD through the pass-through views; the
--- underlying table grants and RLS policies are the effective security boundary.
-GRANT SELECT, INSERT, UPDATE, DELETE ON public.passengers          TO authenticated;
-GRANT SELECT, INSERT, UPDATE, DELETE ON public.customer_passengers TO authenticated;

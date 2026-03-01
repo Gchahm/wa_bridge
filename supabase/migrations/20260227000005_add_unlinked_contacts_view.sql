@@ -12,7 +12,7 @@ CREATE OR REPLACE VIEW public.unlinked_contacts
     AS
 SELECT c.phone_number, c.push_name, c.last_seen_at
 FROM wa_bridge.contacts c
-LEFT JOIN wa_bridge.customers cu ON cu.phone_number = c.phone_number
+LEFT JOIN public.customers cu ON cu.phone_number = c.phone_number
 WHERE cu.id IS NULL
 ORDER BY c.last_seen_at DESC NULLS LAST;
 
