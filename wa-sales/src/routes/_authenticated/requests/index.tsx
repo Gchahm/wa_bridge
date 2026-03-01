@@ -32,7 +32,7 @@ import { RequestBookingSheets } from './-components/RequestBookingSheets'
 
 type FlightRequestSummary =
   Database['public']['Views']['flight_requests_summary']['Row']
-type FlightRequest = Database['public']['Views']['flight_requests']['Row']
+type FlightRequest = Database['public']['Tables']['flight_requests']['Row']
 
 const parentRoute = getRouteApi('/_authenticated/requests')
 

@@ -4,9 +4,9 @@ import { Button } from '@/components/ui/button'
 import { supabase } from '@/lib/supabase'
 import type { Database } from '@/lib/database.types'
 
-type Passenger = Database['public']['Views']['passengers']['Row']
+type Passenger = Database['public']['Tables']['passengers']['Row']
 type FlightRequestPassenger =
-  Database['public']['Views']['flight_request_passengers']['Row']
+  Database['public']['Tables']['flight_request_passengers']['Row']
 
 interface RequestPassengerListProps {
   flightRequestId: string
@@ -41,9 +41,9 @@ export function RequestPassengerList({
         return
       }
 
-      const passengerIds = (junctions as FlightRequestPassenger[])
-        .map((j) => j.passenger_id)
-        .filter((id): id is string => id !== null)
+      const passengerIds = (junctions as FlightRequestPassenger[]).map(
+        (j) => j.passenger_id,
+      )
 
       if (passengerIds.length === 0) {
         setPassengers([])
@@ -106,7 +106,7 @@ export function RequestPassengerList({
             type="button"
             variant="ghost"
             size="icon"
-            onClick={() => handleUnlink(passenger.id as string)}
+            onClick={() => handleUnlink(passenger.id)}
           >
             <X className="size-4" />
           </Button>

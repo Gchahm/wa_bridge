@@ -5,9 +5,9 @@ import { Badge } from '@/components/ui/badge'
 import { supabase } from '@/lib/supabase'
 import type { Database } from '@/lib/database.types'
 
-type Passenger = Database['public']['Views']['passengers']['Row']
+type Passenger = Database['public']['Tables']['passengers']['Row']
 type CustomerPassenger =
-  Database['public']['Views']['customer_passengers']['Row']
+  Database['public']['Tables']['customer_passengers']['Row']
 
 interface PassengerRow {
   passenger: Passenger
@@ -53,9 +53,9 @@ export function PassengerList({
         return
       }
 
-      const passengerIds = junctions
-        .map((j: CustomerPassenger) => j.passenger_id)
-        .filter((id): id is string => id !== null)
+      const passengerIds = junctions.map(
+        (j: CustomerPassenger) => j.passenger_id,
+      )
 
       const { data: passengers } = await supabase
         .from('passengers')
@@ -63,9 +63,7 @@ export function PassengerList({
         .in('id', passengerIds)
 
       const passengerMap = new Map<string, Passenger>(
-        (passengers ?? [])
-          .filter((p: Passenger) => p.id !== null)
-          .map((p: Passenger) => [p.id as string, p]),
+        (passengers ?? []).map((p: Passenger) => [p.id, p]),
       )
 
       const built: PassengerRow[] = junctions
@@ -74,7 +72,7 @@ export function PassengerList({
             j.passenger_id && passengerMap.has(j.passenger_id),
         )
         .map((j: CustomerPassenger) => ({
-          passenger: passengerMap.get(j.passenger_id as string)!,
+          passenger: passengerMap.get(j.passenger_id)!,
           label: j.label,
         }))
 
@@ -162,7 +160,7 @@ export function PassengerList({
               size="icon"
               onClick={(e) => {
                 e.stopPropagation()
-                handleUnlink(passenger.id as string)
+                handleUnlink(passenger.id)
               }}
             >
               <X className="size-4" />

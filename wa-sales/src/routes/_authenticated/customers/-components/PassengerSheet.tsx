@@ -26,7 +26,7 @@ import { supabase } from '@/lib/supabase'
 import type { Database } from '@/lib/database.types'
 import { DocumentList } from '@/components/DocumentList'
 
-type Passenger = Database['public']['Views']['passengers']['Row']
+type Passenger = Database['public']['Tables']['passengers']['Row']
 
 const passengerSchema = z.object({
   full_name: z.string().min(1, 'Full name is required'),
@@ -268,10 +268,7 @@ export function PassengerSheet({
                   Tagged documents for this passenger.
                 </p>
               </div>
-              <DocumentList
-                passengerId={passenger.id as string}
-                refreshKey={0}
-              />
+              <DocumentList passengerId={passenger.id} refreshKey={0} />
             </div>
 
             {/* Footer */}
@@ -280,7 +277,7 @@ export function PassengerSheet({
                 <Button
                   type="button"
                   variant="destructive"
-                  onClick={() => onDelete(passenger.id as string)}
+                  onClick={() => onDelete(passenger.id)}
                 >
                   Delete
                 </Button>

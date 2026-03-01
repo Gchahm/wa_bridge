@@ -26,7 +26,7 @@ import type { Database } from '@/lib/database.types'
 import { BookingSheet } from './-components/BookingSheet'
 
 type BookingSummary = Database['public']['Views']['bookings_summary']['Row']
-type Booking = Database['public']['Views']['bookings']['Row']
+type Booking = Database['public']['Tables']['bookings']['Row']
 
 const parentRoute = getRouteApi('/_authenticated/bookings')
 

@@ -29,8 +29,8 @@ import { BookingPassengerSelect } from './BookingPassengerSelect'
 import { PaymentList } from './PaymentList'
 import { CommissionSection } from './CommissionSection'
 
-type Booking = Database['public']['Views']['bookings']['Row']
-type Customer = Database['public']['Views']['customers']['Row']
+type Booking = Database['public']['Tables']['bookings']['Row']
+type Customer = Database['public']['Tables']['customers']['Row']
 
 const bookingSchema = z.object({
   pnr: z.string().optional(),
@@ -182,9 +182,7 @@ function BookingSheetForm({
       .select('passenger_id')
       .eq('booking_id', booking.id)
       .then(({ data }) => {
-        const ids = (data ?? [])
-          .map((j) => j.passenger_id)
-          .filter((id): id is string => id !== null)
+        const ids = (data ?? []).map((j) => j.passenger_id)
         setLinkedPassengerIds(ids)
       })
   })
@@ -197,9 +195,7 @@ function BookingSheetForm({
         .select('passenger_id')
         .eq('booking_id', booking.id)
         .then(({ data }) => {
-          const ids = (data ?? [])
-            .map((j) => j.passenger_id)
-            .filter((id): id is string => id !== null)
+          const ids = (data ?? []).map((j) => j.passenger_id)
           setLinkedPassengerIds(ids)
         })
     }
@@ -240,7 +236,7 @@ function BookingSheetForm({
               <SelectContent>
                 <SelectItem value="__none__">Select a customer...</SelectItem>
                 {customers.map((c) => (
-                  <SelectItem key={c.id} value={c.id as string}>
+                  <SelectItem key={c.id} value={c.id}>
                     {c.name}
                   </SelectItem>
                 ))}

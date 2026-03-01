@@ -13,7 +13,7 @@ import { supabase } from '@/lib/supabase'
 import type { Database } from '@/lib/database.types'
 import { RequestBookingSheets } from './RequestBookingSheets'
 
-type FlightRequest = Database['public']['Views']['flight_requests']['Row']
+type FlightRequest = Database['public']['Tables']['flight_requests']['Row']
 
 const statusColors: Record<string, string> = {
   new: 'bg-blue-100 text-blue-800',
@@ -131,7 +131,7 @@ export function RequestsForCustomerSheet({
                     {req.origin || '?'} → {req.destination || '?'}
                   </span>
                   <Badge
-                    className={statusColors[req.status ?? 'new']}
+                    className={statusColors[req.status]}
                     variant="secondary"
                   >
                     {req.status}

@@ -9,7 +9,7 @@ import {
 import { supabase } from '@/lib/supabase'
 import type { Database } from '@/lib/database.types'
 
-type Passenger = Database['public']['Views']['passengers']['Row']
+type Passenger = Database['public']['Tables']['passengers']['Row']
 
 interface RequestPassengerSelectProps {
   flightRequestId: string
@@ -39,9 +39,7 @@ export function RequestPassengerSelect({
         return
       }
 
-      const ids = junctions
-        .map((j) => j.passenger_id)
-        .filter((id): id is string => id !== null)
+      const ids = junctions.map((j) => j.passenger_id)
 
       if (ids.length === 0) {
         setPassengers([])
@@ -88,7 +86,7 @@ export function RequestPassengerSelect({
       <SelectContent>
         <SelectItem value="__none__">Link passenger to request...</SelectItem>
         {available.map((passenger) => (
-          <SelectItem key={passenger.id} value={passenger.id as string}>
+          <SelectItem key={passenger.id} value={passenger.id}>
             {passenger.full_name}
             {passenger.document_number ? ` (${passenger.document_number})` : ''}
           </SelectItem>

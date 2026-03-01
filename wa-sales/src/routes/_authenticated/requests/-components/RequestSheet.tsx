@@ -35,7 +35,7 @@ import { QuoteOptionList } from './QuoteOptionList'
 import { RequestPassengerList } from './RequestPassengerList'
 import { RequestPassengerSelect } from './RequestPassengerSelect'
 
-type FlightRequest = Database['public']['Views']['flight_requests']['Row']
+type FlightRequest = Database['public']['Tables']['flight_requests']['Row']
 
 const requestSchema = z.object({
   origin: z.string().optional(),
@@ -236,9 +236,7 @@ function RequestSheetForm({
       .select('passenger_id')
       .eq('flight_request_id', request.id)
       .then(({ data }) => {
-        const ids = (data ?? [])
-          .map((j) => j.passenger_id)
-          .filter((id): id is string => id !== null)
+        const ids = (data ?? []).map((j) => j.passenger_id)
         setLinkedPassengerIds(ids)
       })
   })
@@ -252,9 +250,7 @@ function RequestSheetForm({
         .select('passenger_id')
         .eq('flight_request_id', request.id)
         .then(({ data }) => {
-          const ids = (data ?? [])
-            .map((j) => j.passenger_id)
-            .filter((id): id is string => id !== null)
+          const ids = (data ?? []).map((j) => j.passenger_id)
           setLinkedPassengerIds(ids)
         })
     }
@@ -317,7 +313,7 @@ function RequestSheetForm({
 
   // Summary mode for editing
   if (isEditing && viewMode === 'summary' && request.id) {
-    const status = request.status ?? 'new'
+    const status = request.status
     const origin = request.origin || '???'
     const destination = request.destination || '???'
     const depRange = formatDateRange(

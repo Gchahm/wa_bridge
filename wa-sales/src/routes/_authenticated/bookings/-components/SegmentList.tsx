@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label'
 import { supabase } from '@/lib/supabase'
 import type { Database } from '@/lib/database.types'
 
-type BookingSegment = Database['public']['Views']['booking_segments']['Row']
+type BookingSegment = Database['public']['Tables']['booking_segments']['Row']
 
 interface SegmentListProps {
   bookingId: string
@@ -76,7 +76,7 @@ export function SegmentList({ bookingId, refreshKey }: SegmentListProps) {
 
     const nextOrder =
       segments.length > 0
-        ? Math.max(...segments.map((s) => s.segment_order ?? 0)) + 1
+        ? Math.max(...segments.map((s) => s.segment_order)) + 1
         : 1
 
     const { data, error } = await supabase
@@ -122,8 +122,8 @@ export function SegmentList({ bookingId, refreshKey }: SegmentListProps) {
     setEditingId(segment.id)
     setEditAirline(segment.airline ?? '')
     setEditFlightNumber(segment.flight_number ?? '')
-    setEditOrigin(segment.origin ?? '')
-    setEditDestination(segment.destination ?? '')
+    setEditOrigin(segment.origin)
+    setEditDestination(segment.destination)
     setEditDepartureAt(
       segment.departure_at ? segment.departure_at.substring(0, 16) : '',
     )

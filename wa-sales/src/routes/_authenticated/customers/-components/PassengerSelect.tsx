@@ -9,7 +9,7 @@ import {
 import { supabase } from '@/lib/supabase'
 import type { Database } from '@/lib/database.types'
 
-type Passenger = Database['public']['Views']['passengers']['Row']
+type Passenger = Database['public']['Tables']['passengers']['Row']
 
 interface PassengerSelectProps {
   customerId: string
@@ -61,7 +61,7 @@ export function PassengerSelect({
       <SelectContent>
         <SelectItem value="__none__">Link existing passenger...</SelectItem>
         {available.map((passenger) => (
-          <SelectItem key={passenger.id} value={passenger.id as string}>
+          <SelectItem key={passenger.id} value={passenger.id}>
             {passenger.full_name}
             {passenger.document_number ? ` (${passenger.document_number})` : ''}
           </SelectItem>

@@ -23,9 +23,9 @@ import { PassengerSelect } from './PassengerSelect'
 import { PassengerSheet } from './PassengerSheet'
 
 type Customer = Database['public']['Views']['customers_with_contact']['Row']
-type Passenger = Database['public']['Views']['passengers']['Row']
+type Passenger = Database['public']['Tables']['passengers']['Row']
 type CustomerPassenger =
-  Database['public']['Views']['customer_passengers']['Row']
+  Database['public']['Tables']['customer_passengers']['Row']
 
 const customerSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -154,9 +154,7 @@ function CustomerSheetForm({
       .eq('customer_id', customer.id)
       .then(({ data }) => {
         const junctions = (data ?? []) as CustomerPassenger[]
-        const ids = junctions
-          .map((j) => j.passenger_id)
-          .filter((id): id is string => id !== null)
+        const ids = junctions.map((j) => j.passenger_id)
         setLinkedPassengerIds(ids)
 
         const hasSelf = junctions.some((j) => j.label === 'self')

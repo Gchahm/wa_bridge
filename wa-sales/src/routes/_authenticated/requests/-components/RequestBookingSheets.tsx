@@ -4,7 +4,7 @@ import type { Database } from '@/lib/database.types'
 import { RequestSheet } from './RequestSheet'
 import { BookingSheet } from '@/routes/_authenticated/bookings/-components/BookingSheet'
 
-type FlightRequest = Database['public']['Views']['flight_requests']['Row']
+type FlightRequest = Database['public']['Tables']['flight_requests']['Row']
 
 interface RequestBookingSheetsProps {
   open: boolean

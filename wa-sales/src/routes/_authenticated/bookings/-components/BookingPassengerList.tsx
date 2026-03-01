@@ -5,8 +5,9 @@ import { Input } from '@/components/ui/input'
 import { supabase } from '@/lib/supabase'
 import type { Database } from '@/lib/database.types'
 
-type Passenger = Database['public']['Views']['passengers']['Row']
-type BookingPassenger = Database['public']['Views']['booking_passengers']['Row']
+type Passenger = Database['public']['Tables']['passengers']['Row']
+type BookingPassenger =
+  Database['public']['Tables']['booking_passengers']['Row']
 
 interface BookingPassengerListProps {
   bookingId: string
@@ -48,9 +49,7 @@ export function BookingPassengerList({
       }
 
       const typedJunctions = junctions as BookingPassenger[]
-      const passengerIds = typedJunctions
-        .map((j) => j.passenger_id)
-        .filter((id): id is string => id !== null)
+      const passengerIds = typedJunctions.map((j) => j.passenger_id)
 
       if (passengerIds.length === 0) {
         setPassengers([])
@@ -156,7 +155,7 @@ export function BookingPassengerList({
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
                       e.preventDefault()
-                      handleSaveTicket(passenger.id as string)
+                      handleSaveTicket(passenger.id)
                     }
                     if (e.key === 'Escape') setEditingTicketId(null)
                   }}
@@ -166,7 +165,7 @@ export function BookingPassengerList({
                   variant="outline"
                   size="sm"
                   className="h-7 text-xs"
-                  onClick={() => handleSaveTicket(passenger.id as string)}
+                  onClick={() => handleSaveTicket(passenger.id)}
                 >
                   Save
                 </Button>
@@ -193,7 +192,7 @@ export function BookingPassengerList({
               type="button"
               variant="ghost"
               size="icon"
-              onClick={() => handleUnlink(passenger.id as string)}
+              onClick={() => handleUnlink(passenger.id)}
             >
               <X className="size-4" />
             </Button>

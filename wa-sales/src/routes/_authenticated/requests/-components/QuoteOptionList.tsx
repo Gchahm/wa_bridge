@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { supabase } from '@/lib/supabase'
 import type { Database } from '@/lib/database.types'
 
-type QuoteOption = Database['public']['Views']['quote_options']['Row']
+type QuoteOption = Database['public']['Tables']['quote_options']['Row']
 
 interface QuoteOptionListProps {
   flightRequestId: string
@@ -156,7 +156,7 @@ export function QuoteOptionList({
 
   function startEdit(option: QuoteOption) {
     setEditingId(option.id)
-    setEditDescription(option.description ?? '')
+    setEditDescription(option.description)
     setEditPrice(option.price?.toString() ?? '')
     setEditCurrency(option.currency ?? 'BRL')
     setEditDepartureDate(option.departure_date ?? '')
