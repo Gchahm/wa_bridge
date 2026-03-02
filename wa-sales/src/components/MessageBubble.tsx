@@ -3,6 +3,7 @@ import { ChevronDown, ChevronUp, Pencil, Tag } from 'lucide-react'
 import type { Database } from '@/lib/database.types'
 import { AudioPlayer } from '@/components/AudioPlayer'
 import { MessageImage } from '@/components/MessageImage'
+import { MessageSticker } from '@/components/MessageSticker'
 import type { Reaction } from '@/routes/_authenticated/chat/-hooks/useReactions'
 
 type Message = Database['public']['Views']['messages']['Row']
@@ -72,13 +73,43 @@ export function MessageBubble({
 
   const isAudio = message.media_type === 'audio' && !!message.media_path
   const isImage = message.media_type === 'image' && !!message.media_path
-  const hasInlineMedia = isAudio || isImage
+  const isSticker = message.media_type === 'sticker' && !!message.media_path
+  const hasInlineMedia = isAudio || isImage || isSticker
   const isMedia =
     message.message_type !== 'text' && message.message_type !== 'chat'
   const contentText = hasInlineMedia
     ? message.content || ''
     : message.content ||
       (isMedia ? `[${message.media_type || message.message_type}]` : '')
+
+  // Sticker messages render without a bubble background
+  if (isSticker) {
+    return (
+      <>
+        {dateLabel && (
+          <div className="flex items-center justify-center my-4">
+            <span className="px-3 py-1 text-xs text-gray-600 bg-white rounded-full shadow-sm">
+              {dateLabel}
+            </span>
+          </div>
+        )}
+        <div
+          className={`flex mb-1 ${isFromMe ? 'justify-end' : 'justify-start'}`}
+        >
+          <div className="flex flex-col items-center gap-0.5">
+            <MessageSticker mediaPath={message.media_path!} />
+            {/* Reactions */}
+            {reactions && reactions.length > 0 && (
+              <ReactionBadges reactions={reactions} />
+            )}
+            <span className="text-[10px] text-gray-500 leading-none">
+              {time}
+            </span>
+          </div>
+        </div>
+      </>
+    )
+  }
 
   return (
     <>
