@@ -1,26 +1,8 @@
 import { useState } from 'react'
-import { useForm } from '@tanstack/react-form'
-import { z } from 'zod'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
 import { Separator } from '@/components/ui/separator'
 import { Badge } from '@/components/ui/badge'
-import {
-  ArrowLeft,
-  ClipboardCheck,
-  Copy,
-  Pencil,
-  TicketCheck,
-} from 'lucide-react'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+import { ClipboardCheck, Copy, Pencil, TicketCheck } from 'lucide-react'
 import {
   Sheet,
   SheetContent,
@@ -34,26 +16,9 @@ import type { Database } from '@/lib/database.types'
 import { QuoteOptionList } from './QuoteOptionList'
 import { RequestPassengerList } from './RequestPassengerList'
 import { RequestPassengerSelect } from './RequestPassengerSelect'
+import { RequestForm } from './RequestForm'
 
 type FlightRequest = Database['public']['Tables']['flight_requests']['Row']
-
-const requestSchema = z.object({
-  origin: z.string().optional(),
-  destination: z.string().optional(),
-  departure_date_start: z.string().optional(),
-  departure_date_end: z.string().optional(),
-  return_date_start: z.string().optional(),
-  return_date_end: z.string().optional(),
-  adults: z.number().int().min(0).default(1),
-  children: z.number().int().min(0).default(0),
-  infants: z.number().int().min(0).default(0),
-  cabin_class: z.string().default('economy'),
-  budget_min: z.number().nullable().optional(),
-  budget_max: z.number().nullable().optional(),
-  budget_currency: z.string().default('BRL'),
-  status: z.string().default('new'),
-  notes: z.string().optional(),
-})
 
 const statusColors: Record<string, string> = {
   new: 'bg-blue-100 text-blue-800',
@@ -154,74 +119,6 @@ function RequestSheetForm({
   const [linkedPassengerIds, setLinkedPassengerIds] = useState<string[]>([])
   const [copied, setCopied] = useState(false)
 
-  const form = useForm({
-    defaultValues: {
-      origin: request?.origin ?? '',
-      destination: request?.destination ?? '',
-      departure_date_start: request?.departure_date_start ?? '',
-      departure_date_end: request?.departure_date_end ?? '',
-      return_date_start: request?.return_date_start ?? '',
-      return_date_end: request?.return_date_end ?? '',
-      adults: request?.adults ?? 1,
-      children: request?.children ?? 0,
-      infants: request?.infants ?? 0,
-      cabin_class: request?.cabin_class ?? 'economy',
-      budget_min: request?.budget_min ?? null,
-      budget_max: request?.budget_max ?? null,
-      budget_currency: request?.budget_currency ?? 'BRL',
-      status: request?.status ?? 'new',
-      notes: request?.notes ?? '',
-    },
-    onSubmit: async ({ value }) => {
-      const parsed = requestSchema.safeParse(value)
-      if (!parsed.success) return
-
-      const payload = {
-        customer_id: customerId,
-        chat_id: chatId ?? null,
-        origin: parsed.data.origin || null,
-        destination: parsed.data.destination || null,
-        departure_date_start: parsed.data.departure_date_start || null,
-        departure_date_end: parsed.data.departure_date_end || null,
-        return_date_start: parsed.data.return_date_start || null,
-        return_date_end: parsed.data.return_date_end || null,
-        adults: parsed.data.adults,
-        children: parsed.data.children,
-        infants: parsed.data.infants,
-        cabin_class: parsed.data.cabin_class,
-        budget_min: parsed.data.budget_min,
-        budget_max: parsed.data.budget_max,
-        budget_currency: parsed.data.budget_currency || 'BRL',
-        status: parsed.data.status,
-        notes: parsed.data.notes || null,
-      }
-
-      if (requestProp?.id) {
-        const { error } = await supabase
-          .from('flight_requests')
-          .update(payload)
-          .eq('id', requestProp.id)
-        if (error) {
-          console.error('Error updating request:', error)
-          return
-        }
-        onSaved()
-      } else {
-        const { data, error } = await supabase
-          .from('flight_requests')
-          .insert(payload)
-          .select()
-          .single()
-        if (error) {
-          console.error('Error creating request:', error)
-          return
-        }
-        setCreatedRequest(data as unknown as FlightRequest)
-        setViewMode('summary')
-      }
-    },
-  })
-
   // Load linked passenger IDs for the exclude list
   useState(() => {
     if (!isEditing || !request.id) return
@@ -305,496 +202,196 @@ function RequestSheetForm({
     setTimeout(() => setCopied(false), 2000)
   }
 
-  // Summary mode for editing
-  if (isEditing && viewMode === 'summary' && request.id) {
-    const status = request.status
-    const origin = request.origin || '???'
-    const destination = request.destination || '???'
-    const depRange = formatDateRange(
-      request.departure_date_start,
-      request.departure_date_end,
-    )
-    const retRange = formatDateRange(
-      request.return_date_start,
-      request.return_date_end,
-    )
-
-    const paxParts: string[] = []
-    if (request.adults && request.adults > 0)
-      paxParts.push(`${request.adults} adult${request.adults > 1 ? 's' : ''}`)
-    if (request.children && request.children > 0)
-      paxParts.push(
-        `${request.children} child${request.children > 1 ? 'ren' : ''}`,
-      )
-    if (request.infants && request.infants > 0)
-      paxParts.push(
-        `${request.infants} infant${request.infants > 1 ? 's' : ''}`,
-      )
-    const paxSummary = paxParts.join(', ') || 'No passengers'
-    const cabinLabel =
-      cabinClassLabels[request.cabin_class ?? 'economy'] ?? request.cabin_class
-
-    const hasBudget = request.budget_min != null || request.budget_max != null
-    const currency = request.budget_currency || 'BRL'
-
+  // Form mode (create or edit-form)
+  if (!isEditing || viewMode === 'form') {
     return (
-      <>
-        <SheetHeader>
-          <SheetTitle>Flight Request</SheetTitle>
-          <SheetDescription>
-            Request details, passengers, and quotes.
-          </SheetDescription>
-        </SheetHeader>
-
-        <div className="flex flex-1 flex-col gap-4 px-4">
-          {/* Request summary card */}
-          <div className="bg-muted/50 flex flex-col gap-2 rounded-lg border p-4">
-            <div className="flex items-start justify-between">
-              <p className="text-lg font-semibold">
-                {origin} &rarr; {destination}
-              </p>
-              <Badge className={statusColors[status]} variant="secondary">
-                {status}
-              </Badge>
-            </div>
-
-            {depRange && (
-              <p className="text-muted-foreground text-sm">Dep: {depRange}</p>
-            )}
-            {retRange && (
-              <p className="text-muted-foreground text-sm">Ret: {retRange}</p>
-            )}
-
-            <p className="text-sm">
-              {paxSummary} &middot; {cabinLabel}
-            </p>
-
-            {hasBudget && (
-              <p className="text-muted-foreground text-sm">
-                Budget: {currency}{' '}
-                {request.budget_min != null
-                  ? request.budget_min.toLocaleString()
-                  : '?'}
-                {' \u2013 '}
-                {request.budget_max != null
-                  ? request.budget_max.toLocaleString()
-                  : '?'}
-              </p>
-            )}
-
-            {request.notes && (
-              <p className="text-muted-foreground text-sm">{request.notes}</p>
-            )}
-
-            <div className="flex justify-end gap-1">
-              <Button variant="ghost" size="sm" onClick={handleCopyForLLM}>
-                {copied ? (
-                  <ClipboardCheck className="size-3" />
-                ) : (
-                  <Copy className="size-3" />
-                )}
-                {copied ? 'Copied' : 'Copy for LLM'}
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setViewMode('form')}
-              >
-                <Pencil className="size-3" />
-                Edit
-              </Button>
-            </div>
-          </div>
-
-          {/* Passengers */}
-          <Separator />
-
-          <div className="flex flex-col gap-3">
-            <div>
-              <p className="text-sm font-medium">Passengers</p>
-              <p className="text-muted-foreground text-xs">
-                Passengers travelling on this request.
-              </p>
-            </div>
-
-            <RequestPassengerList
-              flightRequestId={request.id}
-              refreshKey={passengerRefreshKey}
-              onUnlinked={handlePassengerChanged}
-            />
-
-            <RequestPassengerSelect
-              flightRequestId={request.id}
-              customerId={customerId}
-              excludeIds={linkedPassengerIds}
-              onLinked={handlePassengerChanged}
-            />
-          </div>
-
-          {/* Quote Options */}
-          <Separator />
-
-          <div className="flex flex-col gap-3">
-            <div>
-              <p className="text-sm font-medium">Quote Options</p>
-              <p className="text-muted-foreground text-xs">
-                Price quotes for this request.
-              </p>
-            </div>
-
-            <QuoteOptionList
-              flightRequestId={request.id}
-              onStatusChange={() => onSaved()}
-              chatId={chatId}
-              origin={request.origin}
-              destination={request.destination}
-            />
-          </div>
-
-          {/* Footer */}
-          <SheetFooter className="mt-auto px-0">
-            <div className="flex w-full items-center justify-end">
-              <div className="flex gap-2">
-                {onCreateBooking && ['accepted', 'booked'].includes(status) && (
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    onClick={() => onCreateBooking(request.id, customerId)}
-                  >
-                    <TicketCheck className="size-4" />
-                    Create Booking
-                  </Button>
-                )}
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => onOpenChange(false)}
-                >
-                  Close
-                </Button>
-              </div>
-            </div>
-          </SheetFooter>
-        </div>
-      </>
+      <RequestForm
+        customerId={customerId}
+        chatId={chatId}
+        request={request}
+        onSaved={() => {
+          onSaved()
+          setViewMode('summary')
+        }}
+        onCreated={(created) => {
+          setCreatedRequest(created)
+          setViewMode('summary')
+        }}
+        onCancel={() =>
+          isEditing ? setViewMode('summary') : onOpenChange(false)
+        }
+      />
     )
   }
 
-  // Form mode (create or edit-form)
+  // Summary mode for editing
+  const status = request.status
+  const origin = request.origin || '???'
+  const destination = request.destination || '???'
+  const depRange = formatDateRange(
+    request.departure_date_start,
+    request.departure_date_end,
+  )
+  const retRange = formatDateRange(
+    request.return_date_start,
+    request.return_date_end,
+  )
+
+  const paxParts: string[] = []
+  if (request.adults && request.adults > 0)
+    paxParts.push(`${request.adults} adult${request.adults > 1 ? 's' : ''}`)
+  if (request.children && request.children > 0)
+    paxParts.push(
+      `${request.children} child${request.children > 1 ? 'ren' : ''}`,
+    )
+  if (request.infants && request.infants > 0)
+    paxParts.push(`${request.infants} infant${request.infants > 1 ? 's' : ''}`)
+  const paxSummary = paxParts.join(', ') || 'No passengers'
+  const cabinLabel =
+    cabinClassLabels[request.cabin_class ?? 'economy'] ?? request.cabin_class
+
+  const hasBudget = request.budget_min != null || request.budget_max != null
+  const currency = request.budget_currency || 'BRL'
+
   return (
     <>
       <SheetHeader>
-        <SheetTitle>
-          {isEditing ? 'Edit Flight Request' : 'New Flight Request'}
-        </SheetTitle>
+        <SheetTitle>Flight Request</SheetTitle>
         <SheetDescription>
-          {isEditing
-            ? 'Update the flight request details below.'
-            : 'Fill in the details to create a new flight request.'}
+          Request details, passengers, and quotes.
         </SheetDescription>
       </SheetHeader>
 
-      <form
-        className="flex flex-1 flex-col gap-4 px-4"
-        onSubmit={(e) => {
-          e.preventDefault()
-          e.stopPropagation()
-          form.handleSubmit()
-        }}
-      >
-        {isEditing && (
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="self-start"
-            onClick={() => setViewMode('summary')}
-          >
-            <ArrowLeft className="size-3" />
-            Back to summary
-          </Button>
-        )}
+      <div className="flex flex-1 flex-col gap-4 px-4">
+        {/* Request summary card */}
+        <div className="bg-muted/50 flex flex-col gap-2 rounded-lg border p-4">
+          <div className="flex items-start justify-between">
+            <p className="text-lg font-semibold">
+              {origin} &rarr; {destination}
+            </p>
+            <Badge className={statusColors[status]} variant="secondary">
+              {status}
+            </Badge>
+          </div>
 
-        {/* Route */}
-        <div className="grid grid-cols-2 gap-2">
-          <form.Field name="origin">
-            {(field) => (
-              <div className="flex flex-col gap-1">
-                <Label htmlFor="origin">Origin</Label>
-                <Input
-                  id="origin"
-                  value={field.state.value}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                  placeholder="e.g. GRU"
-                />
-              </div>
-            )}
-          </form.Field>
-          <form.Field name="destination">
-            {(field) => (
-              <div className="flex flex-col gap-1">
-                <Label htmlFor="destination">Destination</Label>
-                <Input
-                  id="destination"
-                  value={field.state.value}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                  placeholder="e.g. CDG"
-                />
-              </div>
-            )}
-          </form.Field>
-        </div>
-
-        {/* Departure dates */}
-        <div className="grid grid-cols-2 gap-2">
-          <form.Field name="departure_date_start">
-            {(field) => (
-              <div className="flex flex-col gap-1">
-                <Label htmlFor="dep_start">Departure from</Label>
-                <Input
-                  id="dep_start"
-                  type="date"
-                  value={field.state.value}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                />
-              </div>
-            )}
-          </form.Field>
-          <form.Field name="departure_date_end">
-            {(field) => (
-              <div className="flex flex-col gap-1">
-                <Label htmlFor="dep_end">Departure to</Label>
-                <Input
-                  id="dep_end"
-                  type="date"
-                  value={field.state.value}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                />
-              </div>
-            )}
-          </form.Field>
-        </div>
-
-        {/* Return dates */}
-        <div className="grid grid-cols-2 gap-2">
-          <form.Field name="return_date_start">
-            {(field) => (
-              <div className="flex flex-col gap-1">
-                <Label htmlFor="ret_start">Return from</Label>
-                <Input
-                  id="ret_start"
-                  type="date"
-                  value={field.state.value}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                />
-              </div>
-            )}
-          </form.Field>
-          <form.Field name="return_date_end">
-            {(field) => (
-              <div className="flex flex-col gap-1">
-                <Label htmlFor="ret_end">Return to</Label>
-                <Input
-                  id="ret_end"
-                  type="date"
-                  value={field.state.value}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                />
-              </div>
-            )}
-          </form.Field>
-        </div>
-
-        {/* Passengers count */}
-        <div className="grid grid-cols-3 gap-2">
-          <form.Field name="adults">
-            {(field) => (
-              <div className="flex flex-col gap-1">
-                <Label htmlFor="adults">Adults</Label>
-                <Input
-                  id="adults"
-                  type="number"
-                  min={0}
-                  value={field.state.value}
-                  onChange={(e) =>
-                    field.handleChange(parseInt(e.target.value) || 0)
-                  }
-                />
-              </div>
-            )}
-          </form.Field>
-          <form.Field name="children">
-            {(field) => (
-              <div className="flex flex-col gap-1">
-                <Label htmlFor="children">Children</Label>
-                <Input
-                  id="children"
-                  type="number"
-                  min={0}
-                  value={field.state.value}
-                  onChange={(e) =>
-                    field.handleChange(parseInt(e.target.value) || 0)
-                  }
-                />
-              </div>
-            )}
-          </form.Field>
-          <form.Field name="infants">
-            {(field) => (
-              <div className="flex flex-col gap-1">
-                <Label htmlFor="infants">Infants</Label>
-                <Input
-                  id="infants"
-                  type="number"
-                  min={0}
-                  value={field.state.value}
-                  onChange={(e) =>
-                    field.handleChange(parseInt(e.target.value) || 0)
-                  }
-                />
-              </div>
-            )}
-          </form.Field>
-        </div>
-
-        {/* Cabin class */}
-        <form.Field name="cabin_class">
-          {(field) => (
-            <div className="flex flex-col gap-1">
-              <Label>Cabin Class</Label>
-              <Select
-                value={field.state.value}
-                onValueChange={(v) => field.handleChange(v)}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="economy">Economy</SelectItem>
-                  <SelectItem value="premium_economy">
-                    Premium Economy
-                  </SelectItem>
-                  <SelectItem value="business">Business</SelectItem>
-                  <SelectItem value="first">First</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+          {depRange && (
+            <p className="text-muted-foreground text-sm">Dep: {depRange}</p>
           )}
-        </form.Field>
+          {retRange && (
+            <p className="text-muted-foreground text-sm">Ret: {retRange}</p>
+          )}
 
-        {/* Budget */}
-        <div className="grid grid-cols-3 gap-2">
-          <form.Field name="budget_min">
-            {(field) => (
-              <div className="flex flex-col gap-1">
-                <Label htmlFor="budget_min">Budget Min</Label>
-                <Input
-                  id="budget_min"
-                  type="number"
-                  step="0.01"
-                  value={field.state.value ?? ''}
-                  onChange={(e) =>
-                    field.handleChange(
-                      e.target.value ? parseFloat(e.target.value) : null,
-                    )
-                  }
-                />
-              </div>
-            )}
-          </form.Field>
-          <form.Field name="budget_max">
-            {(field) => (
-              <div className="flex flex-col gap-1">
-                <Label htmlFor="budget_max">Budget Max</Label>
-                <Input
-                  id="budget_max"
-                  type="number"
-                  step="0.01"
-                  value={field.state.value ?? ''}
-                  onChange={(e) =>
-                    field.handleChange(
-                      e.target.value ? parseFloat(e.target.value) : null,
-                    )
-                  }
-                />
-              </div>
-            )}
-          </form.Field>
-          <form.Field name="budget_currency">
-            {(field) => (
-              <div className="flex flex-col gap-1">
-                <Label htmlFor="budget_currency">Currency</Label>
-                <Input
-                  id="budget_currency"
-                  value={field.state.value}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                />
-              </div>
-            )}
-          </form.Field>
+          <p className="text-sm">
+            {paxSummary} &middot; {cabinLabel}
+          </p>
+
+          {hasBudget && (
+            <p className="text-muted-foreground text-sm">
+              Budget: {currency}{' '}
+              {request.budget_min != null
+                ? request.budget_min.toLocaleString()
+                : '?'}
+              {' \u2013 '}
+              {request.budget_max != null
+                ? request.budget_max.toLocaleString()
+                : '?'}
+            </p>
+          )}
+
+          {request.notes && (
+            <p className="text-muted-foreground text-sm">{request.notes}</p>
+          )}
+
+          <div className="flex justify-end gap-1">
+            <Button variant="ghost" size="sm" onClick={handleCopyForLLM}>
+              {copied ? (
+                <ClipboardCheck className="size-3" />
+              ) : (
+                <Copy className="size-3" />
+              )}
+              {copied ? 'Copied' : 'Copy for LLM'}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setViewMode('form')}
+            >
+              <Pencil className="size-3" />
+              Edit
+            </Button>
+          </div>
         </div>
 
-        {/* Status (edit only) */}
-        {isEditing && (
-          <form.Field name="status">
-            {(field) => (
-              <div className="flex flex-col gap-1">
-                <Label>Status</Label>
-                <Select
-                  value={field.state.value}
-                  onValueChange={(v) => field.handleChange(v)}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="new">New</SelectItem>
-                    <SelectItem value="quoted">Quoted</SelectItem>
-                    <SelectItem value="accepted">Accepted</SelectItem>
-                    <SelectItem value="booked">Booked</SelectItem>
-                    <SelectItem value="completed">Completed</SelectItem>
-                    <SelectItem value="cancelled">Cancelled</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-          </form.Field>
-        )}
+        {/* Passengers */}
+        <Separator />
 
-        {/* Notes */}
-        <form.Field name="notes">
-          {(field) => (
-            <div className="flex flex-col gap-1">
-              <Label htmlFor="notes">Notes</Label>
-              <Textarea
-                id="notes"
-                value={field.state.value}
-                onChange={(e) => field.handleChange(e.target.value)}
-                placeholder="Optional notes..."
-                rows={3}
-              />
-            </div>
-          )}
-        </form.Field>
+        <div className="flex flex-col gap-3">
+          <div>
+            <p className="text-sm font-medium">Passengers</p>
+            <p className="text-muted-foreground text-xs">
+              Passengers travelling on this request.
+            </p>
+          </div>
 
+          <RequestPassengerList
+            flightRequestId={request.id}
+            refreshKey={passengerRefreshKey}
+            onUnlinked={handlePassengerChanged}
+          />
+
+          <RequestPassengerSelect
+            flightRequestId={request.id}
+            customerId={customerId}
+            excludeIds={linkedPassengerIds}
+            onLinked={handlePassengerChanged}
+          />
+        </div>
+
+        {/* Quote Options */}
+        <Separator />
+
+        <div className="flex flex-col gap-3">
+          <div>
+            <p className="text-sm font-medium">Quote Options</p>
+            <p className="text-muted-foreground text-xs">
+              Price quotes for this request.
+            </p>
+          </div>
+
+          <QuoteOptionList
+            flightRequestId={request.id}
+            onStatusChange={() => onSaved()}
+            chatId={chatId}
+            origin={request.origin}
+            destination={request.destination}
+          />
+        </div>
+
+        {/* Footer */}
         <SheetFooter className="mt-auto px-0">
-          <div className="flex w-full items-center justify-between">
-            <div />
+          <div className="flex w-full items-center justify-end">
             <div className="flex gap-2">
+              {onCreateBooking && ['accepted', 'booked'].includes(status) && (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => onCreateBooking(request.id, customerId)}
+                >
+                  <TicketCheck className="size-4" />
+                  Create Booking
+                </Button>
+              )}
               <Button
                 type="button"
                 variant="outline"
-                onClick={() =>
-                  isEditing ? setViewMode('summary') : onOpenChange(false)
-                }
+                onClick={() => onOpenChange(false)}
               >
-                Cancel
+                Close
               </Button>
-              <Button type="submit">{isEditing ? 'Save' : 'Create'}</Button>
             </div>
           </div>
         </SheetFooter>
-      </form>
+      </div>
     </>
   )
 }
