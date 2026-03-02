@@ -1,8 +1,14 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { Badge } from '@/components/ui/badge'
-import { ClipboardCheck, Copy, Pencil, TicketCheck } from 'lucide-react'
+import {
+  ClipboardCheck,
+  Copy,
+  ExternalLink,
+  Pencil,
+  TicketCheck,
+} from 'lucide-react'
 import {
   Sheet,
   SheetContent,
@@ -44,6 +50,7 @@ interface RequestSheetProps {
   request: FlightRequest | null
   onSaved: () => void
   onCreateBooking?: (flightRequestId: string, customerId: string) => void
+  onViewBooking?: (bookingId: string, customerId: string) => void
 }
 
 export function RequestSheet({
@@ -54,6 +61,7 @@ export function RequestSheet({
   request,
   onSaved,
   onCreateBooking,
+  onViewBooking,
 }: RequestSheetProps) {
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -67,6 +75,7 @@ export function RequestSheet({
             onOpenChange={onOpenChange}
             onSaved={onSaved}
             onCreateBooking={onCreateBooking}
+            onViewBooking={onViewBooking}
           />
         )}
       </SheetContent>
@@ -98,6 +107,7 @@ function RequestSheetForm({
   onOpenChange,
   onSaved,
   onCreateBooking,
+  onViewBooking,
 }: {
   customerId: string
   chatId?: string | null
@@ -105,6 +115,7 @@ function RequestSheetForm({
   onOpenChange: (open: boolean) => void
   onSaved: () => void
   onCreateBooking?: (flightRequestId: string, customerId: string) => void
+  onViewBooking?: (bookingId: string, customerId: string) => void
 }) {
   const [createdRequest, setCreatedRequest] = useState<FlightRequest | null>(
     null,
@@ -118,6 +129,9 @@ function RequestSheetForm({
   const [passengerRefreshKey, setPassengerRefreshKey] = useState(0)
   const [linkedPassengerIds, setLinkedPassengerIds] = useState<string[]>([])
   const [copied, setCopied] = useState(false)
+  const [existingBookingId, setExistingBookingId] = useState<string | null>(
+    null,
+  )
 
   // Load linked passenger IDs for the exclude list
   useState(() => {
@@ -131,6 +145,19 @@ function RequestSheetForm({
         setLinkedPassengerIds(ids)
       })
   })
+
+  // Check if a booking already exists for this flight request
+  useEffect(() => {
+    if (!request?.id) return
+    supabase
+      .from('bookings')
+      .select('id')
+      .eq('flight_request_id', request.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        setExistingBookingId(data?.id ?? null)
+      })
+  }, [request?.id])
 
   function handlePassengerChanged() {
     setPassengerRefreshKey((k) => k + 1)
@@ -371,16 +398,30 @@ function RequestSheetForm({
         <SheetFooter className="mt-auto px-0">
           <div className="flex w-full items-center justify-end">
             <div className="flex gap-2">
-              {onCreateBooking && ['accepted', 'booked'].includes(status) && (
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={() => onCreateBooking(request.id, customerId)}
-                >
-                  <TicketCheck className="size-4" />
-                  Create Booking
-                </Button>
-              )}
+              {['accepted', 'booked'].includes(status) &&
+                (existingBookingId ? (
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={() =>
+                      onViewBooking?.(existingBookingId, customerId)
+                    }
+                  >
+                    <ExternalLink className="size-4" />
+                    View Booking
+                  </Button>
+                ) : (
+                  onCreateBooking && (
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      onClick={() => onCreateBooking(request.id, customerId)}
+                    >
+                      <TicketCheck className="size-4" />
+                      Create Booking
+                    </Button>
+                  )
+                ))}
               <Button
                 type="button"
                 variant="outline"

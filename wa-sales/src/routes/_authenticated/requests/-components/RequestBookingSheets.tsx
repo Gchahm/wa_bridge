@@ -1,9 +1,11 @@
 import { useState } from 'react'
 import type { Database } from '@/lib/database.types'
+import { supabase } from '@/lib/supabase'
 import { RequestSheet } from './RequestSheet'
 import { BookingSheet } from '@/routes/_authenticated/bookings/-components/BookingSheet'
 
 type FlightRequest = Database['public']['Tables']['flight_requests']['Row']
+type Booking = Database['public']['Tables']['bookings']['Row']
 
 interface RequestBookingSheetsProps {
   open: boolean
@@ -29,6 +31,7 @@ export function RequestBookingSheets({
   const [bookingCustomerId, setBookingCustomerId] = useState<string | null>(
     null,
   )
+  const [viewingBooking, setViewingBooking] = useState<Booking | null>(null)
 
   function handleOpenChange(isOpen: boolean) {
     onOpenChange(isOpen)
@@ -47,10 +50,27 @@ export function RequestBookingSheets({
     setBookingSheetOpen(true)
   }
 
+  async function handleViewBooking(bookingId: string, forCustomerId: string) {
+    const { data } = await supabase
+      .from('bookings')
+      .select('*')
+      .eq('id', bookingId)
+      .single()
+
+    if (data) {
+      onOpenChange(false)
+      setViewingBooking(data)
+      setBookingCustomerId(forCustomerId)
+      setBookingFlightRequestId(null)
+      setBookingSheetOpen(true)
+    }
+  }
+
   function handleBookingSaved() {
     setBookingSheetOpen(false)
     setBookingFlightRequestId(null)
     setBookingCustomerId(null)
+    setViewingBooking(null)
     onChanged()
   }
 
@@ -65,13 +85,14 @@ export function RequestBookingSheets({
           request={request}
           onSaved={handleSaved}
           onCreateBooking={handleCreateBooking}
+          onViewBooking={handleViewBooking}
         />
       )}
       <BookingSheet
         open={bookingSheetOpen}
         onOpenChange={setBookingSheetOpen}
         customerId={bookingCustomerId}
-        booking={null}
+        booking={viewingBooking}
         flightRequestId={bookingFlightRequestId}
         onSaved={handleBookingSaved}
       />
