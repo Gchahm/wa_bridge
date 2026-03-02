@@ -101,7 +101,7 @@
       "position": [1200, 0],
       "parameters": {
         "method": "POST",
-        "url": "http://localhost:8080/claude",
+        "url": "http://wa_bridge-whatsapp-1:8080/claude",
         "authentication": "none",
         "sendBody": true,
         "specifyBody": "json",
@@ -131,7 +131,7 @@
       "position": [1800, 0],
       "parameters": {
         "method": "POST",
-        "url": "http://localhost:8080/send",
+        "url": "http://wa_bridge-whatsapp-1:8080/send",
         "authentication": "none",
         "sendBody": true,
         "specifyBody": "json",

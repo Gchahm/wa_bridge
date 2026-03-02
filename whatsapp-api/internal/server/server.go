@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
-	"os"
 	"os/exec"
 	"strings"
 	"time"
@@ -180,17 +179,15 @@ func (h *handler) claudeReply(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 2*time.Minute)
 	defer cancel()
 
-	home, err := os.UserHomeDir()
+	claudePath, err := exec.LookPath("claude")
 	if err != nil {
-		log.Error().Err(err).Msg("claudeReply: failed to resolve home dir")
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to resolve home directory"})
+		log.Error().Err(err).Msg("claudeReply: claude CLI not found in PATH")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "claude CLI not found in PATH"})
 		return
 	}
 
-	claudePath := home + "/.local/bin/claude"
-	cmd := exec.CommandContext(ctx, claudePath, "-p", "--output-format", "text", "-s", req.SystemPrompt)
+	cmd := exec.CommandContext(ctx, claudePath, "-p", "--output-format", "text", "--system-prompt", req.SystemPrompt)
 	cmd.Stdin = strings.NewReader(req.UserMessage)
-	cmd.Env = append(os.Environ(), "PATH="+home+"/.local/bin:"+os.Getenv("PATH"))
 
 	out, err := cmd.Output()
 	if err != nil {

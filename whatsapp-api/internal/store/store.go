@@ -283,7 +283,7 @@ func (s *Store) EnsureCustomer(ctx context.Context, phoneNumber, pushName string
 		name = phoneNumber
 	}
 	_, err := s.db.ExecContext(ctx,
-		`INSERT INTO wa_bridge.customers (name, phone_number)
+		`INSERT INTO public.customers (name, phone_number)
 		 VALUES ($1, $2)
 		 ON CONFLICT (phone_number) WHERE phone_number IS NOT NULL DO NOTHING`,
 		name, phoneNumber)
