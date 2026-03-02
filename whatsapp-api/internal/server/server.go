@@ -7,6 +7,10 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
+	"os"
+	"os/exec"
+	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/skip2/go-qrcode"
@@ -38,6 +42,12 @@ type UpdateDescriptionRequest struct {
 	MessageID   string `json:"message_id" binding:"required"`
 	ChatID      string `json:"chat_id" binding:"required"`
 	Description string `json:"description" binding:"required"`
+}
+
+// ClaudeRequest is the JSON body accepted by POST /claude.
+type ClaudeRequest struct {
+	SystemPrompt string `json:"system_prompt" binding:"required"`
+	UserMessage  string `json:"user_message" binding:"required"`
 }
 
 type handler struct {
@@ -160,6 +170,38 @@ func (h *handler) updateDescription(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 }
 
+func (h *handler) claudeReply(c *gin.Context) {
+	var req ClaudeRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "system_prompt and user_message are required"})
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 2*time.Minute)
+	defer cancel()
+
+	home, err := os.UserHomeDir()
+	if err != nil {
+		log.Error().Err(err).Msg("claudeReply: failed to resolve home dir")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to resolve home directory"})
+		return
+	}
+
+	claudePath := home + "/.local/bin/claude"
+	cmd := exec.CommandContext(ctx, claudePath, "-p", "--output-format", "text", "-s", req.SystemPrompt)
+	cmd.Stdin = strings.NewReader(req.UserMessage)
+	cmd.Env = append(os.Environ(), "PATH="+home+"/.local/bin:"+os.Getenv("PATH"))
+
+	out, err := cmd.Output()
+	if err != nil {
+		log.Error().Err(err).Msg("claudeReply: claude CLI failed")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("claude CLI error: %v", err)})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"reply": strings.TrimSpace(string(out))})
+}
+
 // Start registers all HTTP routes and begins serving on listenAddr.
 // It runs the HTTP server in a goroutine and returns immediately.
 func Start(ctx context.Context, client *whatsmeow.Client, qrStore *waclient.QRStore, db *store.Store, listenAddr string) {
@@ -181,6 +223,7 @@ func Start(ctx context.Context, client *whatsmeow.Client, qrStore *waclient.QRSt
 	r.GET("/qr.png", h.qrPNG)
 	r.POST("/messages/description", h.updateDescription)
 	r.POST("/disconnect", h.disconnect)
+	r.POST("/claude", h.claudeReply)
 
 	go func() {
 		log.Info().Str("addr", listenAddr).Msg("HTTP server listening")

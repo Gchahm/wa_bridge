@@ -1,0 +1,214 @@
+{
+  "id": "LFLeF8c4GI7WDUl8",
+  "name": "WA Claude Auto-Reply",
+  "active": false,
+  "nodes": [
+    {
+      "id": "node-webhook",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [0, 0],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "whatsapp",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "webhookId": "wa-claude-autoreply"
+    },
+    {
+      "id": "node-filter",
+      "name": "Filter Messages",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [300, 0],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "cond-not-group",
+              "operator": {
+                "type": "boolean",
+                "operation": "false",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.body.is_group }}",
+              "rightValue": ""
+            },
+            {
+              "id": "cond-not-from-me",
+              "operator": {
+                "type": "boolean",
+                "operation": "false",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.body.is_from_me }}",
+              "rightValue": ""
+            },
+            {
+              "id": "cond-is-text",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "leftValue": "={{ $json.body.message_type }}",
+              "rightValue": "text"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "node-postgres",
+      "name": "Fetch History",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [600, 0],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT sender_name, content, is_from_me, message_type, media_type, timestamp\nFROM wa_bridge.messages\nWHERE chat_id = $1 AND content IS NOT NULL AND content != ''\nORDER BY timestamp DESC LIMIT 20",
+        "options": {
+          "queryReplacement": "={{ $('Webhook').item.json.body.chat_id }}"
+        }
+      }
+    },
+    {
+      "id": "node-build-prompt",
+      "name": "Build Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 0],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "const webhook = $('Webhook').first().json.body;\nconst historyRows = $('Fetch History').all().map(i => i.json);\n\nconst history = historyRows.reverse();\n\nconst transcript = history.map(msg => {\n  const ts = msg.timestamp ? new Date(msg.timestamp).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' }) : '';\n  const role = msg.is_from_me ? 'Assistente' : (msg.sender_name || 'Cliente');\n  let content = msg.content || '';\n  if (msg.message_type === 'media' && msg.media_type) {\n    content = `[${msg.media_type}] ${content}`.trim();\n  }\n  return `[${ts}] ${role}: ${content}`;\n}).join('\\n');\n\nconst chatId = webhook.chat_id || '';\nconst phone = chatId.replace('@s.whatsapp.net', '');\n\nconst systemPrompt = `Você é a assistente virtual da Gleyci Turismo, uma agência de viagens brasileira. Seu nome é Gleyci.\n\nRegras:\n- Responda sempre em português brasileiro\n- Seja simpática, profissional e concisa (respostas curtas, adequadas para WhatsApp)\n- Ajude com informações sobre pacotes de viagem, destinos, reservas e dúvidas gerais\n- Se não souber algo específico, diga que vai verificar e retornar\n- Use formatação simples (sem markdown complexo) — lembre-se que é WhatsApp\n- Não invente preços ou disponibilidade — diga que vai confirmar\n- Se a conversa não for sobre viagens, seja educada mas redirecione gentilmente`;\n\nconst userMessage = transcript\n  ? `Aqui está o histórico recente da conversa:\\n\\n${transcript}\\n\\nResponda à última mensagem do cliente.`\n  : `O cliente enviou: ${webhook.text}\\n\\nResponda à mensagem.`;\n\nreturn [{ json: { phone, systemPrompt, userMessage } }];"
+      }
+    },
+    {
+      "id": "node-claude",
+      "name": "Call Claude",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [1200, 0],
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:8080/claude",
+        "authentication": "none",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ system_prompt: $json.systemPrompt, user_message: $json.userMessage }) }}",
+        "options": {
+          "timeout": 120000
+        }
+      }
+    },
+    {
+      "id": "node-extract-reply",
+      "name": "Extract Reply",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1500, 0],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "const reply = ($input.first().json.reply || '').trim();\nconst phone = $('Build Prompt').first().json.phone;\n\nif (!reply) {\n  return [];\n}\n\nreturn [{ json: { phone, reply: reply.substring(0, 4000) } }];"
+      }
+    },
+    {
+      "id": "node-send-reply",
+      "name": "Send Reply",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [1800, 0],
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:8080/send",
+        "authentication": "none",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ number: $json.phone, text: $json.reply, is_group: false }) }}",
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Filter Messages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Messages": {
+      "main": [
+        [
+          {
+            "node": "Fetch History",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch History": {
+      "main": [
+        [
+          {
+            "node": "Build Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Prompt": {
+      "main": [
+        [
+          {
+            "node": "Call Claude",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call Claude": {
+      "main": [
+        [
+          {
+            "node": "Extract Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Reply": {
+      "main": [
+        [
+          {
+            "node": "Send Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

@@ -11,8 +11,11 @@ services:
       - DATABASE_URL=${WA_DATABASE_URL}
       - SUPABASE_URL=${WA_SUPABASE_URL}
       - SUPABASE_SERVICE_KEY=${WA_SUPABASE_SERVICE_KEY}
+      - CLAUDE_CODE_OAUTH_TOKEN=${CLAUDE_CODE_OAUTH_TOKEN}
     tty: true
     stdin_open: true
+    volumes:
+      - wa_local:/root/.local
     logging:
       driver: loki
       options:
@@ -78,5 +81,6 @@ services:
 
 volumes:
   n8n_data:
+  wa_local:
   loki_data:
   grafana_data:
