@@ -227,6 +227,36 @@ func (s *Store) UpdateChatLastMessage(ctx context.Context, chatID string, ts tim
 	return err
 }
 
+// UpdateChatName sets the chat name, preserving the existing name when the
+// provided value is empty.
+func (s *Store) UpdateChatName(ctx context.Context, chatID, name string) error {
+	_, err := s.db.ExecContext(ctx,
+		`UPDATE wa_bridge.chats SET name = COALESCE(NULLIF($2, ''), name) WHERE chat_id = $1`,
+		chatID, name)
+	return err
+}
+
+// GroupChatsWithoutName returns the chat_ids of all group chats that have no
+// name set. Used on startup to drain groups created while the bridge was offline.
+func (s *Store) GroupChatsWithoutName(ctx context.Context) ([]string, error) {
+	rows, err := s.db.QueryContext(ctx,
+		`SELECT chat_id FROM wa_bridge.chats WHERE is_group = true AND name IS NULL`)
+	if err != nil {
+		return nil, fmt.Errorf("querying group chats without name: %w", err)
+	}
+	defer rows.Close()
+
+	var ids []string
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return ids, fmt.Errorf("scanning group chat row: %w", err)
+		}
+		ids = append(ids, id)
+	}
+	return ids, rows.Err()
+}
+
 // UpsertReaction upserts the sender's contact record and then inserts or
 // updates a reaction on the target message. An existing reaction from the same
 // sender on the same message is replaced when the emoji changes.

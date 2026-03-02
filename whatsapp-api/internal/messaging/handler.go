@@ -69,7 +69,9 @@ func handleMessage(client *whatsmeow.Client, cfg config.Config, db *store.Store,
 	}
 
 	payload := buildPayload(msg)
-	payload.ChatName = resolveChatName(client, msg)
+	if !msg.Info.IsGroup && !msg.Info.IsFromMe {
+		payload.ChatName = msg.Info.PushName
+	}
 
 	if payload.MessageType == "other" {
 		go func() {
@@ -106,25 +108,6 @@ func handleMessage(client *whatsmeow.Client, cfg config.Config, db *store.Store,
 	if cfg.WebhookURL != "" && !(payload.MessageType == "media" && payload.Text == "") {
 		go webhook.SendText(cfg.WebhookURL, payload)
 	}
-}
-
-// resolveChatName returns a human-friendly name for the chat. For groups it
-// fetches the group subject via the WhatsApp API; for DMs it uses the other
-// party's push name.
-func resolveChatName(client *whatsmeow.Client, msg *events.Message) string {
-	if msg.Info.IsGroup {
-		info, err := client.GetGroupInfo(context.Background(), msg.Info.Chat)
-		if err != nil {
-			log.Error().Err(err).Str("chat_id", msg.Info.Chat.String()).Msg("failed to fetch group info")
-			return ""
-		}
-		return info.Name
-	}
-	// For DMs, use the sender's push name (only meaningful for incoming messages).
-	if !msg.Info.IsFromMe {
-		return msg.Info.PushName
-	}
-	return ""
 }
 
 // resolveSender extracts the sender phone number from the message metadata.

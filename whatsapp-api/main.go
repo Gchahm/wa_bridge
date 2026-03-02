@@ -35,6 +35,7 @@ func main() {
 	server.Start(ctx, client, qrStore, db, agentHandler, cfg.ListenAddr)
 	go waclient.Connect(ctx, client, qrStore)
 	go outbox.Listen(ctx, client, db, cfg.DatabaseURL)
+	go messaging.ListenGroupChats(ctx, client, db, cfg.DatabaseURL)
 	go agentHandler.Listen(ctx, cfg.DatabaseURL)
 
 	log.Info().Msg("WhatsApp bridge running, press Ctrl+C to quit")
