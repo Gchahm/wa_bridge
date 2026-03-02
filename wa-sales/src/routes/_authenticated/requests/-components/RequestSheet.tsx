@@ -151,7 +151,6 @@ function RequestSheetForm({
     requestProp ? 'summary' : 'form',
   )
   const [passengerRefreshKey, setPassengerRefreshKey] = useState(0)
-  const [quoteRefreshKey, setQuoteRefreshKey] = useState(0)
   const [linkedPassengerIds, setLinkedPassengerIds] = useState<string[]>([])
   const [copied, setCopied] = useState(false)
 
@@ -445,7 +444,6 @@ function RequestSheetForm({
 
             <QuoteOptionList
               flightRequestId={request.id}
-              refreshKey={quoteRefreshKey}
               onStatusChange={() => onSaved()}
               chatId={chatId}
               origin={request.origin}

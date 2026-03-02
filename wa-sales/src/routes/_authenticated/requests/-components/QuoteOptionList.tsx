@@ -11,7 +11,6 @@ type QuoteOption = Database['public']['Tables']['quote_options']['Row']
 
 interface QuoteOptionListProps {
   flightRequestId: string
-  refreshKey: number
   onStatusChange?: () => void
   chatId?: string | null
   origin?: string | null
@@ -20,7 +19,6 @@ interface QuoteOptionListProps {
 
 export function QuoteOptionList({
   flightRequestId,
-  refreshKey,
   onStatusChange,
   chatId,
   origin,
@@ -69,7 +67,7 @@ export function QuoteOptionList({
     return () => {
       ctrl.cancelled = true
     }
-  }, [flightRequestId, refreshKey])
+  }, [flightRequestId])
 
   async function handleAdd() {
     if (!newDescription.trim()) return
