@@ -19,6 +19,7 @@ import (
 
 	"go.mau.fi/whatsmeow"
 
+	"whatsapp-bridge/internal/agent"
 	"whatsapp-bridge/internal/logging"
 	"whatsapp-bridge/internal/store"
 	"whatsapp-bridge/internal/waclient"
@@ -53,6 +54,7 @@ type handler struct {
 	client  *whatsmeow.Client
 	qrStore *waclient.QRStore
 	db      *store.Store
+	agent   *agent.Handler
 	ctx     context.Context
 }
 
@@ -169,6 +171,22 @@ func (h *handler) updateDescription(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 }
 
+func (h *handler) agentHandler(c *gin.Context) {
+	var req agent.Request
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, agent.Response{Status: "error", Error: "chat_id is required"})
+		return
+	}
+
+	resp := h.agent.HandleMessage(c.Request.Context(), req)
+
+	status := http.StatusOK
+	if resp.Status == "error" {
+		status = http.StatusInternalServerError
+	}
+	c.JSON(status, resp)
+}
+
 func (h *handler) claudeReply(c *gin.Context) {
 	var req ClaudeRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -212,8 +230,10 @@ func Start(ctx context.Context, client *whatsmeow.Client, qrStore *waclient.QRSt
 	}
 	r.SetHTMLTemplate(tmpl)
 
-	h := &handler{client: client, qrStore: qrStore, db: db, ctx: ctx}
+	agentHandler := agent.NewHandler(db, client)
+	h := &handler{client: client, qrStore: qrStore, db: db, agent: agentHandler, ctx: ctx}
 	r.POST("/send", h.send)
+	r.POST("/agent", h.agentHandler)
 	r.GET("/health", h.health)
 	r.GET("/connect", h.connect)
 	r.GET("/qr", h.qr)

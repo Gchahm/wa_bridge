@@ -38,6 +38,11 @@ func (s *Store) Close() error {
 	return s.db.Close()
 }
 
+// DB returns the underlying *sql.DB for direct queries.
+func (s *Store) DB() *sql.DB {
+	return s.db
+}
+
 // MessagePayload is the canonical representation of a WhatsApp message used
 // across the store, messaging, and webhook packages.
 type MessagePayload struct {
