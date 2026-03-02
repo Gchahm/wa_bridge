@@ -116,9 +116,11 @@ function DocumentRow({ document: doc }: { document: Document }) {
       <div className="flex min-w-0 flex-1 flex-col gap-1">
         <div className="flex items-center gap-2">
           <Badge
-            className={TYPE_COLORS[doc.document_type] ?? TYPE_COLORS.other}
+            className={
+              TYPE_COLORS[doc.document_type as string] ?? TYPE_COLORS.other
+            }
           >
-            {TYPE_LABELS[doc.document_type] ?? doc.document_type}
+            {TYPE_LABELS[doc.document_type as string] ?? doc.document_type}
           </Badge>
           {doc.label && (
             <span className="text-muted-foreground truncate text-xs">

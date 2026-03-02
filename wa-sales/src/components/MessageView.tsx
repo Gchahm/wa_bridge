@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import {
+  Bot,
   FileText,
   Loader2,
   MessageSquare,
@@ -52,6 +53,25 @@ export function MessageView({
   const [customerSheetOpen, setCustomerSheetOpen] = useState(false)
   const [customer, setCustomer] = useState<CustomerWithContact | null>(null)
   const [requestsSheetOpen, setRequestsSheetOpen] = useState(false)
+
+  // Bot / agent active state
+  const [agentActive, setAgentActive] = useState<boolean | null>(
+    chat?.agent_active ?? null,
+  )
+
+  useEffect(() => {
+    setAgentActive(chat?.agent_active ?? null)
+  }, [chat?.agent_active])
+
+  async function handleToggleAgent() {
+    if (!chat?.chat_id) return
+    const next = !agentActive
+    setAgentActive(next)
+    await supabase
+      .from('chats')
+      .update({ agent_active: next })
+      .eq('chat_id', chat.chat_id)
+  }
 
   // Document tagging state
   const [taggingMessage, setTaggingMessage] = useState<Message | null>(null)
@@ -210,6 +230,23 @@ export function MessageView({
             {chat.is_group ? 'Group chat' : 'Private chat'}
           </p>
         </div>
+        {isPrivateChat && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="flex-shrink-0"
+            onClick={handleToggleAgent}
+            title={
+              agentActive
+                ? 'Bot active — click to disable'
+                : 'Bot inactive — click to enable'
+            }
+          >
+            <Bot
+              className={`size-5 ${agentActive ? 'text-green-600' : 'text-muted-foreground'}`}
+            />
+          </Button>
+        )}
         {isPrivateChat && (
           <Button
             variant="ghost"

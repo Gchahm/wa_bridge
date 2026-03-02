@@ -28,6 +28,7 @@ type ClaudeResponse struct {
 	Reply        string   `json:"reply"`
 	Actions      []Action `json:"actions,omitempty"`
 	InternalNote string   `json:"internal_note,omitempty"`
+	Done         bool     `json:"done,omitempty"`
 }
 
 // Action is a single action for the agent to execute.

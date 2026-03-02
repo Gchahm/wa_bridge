@@ -3,12 +3,14 @@ package agent
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"os/exec"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/lib/pq"
 	waProto "go.mau.fi/whatsmeow/proto/waE2E"
 	"go.mau.fi/whatsmeow/types"
 	"google.golang.org/protobuf/proto"
@@ -114,6 +116,15 @@ func (h *Handler) HandleMessage(ctx context.Context, req Request) Response {
 				InternalNote:  parsed.InternalNote,
 				Error:         fmt.Sprintf("reply generated but send failed: %v", err),
 			}
+		}
+	}
+
+	// Auto-deactivate agent if Claude signaled done.
+	if parsed.Done {
+		if err := h.db.SetAgentActive(ctx, req.ChatID, false); err != nil {
+			log.Error().Err(err).Str("chat_id", req.ChatID).Msg("failed to deactivate agent")
+		} else {
+			log.Info().Str("chat_id", req.ChatID).Msg("agent auto-deactivated (done=true)")
 		}
 	}
 
@@ -345,4 +356,43 @@ func (h *Handler) sendReply(ctx context.Context, chatID, text string) error {
 func (h *Handler) getChatMutex(chatID string) *sync.Mutex {
 	v, _ := h.chatMu.LoadOrStore(chatID, &sync.Mutex{})
 	return v.(*sync.Mutex)
+}
+
+// Listen subscribes to the agent_activate Postgres channel. When a chat's
+// agent_active transitions to true, it triggers the agent pipeline immediately
+// so the agent processes existing chat history without waiting for a new message.
+func (h *Handler) Listen(ctx context.Context, databaseURL string) {
+	reportProblem := func(ev pq.ListenerEventType, err error) {
+		if err != nil {
+			log.Error().Err(err).Msg("agent listener error")
+		}
+	}
+
+	listener := pq.NewListener(databaseURL, 10*time.Second, time.Minute, reportProblem)
+	if err := listener.Listen("agent_activate"); err != nil {
+		log.Error().Err(err).Msg("failed to LISTEN on agent_activate")
+		return
+	}
+	log.Info().Msg("listening for agent activations on agent_activate channel")
+
+	for {
+		select {
+		case <-ctx.Done():
+			listener.Close()
+			return
+		case n := <-listener.Notify:
+			if n == nil {
+				continue
+			}
+			var payload struct {
+				ChatID string `json:"chat_id"`
+			}
+			if err := json.Unmarshal([]byte(n.Extra), &payload); err != nil {
+				log.Error().Err(err).Msg("failed to parse agent_activate notification")
+				continue
+			}
+			log.Info().Str("chat_id", payload.ChatID).Msg("agent activated via toggle")
+			go h.HandleMessage(ctx, Request{ChatID: payload.ChatID})
+		}
+	}
 }

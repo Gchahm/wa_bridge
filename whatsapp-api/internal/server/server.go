@@ -219,7 +219,7 @@ func (h *handler) claudeReply(c *gin.Context) {
 
 // Start registers all HTTP routes and begins serving on listenAddr.
 // It runs the HTTP server in a goroutine and returns immediately.
-func Start(ctx context.Context, client *whatsmeow.Client, qrStore *waclient.QRStore, db *store.Store, listenAddr string) {
+func Start(ctx context.Context, client *whatsmeow.Client, qrStore *waclient.QRStore, db *store.Store, agentHandler *agent.Handler, listenAddr string) {
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.New()
 	r.Use(logging.GinLogger(), logging.GinRecovery())
@@ -230,7 +230,6 @@ func Start(ctx context.Context, client *whatsmeow.Client, qrStore *waclient.QRSt
 	}
 	r.SetHTMLTemplate(tmpl)
 
-	agentHandler := agent.NewHandler(db, client)
 	h := &handler{client: client, qrStore: qrStore, db: db, agent: agentHandler, ctx: ctx}
 	r.POST("/send", h.send)
 	r.POST("/agent", h.agentHandler)

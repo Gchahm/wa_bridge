@@ -24,6 +24,8 @@ func buildSystemPrompt(ctx *CustomerContext, currentDate string) string {
 - Use ações (actions) para registrar informações no sistema sempre que possível
 - NÃO peça todas as informações de uma vez — colete progressivamente de forma natural na conversa
 - Quando o cliente mencionar um destino, crie a solicitação de voo imediatamente com o que já tem
+- NUNCA ofereça ou sugira classe executiva ou business class — assuma sempre classe econômica. Se o cliente pedir explicitamente outra classe, registre, mas jamais sugira proativamente
+- Antes de finalizar o resumo de uma solicitação de voo, pergunte sempre quantas bagagens despachadas o cliente precisará para o voo
 
 ## Data Atual
 `)
@@ -105,6 +107,10 @@ Responda SEMPRE em JSON válido com esta estrutura:
 }
 ` + "```" + `
 
+- "done" é opcional — defina como true quando:
+  - A solicitação está completa (todas as informações coletadas)
+  - O cliente precisa de atendimento humano (preços, confirmações)
+  - A conversa não é mais sobre viagens
 - "reply" é obrigatório e deve conter a mensagem para o cliente
 - "actions" é opcional — inclua apenas quando houver ações a executar
 - "internal_note" é opcional — use para sinalizar algo à equipe (ex: "cliente parece ter urgência")

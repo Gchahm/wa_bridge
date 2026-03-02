@@ -15,6 +15,7 @@ import (
 	"go.mau.fi/whatsmeow/types/events"
 	"google.golang.org/protobuf/encoding/protojson"
 
+	"whatsapp-bridge/internal/agent"
 	"whatsapp-bridge/internal/config"
 	"whatsapp-bridge/internal/logging"
 	"whatsapp-bridge/internal/media"
@@ -27,16 +28,16 @@ var log = logging.Component("messaging")
 // RegisterHandler attaches the message event handler to client. All
 // configuration and dependencies are provided explicitly so there is no
 // reliance on package-level globals.
-func RegisterHandler(client *whatsmeow.Client, cfg config.Config, db *store.Store) {
+func RegisterHandler(client *whatsmeow.Client, cfg config.Config, db *store.Store, agentHandler *agent.Handler) {
 	client.AddEventHandler(func(evt interface{}) {
 		log.Debug().Str("type", fmt.Sprintf("%T", evt)).Msg("event received")
 		if msg, ok := evt.(*events.Message); ok {
-			handleMessage(client, cfg, db, msg)
+			handleMessage(client, cfg, db, agentHandler, msg)
 		}
 	})
 }
 
-func handleMessage(client *whatsmeow.Client, cfg config.Config, db *store.Store, msg *events.Message) {
+func handleMessage(client *whatsmeow.Client, cfg config.Config, db *store.Store, agentHandler *agent.Handler, msg *events.Message) {
 	// Handle reactions separately — they are not regular messages.
 	if reaction := msg.Message.GetReactionMessage(); reaction != nil {
 		go handleReaction(db, msg, reaction)
@@ -82,6 +83,18 @@ func handleMessage(client *whatsmeow.Client, cfg config.Config, db *store.Store,
 				log.Error().Err(err).Str("message_id", payload.MessageID).Msg("failed to update description for unknown message type")
 			}
 		}()
+	} else if !payload.IsGroup && !payload.IsFromMe && payload.MessageType != "other" {
+		// Save synchronously so the message is available when the agent reads history.
+		db.SaveMessage(payload)
+		// Trigger agent if active for this chat.
+		if agentHandler != nil {
+			active, err := db.IsAgentActive(context.Background(), payload.ChatID)
+			if err != nil {
+				log.Error().Err(err).Str("chat_id", payload.ChatID).Msg("failed to check agent_active")
+			} else if active {
+				go agentHandler.HandleMessage(context.Background(), agent.Request{ChatID: payload.ChatID})
+			}
+		}
 	} else {
 		go db.SaveMessage(payload)
 	}

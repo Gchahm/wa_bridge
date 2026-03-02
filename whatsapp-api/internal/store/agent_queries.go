@@ -617,3 +617,20 @@ func nullInt(params map[string]interface{}, key string) interface{} {
 		return nil
 	}
 }
+
+// SetAgentActive updates the agent_active flag for a chat.
+func (s *Store) SetAgentActive(ctx context.Context, chatID string, active bool) error {
+	_, err := s.db.ExecContext(ctx,
+		`UPDATE wa_bridge.chats SET agent_active = $1 WHERE chat_id = $2`,
+		active, chatID)
+	return err
+}
+
+// IsAgentActive returns whether the agent is active for a chat.
+func (s *Store) IsAgentActive(ctx context.Context, chatID string) (bool, error) {
+	var active bool
+	err := s.db.QueryRowContext(ctx,
+		`SELECT COALESCE(agent_active, false) FROM wa_bridge.chats WHERE chat_id = $1`,
+		chatID).Scan(&active)
+	return active, err
+}

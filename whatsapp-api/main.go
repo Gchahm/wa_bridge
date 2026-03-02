@@ -6,6 +6,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"whatsapp-bridge/internal/agent"
 	"whatsapp-bridge/internal/config"
 	"whatsapp-bridge/internal/logging"
 	"whatsapp-bridge/internal/messaging"
@@ -29,10 +30,12 @@ func main() {
 	qrStore := &waclient.QRStore{}
 	client := waclient.New(ctx, cfg.DatabaseURL)
 
-	messaging.RegisterHandler(client, cfg, db)
-	server.Start(ctx, client, qrStore, db, cfg.ListenAddr)
+	agentHandler := agent.NewHandler(db, client)
+	messaging.RegisterHandler(client, cfg, db, agentHandler)
+	server.Start(ctx, client, qrStore, db, agentHandler, cfg.ListenAddr)
 	go waclient.Connect(ctx, client, qrStore)
 	go outbox.Listen(ctx, client, db, cfg.DatabaseURL)
+	go agentHandler.Listen(ctx, cfg.DatabaseURL)
 
 	log.Info().Msg("WhatsApp bridge running, press Ctrl+C to quit")
 	c := make(chan os.Signal, 1)

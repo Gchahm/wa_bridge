@@ -55,13 +55,6 @@ export type Database = {
             foreignKeyName: 'fk_booking_passengers_booking'
             columns: ['booking_id']
             isOneToOne: false
-            referencedRelation: 'booking_payment_summary'
-            referencedColumns: ['booking_id']
-          },
-          {
-            foreignKeyName: 'fk_booking_passengers_booking'
-            columns: ['booking_id']
-            isOneToOne: false
             referencedRelation: 'bookings'
             referencedColumns: ['id']
           },
@@ -119,13 +112,6 @@ export type Database = {
           segment_order?: number
         }
         Relationships: [
-          {
-            foreignKeyName: 'fk_booking_segments_booking'
-            columns: ['booking_id']
-            isOneToOne: false
-            referencedRelation: 'booking_payment_summary'
-            referencedColumns: ['booking_id']
-          },
           {
             foreignKeyName: 'fk_booking_segments_booking'
             columns: ['booking_id']
@@ -209,61 +195,6 @@ export type Database = {
             columns: ['flight_request_id']
             isOneToOne: false
             referencedRelation: 'flight_requests_summary'
-            referencedColumns: ['id']
-          },
-        ]
-      }
-      commissions: {
-        Row: {
-          amount: number
-          booking_id: string
-          created_at: string | null
-          currency: string | null
-          id: string
-          notes: string | null
-          received_at: string | null
-          status: string
-        }
-        Insert: {
-          amount: number
-          booking_id: string
-          created_at?: string | null
-          currency?: string | null
-          id?: string
-          notes?: string | null
-          received_at?: string | null
-          status?: string
-        }
-        Update: {
-          amount?: number
-          booking_id?: string
-          created_at?: string | null
-          currency?: string | null
-          id?: string
-          notes?: string | null
-          received_at?: string | null
-          status?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: 'fk_commissions_booking'
-            columns: ['booking_id']
-            isOneToOne: false
-            referencedRelation: 'booking_payment_summary'
-            referencedColumns: ['booking_id']
-          },
-          {
-            foreignKeyName: 'fk_commissions_booking'
-            columns: ['booking_id']
-            isOneToOne: false
-            referencedRelation: 'bookings'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'fk_commissions_booking'
-            columns: ['booking_id']
-            isOneToOne: false
-            referencedRelation: 'bookings_summary'
             referencedColumns: ['id']
           },
         ]
@@ -400,95 +331,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: 'unlinked_contacts'
             referencedColumns: ['phone_number']
-          },
-        ]
-      }
-      documents: {
-        Row: {
-          booking_id: string | null
-          chat_id: string | null
-          created_at: string | null
-          customer_id: string | null
-          document_type: string
-          id: string
-          label: string | null
-          message_id: string | null
-          passenger_id: string | null
-          storage_path: string
-        }
-        Insert: {
-          booking_id?: string | null
-          chat_id?: string | null
-          created_at?: string | null
-          customer_id?: string | null
-          document_type: string
-          id?: string
-          label?: string | null
-          message_id?: string | null
-          passenger_id?: string | null
-          storage_path: string
-        }
-        Update: {
-          booking_id?: string | null
-          chat_id?: string | null
-          created_at?: string | null
-          customer_id?: string | null
-          document_type?: string
-          id?: string
-          label?: string | null
-          message_id?: string | null
-          passenger_id?: string | null
-          storage_path?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: 'fk_documents_booking'
-            columns: ['booking_id']
-            isOneToOne: false
-            referencedRelation: 'booking_payment_summary'
-            referencedColumns: ['booking_id']
-          },
-          {
-            foreignKeyName: 'fk_documents_booking'
-            columns: ['booking_id']
-            isOneToOne: false
-            referencedRelation: 'bookings'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'fk_documents_booking'
-            columns: ['booking_id']
-            isOneToOne: false
-            referencedRelation: 'bookings_summary'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'fk_documents_customer'
-            columns: ['customer_id']
-            isOneToOne: false
-            referencedRelation: 'customers'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'fk_documents_customer'
-            columns: ['customer_id']
-            isOneToOne: false
-            referencedRelation: 'customers_with_contact'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'fk_documents_message'
-            columns: ['message_id', 'chat_id']
-            isOneToOne: false
-            referencedRelation: 'messages'
-            referencedColumns: ['message_id', 'chat_id']
-          },
-          {
-            foreignKeyName: 'fk_documents_passenger'
-            columns: ['passenger_id']
-            isOneToOne: false
-            referencedRelation: 'passengers'
-            referencedColumns: ['id']
           },
         ]
       }
@@ -672,76 +514,6 @@ export type Database = {
         }
         Relationships: []
       }
-      payments: {
-        Row: {
-          amount: number
-          booking_id: string
-          created_at: string | null
-          currency: string | null
-          due_date: string | null
-          id: string
-          installments: number | null
-          notes: string | null
-          paid_at: string | null
-          payment_method: string | null
-          reference: string | null
-          status: string
-          updated_at: string | null
-        }
-        Insert: {
-          amount: number
-          booking_id: string
-          created_at?: string | null
-          currency?: string | null
-          due_date?: string | null
-          id?: string
-          installments?: number | null
-          notes?: string | null
-          paid_at?: string | null
-          payment_method?: string | null
-          reference?: string | null
-          status?: string
-          updated_at?: string | null
-        }
-        Update: {
-          amount?: number
-          booking_id?: string
-          created_at?: string | null
-          currency?: string | null
-          due_date?: string | null
-          id?: string
-          installments?: number | null
-          notes?: string | null
-          paid_at?: string | null
-          payment_method?: string | null
-          reference?: string | null
-          status?: string
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: 'fk_payments_booking'
-            columns: ['booking_id']
-            isOneToOne: false
-            referencedRelation: 'booking_payment_summary'
-            referencedColumns: ['booking_id']
-          },
-          {
-            foreignKeyName: 'fk_payments_booking'
-            columns: ['booking_id']
-            isOneToOne: false
-            referencedRelation: 'bookings'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'fk_payments_booking'
-            columns: ['booking_id']
-            isOneToOne: false
-            referencedRelation: 'bookings_summary'
-            referencedColumns: ['id']
-          },
-        ]
-      }
       quote_options: {
         Row: {
           created_at: string | null
@@ -798,19 +570,6 @@ export type Database = {
       }
     }
     Views: {
-      booking_payment_summary: {
-        Row: {
-          booking_id: string | null
-          commission_amount: number | null
-          commission_status: string | null
-          currency: string | null
-          total_paid: number | null
-          total_pending: number | null
-          total_price: number | null
-          total_refunded: number | null
-        }
-        Relationships: []
-      }
       bookings_summary: {
         Row: {
           booking_source: string | null
@@ -863,6 +622,7 @@ export type Database = {
       }
       chats: {
         Row: {
+          agent_active: boolean | null
           chat_id: string | null
           contact_phone_number: string | null
           created_at: string | null
@@ -871,6 +631,7 @@ export type Database = {
           name: string | null
         }
         Insert: {
+          agent_active?: boolean | null
           chat_id?: string | null
           contact_phone_number?: string | null
           created_at?: string | null
@@ -879,6 +640,7 @@ export type Database = {
           name?: string | null
         }
         Update: {
+          agent_active?: boolean | null
           chat_id?: string | null
           contact_phone_number?: string | null
           created_at?: string | null
@@ -905,6 +667,7 @@ export type Database = {
       }
       chats_with_preview: {
         Row: {
+          agent_active: boolean | null
           chat_id: string | null
           contact_phone_number: string | null
           created_at: string | null
@@ -1051,8 +814,6 @@ export type Database = {
           content: string | null
           created_at: string | null
           description: string | null
-          edit_history: Json | null
-          edited_at: string | null
           is_agent: boolean | null
           is_from_me: boolean | null
           media_path: string | null
@@ -1069,8 +830,6 @@ export type Database = {
           content?: string | null
           created_at?: string | null
           description?: string | null
-          edit_history?: Json | null
-          edited_at?: string | null
           is_agent?: boolean | null
           is_from_me?: boolean | null
           media_path?: string | null
@@ -1087,8 +846,6 @@ export type Database = {
           content?: string | null
           created_at?: string | null
           description?: string | null
-          edit_history?: Json | null
-          edited_at?: string | null
           is_agent?: boolean | null
           is_from_me?: boolean | null
           media_path?: string | null
@@ -1251,6 +1008,7 @@ export type Database = {
     Tables: {
       chats: {
         Row: {
+          agent_active: boolean | null
           chat_id: string
           contact_phone_number: string | null
           created_at: string | null
@@ -1259,6 +1017,7 @@ export type Database = {
           name: string | null
         }
         Insert: {
+          agent_active?: boolean | null
           chat_id: string
           contact_phone_number?: string | null
           created_at?: string | null
@@ -1267,6 +1026,7 @@ export type Database = {
           name?: string | null
         }
         Update: {
+          agent_active?: boolean | null
           chat_id?: string
           contact_phone_number?: string | null
           created_at?: string | null
@@ -1311,8 +1071,6 @@ export type Database = {
           content: string | null
           created_at: string | null
           description: string | null
-          edit_history: Json | null
-          edited_at: string | null
           is_agent: boolean
           is_from_me: boolean
           media_path: string | null
@@ -1329,8 +1087,6 @@ export type Database = {
           content?: string | null
           created_at?: string | null
           description?: string | null
-          edit_history?: Json | null
-          edited_at?: string | null
           is_agent?: boolean
           is_from_me?: boolean
           media_path?: string | null
@@ -1347,8 +1103,6 @@ export type Database = {
           content?: string | null
           created_at?: string | null
           description?: string | null
-          edit_history?: Json | null
-          edited_at?: string | null
           is_agent?: boolean
           is_from_me?: boolean
           media_path?: string | null
