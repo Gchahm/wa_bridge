@@ -1,0 +1,85 @@
+{
+  "id": "VI9SeieSS3CjcoHn",
+  "name": "WA Image Webhook",
+  "active": false,
+  "nodes": [
+    {
+      "id": "a1b2c3d4-e5f6-7890-abcd-000000000001",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [0, 0],
+      "parameters": {
+        "path": "whatsapp-image",
+        "options": {}
+      }
+    },
+    {
+      "id": "a1b2c3d4-e5f6-7890-abcd-000000000002",
+      "name": "Describe Image",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.1,
+      "position": [400, 0],
+      "parameters": {
+        "resource": "image",
+        "operation": "analyze",
+        "inputType": "base64",
+        "binaryPropertyName": "data",
+        "text": "Descreva esta imagem em detalhes em português. Se houver texto na imagem, transcreva-o.",
+        "modelId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o-mini"
+        },
+        "simplify": true,
+        "options": {
+          "detail": "auto",
+          "maxTokens": 500
+        }
+      }
+    },
+    {
+      "id": "a1b2c3d4-e5f6-7890-abcd-000000000003",
+      "name": "Update Description",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [800, 0],
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:8080/messages/description",
+        "authentication": "none",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ message_id: $('Webhook').item.json.body.message_id, chat_id: $('Webhook').item.json.body.chat_id, description: $json.content }) }}",
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Describe Image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Describe Image": {
+      "main": [
+        [
+          {
+            "node": "Update Description",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
