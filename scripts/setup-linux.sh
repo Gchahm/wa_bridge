@@ -9,6 +9,7 @@
 #   - PostgreSQL client (psql)
 #   - Python 3 (for n8n Code nodes)
 #   - Git
+#   - uv + uvx (Python package runner)
 #
 # Usage:
 #   sudo ./scripts/setup-linux.sh
@@ -132,6 +133,19 @@ install_git() {
   ok "Git installed: $(git --version)"
 }
 
+# --- uv (provides uvx) ---
+
+install_uv() {
+  if command -v uvx &>/dev/null; then
+    ok "uv already installed: $(uv --version)"
+    return
+  fi
+
+  info "Installing uv..."
+  curl -LsSf https://astral.sh/uv/install.sh | sh
+  ok "uv installed: $(uv --version)"
+}
+
 # --- Main ---
 
 main() {
@@ -145,6 +159,7 @@ main() {
   install_psql
   install_python
   install_git
+  install_uv
 
   echo ""
   ok "All dependencies installed."
@@ -155,6 +170,8 @@ main() {
   echo "  psql             $(psql --version 2>/dev/null || echo 'N/A')"
   echo "  python3          $(python3 --version 2>/dev/null || echo 'N/A')"
   echo "  git              $(git --version 2>/dev/null || echo 'N/A')"
+  echo "  uv               $(uv --version 2>/dev/null || echo 'N/A')"
+  echo "  uvx              $(uvx --version 2>/dev/null || echo 'N/A')"
   echo ""
 }
 
