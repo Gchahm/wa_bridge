@@ -58,8 +58,8 @@ type ChatItemProps = {
 
 export function ChatItem({ chat, isActive, onClick }: ChatItemProps) {
   const chatId = chat.chat_id ?? ''
-  const displayName = chat.name || chatId
-  const initials = getInitials(chat.name, chatId)
+  const displayName = chat.customer_name || chat.name || chatId
+  const initials = getInitials(chat.customer_name || chat.name, chatId)
   const avatarColor = getAvatarColor(chatId)
   const relativeTime = formatRelativeTime(
     chat.last_message_timestamp || chat.last_message_at,

@@ -28,6 +28,8 @@ export function handleChatInsert(payload: BroadcastPayload) {
     last_message_timestamp: record.last_message_at,
     last_message_type: null,
     last_message_is_from_me: null,
+    customer_name: null,
+    customer_id: null,
   }
   chatStore.setState((prev) => ({ chats: [chat, ...prev.chats] }))
 }

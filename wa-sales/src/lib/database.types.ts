@@ -173,6 +173,13 @@ export type Database = {
             foreignKeyName: 'fk_bookings_customer'
             columns: ['customer_id']
             isOneToOne: false
+            referencedRelation: 'chats_with_preview'
+            referencedColumns: ['customer_id']
+          },
+          {
+            foreignKeyName: 'fk_bookings_customer'
+            columns: ['customer_id']
+            isOneToOne: false
             referencedRelation: 'customers'
             referencedColumns: ['id']
           },
@@ -220,6 +227,13 @@ export type Database = {
             foreignKeyName: 'fk_customer_passengers_customer'
             columns: ['customer_id']
             isOneToOne: false
+            referencedRelation: 'chats_with_preview'
+            referencedColumns: ['customer_id']
+          },
+          {
+            foreignKeyName: 'fk_customer_passengers_customer'
+            columns: ['customer_id']
+            isOneToOne: false
             referencedRelation: 'customers'
             referencedColumns: ['id']
           },
@@ -260,6 +274,13 @@ export type Database = {
             foreignKeyName: 'fk_customer_relationships_customer'
             columns: ['customer_id']
             isOneToOne: false
+            referencedRelation: 'chats_with_preview'
+            referencedColumns: ['customer_id']
+          },
+          {
+            foreignKeyName: 'fk_customer_relationships_customer'
+            columns: ['customer_id']
+            isOneToOne: false
             referencedRelation: 'customers'
             referencedColumns: ['id']
           },
@@ -269,6 +290,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: 'customers_with_contact'
             referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'fk_customer_relationships_related'
+            columns: ['related_customer_id']
+            isOneToOne: false
+            referencedRelation: 'chats_with_preview'
+            referencedColumns: ['customer_id']
           },
           {
             foreignKeyName: 'fk_customer_relationships_related'
@@ -457,6 +485,13 @@ export type Database = {
             foreignKeyName: 'fk_flight_requests_customer'
             columns: ['customer_id']
             isOneToOne: false
+            referencedRelation: 'chats_with_preview'
+            referencedColumns: ['customer_id']
+          },
+          {
+            foreignKeyName: 'fk_flight_requests_customer'
+            columns: ['customer_id']
+            isOneToOne: false
             referencedRelation: 'customers'
             referencedColumns: ['id']
           },
@@ -594,6 +629,13 @@ export type Database = {
             foreignKeyName: 'fk_bookings_customer'
             columns: ['customer_id']
             isOneToOne: false
+            referencedRelation: 'chats_with_preview'
+            referencedColumns: ['customer_id']
+          },
+          {
+            foreignKeyName: 'fk_bookings_customer'
+            columns: ['customer_id']
+            isOneToOne: false
             referencedRelation: 'customers'
             referencedColumns: ['id']
           },
@@ -725,6 +767,8 @@ export type Database = {
           chat_id: string | null
           contact_phone_number: string | null
           created_at: string | null
+          customer_id: string | null
+          customer_name: string | null
           is_group: boolean | null
           last_message_at: string | null
           last_message_content: string | null
@@ -845,6 +889,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: 'chats_with_preview'
             referencedColumns: ['chat_id']
+          },
+          {
+            foreignKeyName: 'fk_flight_requests_customer'
+            columns: ['customer_id']
+            isOneToOne: false
+            referencedRelation: 'chats_with_preview'
+            referencedColumns: ['customer_id']
           },
           {
             foreignKeyName: 'fk_flight_requests_customer'

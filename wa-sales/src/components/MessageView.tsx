@@ -18,6 +18,7 @@ import { DocumentTagForm } from './DocumentTagForm'
 import { ChatDocumentsSheet } from './ChatDocumentsSheet'
 import { supabase } from '@/lib/supabase'
 import type { Database } from '@/lib/database.types'
+import type { ChatWithPreview } from '@/components/ChatItem'
 import type { Reaction } from '@/routes/_authenticated/chat/-hooks/useReactions'
 import { useHistorySync } from '@/routes/_authenticated/chat/-hooks/useHistorySync'
 import { CustomerSheet } from '@/routes/_authenticated/customers/-components/CustomerSheet'
@@ -27,11 +28,10 @@ import { Button } from '@/components/ui/button'
 type CustomerWithContact =
   Database['public']['Views']['customers_with_contact']['Row']
 
-type Chat = Database['public']['Views']['chats']['Row']
 type Message = Database['public']['Views']['messages']['Row']
 
 type MessageViewProps = {
-  chat: Chat | null
+  chat: ChatWithPreview | null
   messages: Message[]
   reactionsMap: Map<string, Reaction[]>
   fetchNextPage: () => void
@@ -215,7 +215,7 @@ export function MessageView({
     )
   }
 
-  const displayName = chat.name || chat.chat_id || ''
+  const displayName = chat.customer_name || chat.name || chat.chat_id || ''
 
   // Track date separators
   const seenDates = new Set<string>()
