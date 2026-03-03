@@ -18,6 +18,7 @@ import (
 	"go.mau.fi/whatsmeow"
 
 	"whatsapp-bridge/internal/logging"
+	"whatsapp-bridge/internal/metrics"
 	"whatsapp-bridge/internal/store"
 )
 
@@ -82,6 +83,8 @@ func processPending(ctx context.Context, client *whatsmeow.Client, db *store.Sto
 }
 
 func processOne(ctx context.Context, client *whatsmeow.Client, db *store.Store, id int64) {
+	start := time.Now()
+
 	chatID, content, err := db.ClaimOutboxMessage(ctx, id)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -89,21 +92,30 @@ func processOne(ctx context.Context, client *whatsmeow.Client, db *store.Store, 
 			return
 		}
 		log.Error().Err(err).Int64("outbox_id", id).Msg("failed to claim outbox message")
+		metrics.OutboxProcessTotal.WithLabelValues("claim_error").Inc()
+		metrics.OutboxProcessDuration.Observe(time.Since(start).Seconds())
 		return
 	}
 
 	jid, err := types.ParseJID(chatID)
 	if err != nil {
 		db.MarkOutboxFailed(ctx, id, fmt.Sprintf("invalid chat_id JID: %v", err))
+		metrics.OutboxProcessTotal.WithLabelValues("jid_error").Inc()
+		metrics.OutboxProcessDuration.Observe(time.Since(start).Seconds())
 		return
 	}
 
 	msg := &waProto.Message{
 		Conversation: proto.String(content),
 	}
+	sendStart := time.Now()
 	resp, err := client.SendMessage(ctx, jid, msg)
+	metrics.OutboxSendDuration.Observe(time.Since(sendStart).Seconds())
+	metrics.WASendDuration.WithLabelValues("outbox").Observe(time.Since(sendStart).Seconds())
 	if err != nil {
 		db.MarkOutboxFailed(ctx, id, fmt.Sprintf("send failed: %v", err))
+		metrics.OutboxProcessTotal.WithLabelValues("send_error").Inc()
+		metrics.OutboxProcessDuration.Observe(time.Since(start).Seconds())
 		return
 	}
 
@@ -127,6 +139,9 @@ func processOne(ctx context.Context, client *whatsmeow.Client, db *store.Store, 
 	if err := db.UpdateChatLastMessage(ctx, chatID, now); err != nil {
 		log.Error().Err(err).Str("chat_id", chatID).Msg("failed to update chat last_message_at")
 	}
+
+	metrics.OutboxProcessTotal.WithLabelValues("sent").Inc()
+	metrics.OutboxProcessDuration.Observe(time.Since(start).Seconds())
 
 	log.Info().
 		Int64("outbox_id", id).

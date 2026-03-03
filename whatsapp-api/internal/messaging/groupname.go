@@ -9,6 +9,7 @@ import (
 	"go.mau.fi/whatsmeow"
 	"go.mau.fi/whatsmeow/types"
 
+	"whatsapp-bridge/internal/metrics"
 	"whatsapp-bridge/internal/store"
 )
 
@@ -59,23 +60,33 @@ func ListenGroupChats(ctx context.Context, client *whatsmeow.Client, db *store.S
 
 // resolveGroupName fetches the group name from WhatsApp and updates the chat record.
 func resolveGroupName(ctx context.Context, client *whatsmeow.Client, db *store.Store, chatID string) {
+	start := time.Now()
+
 	jid, err := types.ParseJID(chatID)
 	if err != nil {
 		log.Error().Err(err).Str("chat_id", chatID).Msg("invalid JID for group name resolution")
+		metrics.GroupResolveTotal.WithLabelValues("error").Inc()
+		metrics.GroupResolveDuration.Observe(time.Since(start).Seconds())
 		return
 	}
 
 	info, err := client.GetGroupInfo(ctx, jid)
 	if err != nil {
 		log.Error().Err(err).Str("chat_id", chatID).Msg("failed to fetch group info")
+		metrics.GroupResolveTotal.WithLabelValues("error").Inc()
+		metrics.GroupResolveDuration.Observe(time.Since(start).Seconds())
 		return
 	}
 
 	if err := db.UpdateChatName(ctx, chatID, info.Name); err != nil {
 		log.Error().Err(err).Str("chat_id", chatID).Msg("failed to update group chat name")
+		metrics.GroupResolveTotal.WithLabelValues("error").Inc()
+		metrics.GroupResolveDuration.Observe(time.Since(start).Seconds())
 		return
 	}
 
+	metrics.GroupResolveTotal.WithLabelValues("success").Inc()
+	metrics.GroupResolveDuration.Observe(time.Since(start).Seconds())
 	log.Debug().Str("chat_id", chatID).Str("name", info.Name).Msg("group name resolved")
 }
 

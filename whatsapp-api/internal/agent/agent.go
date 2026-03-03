@@ -18,6 +18,7 @@ import (
 	"go.mau.fi/whatsmeow"
 
 	"whatsapp-bridge/internal/logging"
+	"whatsapp-bridge/internal/metrics"
 	"whatsapp-bridge/internal/store"
 )
 
@@ -45,28 +46,40 @@ func NewHandler(db *store.Store, client *whatsmeow.Client) *Handler {
 
 // HandleMessage runs the full agent pipeline for an incoming message.
 func (h *Handler) HandleMessage(ctx context.Context, req Request) Response {
+	pipelineStart := time.Now()
+
 	// Serialize per chat to prevent race conditions.
 	mu := h.getChatMutex(req.ChatID)
 	mu.Lock()
 	defer mu.Unlock()
 
 	// 1. Resolve customer from chat.
+	stepStart := time.Now()
 	customer, err := h.resolveCustomer(ctx, req.ChatID)
+	metrics.AgentStepDuration.WithLabelValues("resolve_customer").Observe(time.Since(stepStart).Seconds())
 	if err != nil {
 		log.Error().Err(err).Str("chat_id", req.ChatID).Msg("failed to resolve customer")
+		metrics.AgentPipelineTotal.WithLabelValues("error").Inc()
+		metrics.AgentPipelineDuration.Observe(time.Since(pipelineStart).Seconds())
 		return Response{Status: "error", Error: "could not identify customer"}
 	}
 
 	// 2. Fetch customer context.
+	stepStart = time.Now()
 	custCtx, err := h.fetchCustomerContext(ctx, customer)
+	metrics.AgentStepDuration.WithLabelValues("fetch_context").Observe(time.Since(stepStart).Seconds())
 	if err != nil {
 		log.Warn().Err(err).Str("customer_id", customer.ID).Msg("failed to fetch full context, proceeding with partial")
 	}
 
 	// 3. Fetch chat history.
+	stepStart = time.Now()
 	messages, err := h.db.GetChatHistory(ctx, req.ChatID, chatHistoryLimit)
+	metrics.AgentStepDuration.WithLabelValues("get_history").Observe(time.Since(stepStart).Seconds())
 	if err != nil {
 		log.Error().Err(err).Str("chat_id", req.ChatID).Msg("failed to fetch chat history")
+		metrics.AgentPipelineTotal.WithLabelValues("error").Inc()
+		metrics.AgentPipelineDuration.Observe(time.Since(pipelineStart).Seconds())
 		return Response{Status: "error", Error: "could not fetch chat history"}
 	}
 
@@ -90,9 +103,13 @@ func (h *Handler) HandleMessage(ctx context.Context, req Request) Response {
 	userMessage := buildUserMessage(chatMessages)
 
 	// 5. Call Claude.
+	stepStart = time.Now()
 	claudeOutput, err := h.callClaude(ctx, systemPrompt, userMessage)
+	metrics.AgentStepDuration.WithLabelValues("call_claude").Observe(time.Since(stepStart).Seconds())
 	if err != nil {
 		log.Error().Err(err).Str("chat_id", req.ChatID).Msg("Claude call failed")
+		metrics.AgentPipelineTotal.WithLabelValues("error").Inc()
+		metrics.AgentPipelineDuration.Observe(time.Since(pipelineStart).Seconds())
 		return Response{Status: "error", Error: fmt.Sprintf("Claude call failed: %v", err)}
 	}
 
@@ -102,13 +119,19 @@ func (h *Handler) HandleMessage(ctx context.Context, req Request) Response {
 	// 7. Execute actions.
 	var actionResults []ActionResult
 	if len(parsed.Actions) > 0 && customer != nil {
+		stepStart = time.Now()
 		actionResults = executeActions(ctx, h.db, customer.ID, req.ChatID, parsed.Actions)
+		metrics.AgentStepDuration.WithLabelValues("execute_actions").Observe(time.Since(stepStart).Seconds())
 	}
 
 	// 8. Send reply via WhatsApp.
 	if parsed.Reply != "" {
+		stepStart = time.Now()
 		if err := h.sendReply(ctx, req.ChatID, parsed.Reply); err != nil {
+			metrics.AgentStepDuration.WithLabelValues("send_reply").Observe(time.Since(stepStart).Seconds())
 			log.Error().Err(err).Str("chat_id", req.ChatID).Msg("failed to send reply")
+			metrics.AgentPipelineTotal.WithLabelValues("partial").Inc()
+			metrics.AgentPipelineDuration.Observe(time.Since(pipelineStart).Seconds())
 			return Response{
 				Status:        "partial",
 				Reply:         parsed.Reply,
@@ -117,6 +140,7 @@ func (h *Handler) HandleMessage(ctx context.Context, req Request) Response {
 				Error:         fmt.Sprintf("reply generated but send failed: %v", err),
 			}
 		}
+		metrics.AgentStepDuration.WithLabelValues("send_reply").Observe(time.Since(stepStart).Seconds())
 	}
 
 	// Auto-deactivate agent if Claude signaled done.
@@ -127,6 +151,9 @@ func (h *Handler) HandleMessage(ctx context.Context, req Request) Response {
 			log.Info().Str("chat_id", req.ChatID).Msg("agent auto-deactivated (done=true)")
 		}
 	}
+
+	metrics.AgentPipelineTotal.WithLabelValues("ok").Inc()
+	metrics.AgentPipelineDuration.Observe(time.Since(pipelineStart).Seconds())
 
 	return Response{
 		Status:        "ok",
@@ -318,7 +345,9 @@ func (h *Handler) sendReply(ctx context.Context, chatID, text string) error {
 		Conversation: proto.String(text),
 	}
 
+	sendStart := time.Now()
 	resp, err := h.client.SendMessage(ctx, jid, msg)
+	metrics.WASendDuration.WithLabelValues("agent").Observe(time.Since(sendStart).Seconds())
 	if err != nil {
 		return fmt.Errorf("whatsmeow send failed: %w", err)
 	}

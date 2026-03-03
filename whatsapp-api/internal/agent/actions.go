@@ -3,7 +3,9 @@ package agent
 import (
 	"context"
 	"fmt"
+	"strconv"
 
+	"whatsapp-bridge/internal/metrics"
 	"whatsapp-bridge/internal/store"
 )
 
@@ -37,6 +39,7 @@ func executeActions(ctx context.Context, db *store.Store, customerID, chatID str
 
 		result := handler(ctx, db, customerID, chatID, action.Params)
 		results = append(results, result)
+		metrics.AgentActionTotal.WithLabelValues(action.Type, strconv.FormatBool(result.Success)).Inc()
 
 		if result.Success {
 			log.Info().

@@ -19,6 +19,7 @@ import (
 	"whatsapp-bridge/internal/config"
 	"whatsapp-bridge/internal/logging"
 	"whatsapp-bridge/internal/media"
+	"whatsapp-bridge/internal/metrics"
 	"whatsapp-bridge/internal/store"
 	"whatsapp-bridge/internal/webhook"
 )
@@ -38,6 +39,8 @@ func RegisterHandler(client *whatsmeow.Client, cfg config.Config, db *store.Stor
 }
 
 func handleMessage(client *whatsmeow.Client, cfg config.Config, db *store.Store, agentHandler *agent.Handler, msg *events.Message) {
+	start := time.Now()
+
 	// Handle reactions separately — they are not regular messages.
 	if reaction := msg.Message.GetReactionMessage(); reaction != nil {
 		go handleReaction(db, msg, reaction)
@@ -71,6 +74,11 @@ func handleMessage(client *whatsmeow.Client, cfg config.Config, db *store.Store,
 	payload := buildPayload(msg)
 	if !msg.Info.IsGroup && !msg.Info.IsFromMe {
 		payload.ChatName = msg.Info.PushName
+	}
+
+	isGroup := "false"
+	if payload.IsGroup {
+		isGroup = "true"
 	}
 
 	if payload.MessageType == "other" {
@@ -108,6 +116,9 @@ func handleMessage(client *whatsmeow.Client, cfg config.Config, db *store.Store,
 	if cfg.WebhookURL != "" && !(payload.MessageType == "media" && payload.Text == "") {
 		go webhook.SendText(cfg.WebhookURL, payload)
 	}
+
+	metrics.IncomingMessageTotal.WithLabelValues(payload.MessageType, isGroup).Inc()
+	metrics.IncomingMessageDuration.WithLabelValues(payload.MessageType).Observe(time.Since(start).Seconds())
 }
 
 // resolveSender extracts the sender phone number from the message metadata.
@@ -293,12 +304,16 @@ func handleMessageEdit(db *store.Store, msg *events.Message, proto *waE2E.Protoc
 // (voice or image), and — when storage is configured — uploads it to Supabase
 // Storage and updates the message record with the resulting path.
 func handleMedia(client *whatsmeow.Client, cfg config.Config, db *store.Store, msg *events.Message, payload store.MessagePayload) {
+	pipelineStart := time.Now()
+
 	info := media.FromMessage(msg)
 	if info == nil {
 		return
 	}
 
+	dlStart := time.Now()
 	data, err := client.Download(context.Background(), info.Downloadable)
+	metrics.MediaDownloadDuration.WithLabelValues(payload.MediaType).Observe(time.Since(dlStart).Seconds())
 	if err != nil {
 		log.Error().Err(err).Str("message_id", payload.MessageID).Msg("failed to download media")
 		return
@@ -323,10 +338,13 @@ func handleMedia(client *whatsmeow.Client, cfg config.Config, db *store.Store, m
 		ext := media.MimeToExt(info.MimeType)
 		mediaPath := fmt.Sprintf("%s/%s.%s", payload.ChatID, payload.MessageID, ext)
 
+		ulStart := time.Now()
 		if err := media.UploadToSupabase(data, cfg.SupabaseURL, cfg.SupabaseServiceKey, "wa-media", mediaPath, info.MimeType); err != nil {
+			metrics.MediaUploadDuration.Observe(time.Since(ulStart).Seconds())
 			log.Error().Err(err).Str("message_id", payload.MessageID).Str("media_path", mediaPath).Msg("failed to upload media")
 			return
 		}
+		metrics.MediaUploadDuration.Observe(time.Since(ulStart).Seconds())
 
 		if err := db.UpdateMediaPath(payload.MessageID, payload.ChatID, mediaPath); err != nil {
 			log.Error().Err(err).Str("message_id", payload.MessageID).Str("media_path", mediaPath).Msg("failed to update media_path")
@@ -335,4 +353,6 @@ func handleMedia(client *whatsmeow.Client, cfg config.Config, db *store.Store, m
 
 		log.Debug().Str("media_path", mediaPath).Msg("media stored")
 	}
+
+	metrics.MediaPipelineDuration.WithLabelValues(payload.MediaType).Observe(time.Since(pipelineStart).Seconds())
 }

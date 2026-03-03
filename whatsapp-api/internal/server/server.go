@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/skip2/go-qrcode"
 	waProto "go.mau.fi/whatsmeow/proto/waE2E"
 	"go.mau.fi/whatsmeow/types"
@@ -21,6 +22,7 @@ import (
 
 	"whatsapp-bridge/internal/agent"
 	"whatsapp-bridge/internal/logging"
+	"whatsapp-bridge/internal/metrics"
 	"whatsapp-bridge/internal/store"
 	"whatsapp-bridge/internal/waclient"
 )
@@ -76,7 +78,10 @@ func (h *handler) send(c *gin.Context) {
 		Conversation: proto.String(req.Text),
 	}
 
-	if _, err := h.client.SendMessage(h.ctx, jid, msg); err != nil {
+	sendStart := time.Now()
+	_, err := h.client.SendMessage(h.ctx, jid, msg)
+	metrics.WASendDuration.WithLabelValues("http").Observe(time.Since(sendStart).Seconds())
+	if err != nil {
 		c.String(http.StatusInternalServerError, "failed to send")
 		return
 	}
@@ -240,6 +245,7 @@ func Start(ctx context.Context, client *whatsmeow.Client, qrStore *waclient.QRSt
 	r.POST("/messages/description", h.updateDescription)
 	r.POST("/disconnect", h.disconnect)
 	r.POST("/claude", h.claudeReply)
+	r.GET("/metrics", gin.WrapH(promhttp.Handler()))
 
 	go func() {
 		log.Info().Str("addr", listenAddr).Msg("HTTP server listening")

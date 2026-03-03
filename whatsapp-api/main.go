@@ -5,11 +5,13 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"whatsapp-bridge/internal/agent"
 	"whatsapp-bridge/internal/config"
 	"whatsapp-bridge/internal/logging"
 	"whatsapp-bridge/internal/messaging"
+	"whatsapp-bridge/internal/metrics"
 	"whatsapp-bridge/internal/outbox"
 	"whatsapp-bridge/internal/server"
 	"whatsapp-bridge/internal/store"
@@ -37,6 +39,22 @@ func main() {
 	go outbox.Listen(ctx, client, db, cfg.DatabaseURL)
 	go messaging.ListenGroupChats(ctx, client, db, cfg.DatabaseURL)
 	go agentHandler.Listen(ctx, cfg.DatabaseURL)
+	go func() {
+		ticker := time.NewTicker(15 * time.Second)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				if client.IsConnected() {
+					metrics.WhatsAppConnected.Set(1)
+				} else {
+					metrics.WhatsAppConnected.Set(0)
+				}
+			}
+		}
+	}()
 
 	log.Info().Msg("WhatsApp bridge running, press Ctrl+C to quit")
 	c := make(chan os.Signal, 1)

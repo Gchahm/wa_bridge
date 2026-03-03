@@ -10,8 +10,10 @@ import (
 	"net/http"
 	"net/textproto"
 	"strconv"
+	"time"
 
 	"whatsapp-bridge/internal/logging"
+	"whatsapp-bridge/internal/metrics"
 	"whatsapp-bridge/internal/store"
 )
 
@@ -25,19 +27,24 @@ func SendText(webhookURL string, payload store.MessagePayload) {
 		return
 	}
 
+	start := time.Now()
 	resp, err := http.Post(webhookURL, "application/json", bytes.NewBuffer(data))
+	metrics.WebhookDuration.WithLabelValues("text").Observe(time.Since(start).Seconds())
 	if err != nil {
 		log.Error().Err(err).Msg("failed to send to webhook")
+		metrics.WebhookTotal.WithLabelValues("text", "error").Inc()
 		return
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode >= 200 && resp.StatusCode < 300 {
+		metrics.WebhookTotal.WithLabelValues("text", "success").Inc()
 		log.Debug().
 			Str("message_id", payload.MessageID).
 			Str("sender_id", payload.SenderID).
 			Msg("message forwarded")
 	} else {
+		metrics.WebhookTotal.WithLabelValues("text", "non_2xx").Inc()
 		log.Warn().
 			Int("status_code", resp.StatusCode).
 			Str("message_id", payload.MessageID).
@@ -85,19 +92,24 @@ func SendImage(imageWebhookURL, senderID, senderName, chatID, messageID string, 
 	}
 	writer.Close()
 
+	start := time.Now()
 	resp, err := http.Post(imageWebhookURL, writer.FormDataContentType(), &body)
+	metrics.WebhookDuration.WithLabelValues("image").Observe(time.Since(start).Seconds())
 	if err != nil {
 		log.Error().Err(err).Str("message_id", messageID).Msg("failed to send to image webhook")
+		metrics.WebhookTotal.WithLabelValues("image", "error").Inc()
 		return
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode >= 200 && resp.StatusCode < 300 {
+		metrics.WebhookTotal.WithLabelValues("image", "success").Inc()
 		log.Debug().
 			Str("message_id", messageID).
 			Str("sender_id", senderID).
 			Msg("image forwarded")
 	} else {
+		metrics.WebhookTotal.WithLabelValues("image", "non_2xx").Inc()
 		log.Warn().
 			Int("status_code", resp.StatusCode).
 			Str("message_id", messageID).
@@ -139,19 +151,24 @@ func SendVoice(voiceWebhookURL, senderID, senderName, chatID, messageID string, 
 	}
 	writer.Close()
 
+	start := time.Now()
 	resp, err := http.Post(voiceWebhookURL, writer.FormDataContentType(), &body)
+	metrics.WebhookDuration.WithLabelValues("voice").Observe(time.Since(start).Seconds())
 	if err != nil {
 		log.Error().Err(err).Str("message_id", messageID).Msg("failed to send to voice webhook")
+		metrics.WebhookTotal.WithLabelValues("voice", "error").Inc()
 		return
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode >= 200 && resp.StatusCode < 300 {
+		metrics.WebhookTotal.WithLabelValues("voice", "success").Inc()
 		log.Debug().
 			Str("message_id", messageID).
 			Str("sender_id", senderID).
 			Msg("audio forwarded")
 	} else {
+		metrics.WebhookTotal.WithLabelValues("voice", "non_2xx").Inc()
 		log.Warn().
 			Int("status_code", resp.StatusCode).
 			Str("message_id", messageID).
