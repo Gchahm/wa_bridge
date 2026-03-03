@@ -10,6 +10,7 @@
       "typeVersion": 2.1,
       "position": [0, 0],
       "parameters": {
+        "httpMethod": "POST",
         "path": "whatsapp-image",
         "options": {}
       }
