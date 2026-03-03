@@ -27,6 +27,28 @@ Monorepo at `/Users/gchahm/dev/gchahm/wa_bridge`.
 
 - `wa_bridge.set_updated_at()` — reusable updated_at trigger, called by triggers on `public.customers`, `public.passengers`, `public.flight_requests`, `public.bookings`. Trigger functions can live in a different schema than the table — this is fine.
 
+## wa_bridge FK Cascade Matrix (critical for migration ordering)
+
+| FK constraint               | Table         | → references         | On Update   | On Delete  |
+|-----------------------------|---------------|----------------------|-------------|------------|
+| fk_messages_chat            | messages      | chats(chat_id)       | NO ACTION   | NO ACTION  |
+| fk_reactions_message        | reactions     | messages(msg,chat)   | NO ACTION   | NO ACTION  |
+| fk_reactions_sender         | reactions     | contacts(phone)      | NOT VALID   | -          |
+| fk_outgoing_messages_chat   | outgoing_msgs | chats(chat_id)       | CASCADE     | RESTRICT   |
+| fk_bridge_commands_chat     | bridge_cmds   | chats(chat_id)       | CASCADE     | RESTRICT   |
+| chats_contact_phone_number_fkey | chats     | contacts(phone)      | CASCADE     | SET NULL   |
+
+Pattern for bulk chat_id renames: DROP fk_messages_chat + fk_reactions_message first, do the rename, then ADD CONSTRAINT NOT VALID + VALIDATE.
+
+`bridge_commands` table added in 20260303000001 with ON UPDATE CASCADE to chats.
+
+## LID → PN chat merge
+
+Migration `20260303000002_merge_lid_chats.sql` merges @lid chats into @s.whatsapp.net.
+Mapping source: `wa_meow.whatsmeow_lid_map(lid text, pn text)`.
+Pattern: `{lid}@lid` → `{pn}@s.whatsapp.net`.
+Two cases: (A) target PN chat exists → move messages/reactions, merge metadata, delete LID chat; (B) target doesn't exist → rename chat_id in-place (CASCADE follows outgoing_messages/bridge_commands).
+
 ## Critical PostgreSQL Facts
 
 ### ALTER TABLE SET SCHEMA behaviour

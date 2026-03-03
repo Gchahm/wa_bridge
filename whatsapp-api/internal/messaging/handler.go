@@ -49,7 +49,7 @@ func handleMessage(client *whatsmeow.Client, cfg config.Config, db *store.Store,
 
 	// Handle reactions separately — they are not regular messages.
 	if reaction := msg.Message.GetReactionMessage(); reaction != nil {
-		go handleReaction(db, msg, reaction)
+		go handleReaction(client, db, msg, reaction)
 		return
 	}
 
@@ -72,12 +72,17 @@ func handleMessage(client *whatsmeow.Client, cfg config.Config, db *store.Store,
 	// the regular payload. These are not user-visible content rows.
 	if proto := msg.Message.GetProtocolMessage(); proto != nil {
 		if proto.GetType() == waE2E.ProtocolMessage_MESSAGE_EDIT {
-			go handleMessageEdit(db, msg, proto)
+			go handleMessageEdit(client, db, msg, proto)
 		}
 		return
 	}
 
 	payload := buildPayload(msg)
+	// Normalize @lid chat IDs to phone-number format so all messages
+	// for the same conversation share a single chat_id.
+	resolved := resolveChatJID(client, msg.Info.Chat)
+	payload.ChatID = resolved.String()
+
 	if !msg.Info.IsGroup && !msg.Info.IsFromMe {
 		payload.ChatName = msg.Info.PushName
 	}
@@ -125,6 +130,20 @@ func handleMessage(client *whatsmeow.Client, cfg config.Config, db *store.Store,
 
 	metrics.IncomingMessageTotal.WithLabelValues(payload.MessageType, isGroup).Inc()
 	metrics.IncomingMessageDuration.WithLabelValues(payload.MessageType).Observe(time.Since(start).Seconds())
+}
+
+// resolveChatJID normalises @lid (Linked Identity) JIDs to the corresponding
+// @s.whatsapp.net phone-number JID so that messages from the primary device
+// and companion devices all share a single chat_id.
+func resolveChatJID(client *whatsmeow.Client, chatJID types.JID) types.JID {
+	if chatJID.Server != types.HiddenUserServer {
+		return chatJID
+	}
+	pnJID, err := client.Store.LIDs.GetPNForLID(context.Background(), chatJID)
+	if err != nil || pnJID.IsEmpty() {
+		return chatJID
+	}
+	return pnJID
 }
 
 // resolveSender extracts the sender phone number from the message metadata.
@@ -221,7 +240,7 @@ func buildPayload(msg *events.Message) store.MessagePayload {
 
 // handleReaction persists or removes a WhatsApp reaction. An empty emoji in
 // the reaction event means the user retracted their reaction.
-func handleReaction(db *store.Store, msg *events.Message, reaction *waE2E.ReactionMessage) {
+func handleReaction(client *whatsmeow.Client, db *store.Store, msg *events.Message, reaction *waE2E.ReactionMessage) {
 	targetID := reaction.GetKey().GetID()
 	if targetID == "" {
 		log.Warn().Msg("reaction has no target message ID")
@@ -230,7 +249,7 @@ func handleReaction(db *store.Store, msg *events.Message, reaction *waE2E.Reacti
 
 	// The reaction key contains the target message's JID. Fall back to the
 	// event's chat when the key does not carry a remote JID.
-	chatID := msg.Info.Chat.String()
+	chatID := resolveChatJID(client, msg.Info.Chat).String()
 	if reaction.GetKey().GetRemoteJID() != "" {
 		chatID = reaction.GetKey().GetRemoteJID()
 	}
@@ -260,14 +279,14 @@ func handleReaction(db *store.Store, msg *events.Message, reaction *waE2E.Reacti
 
 // handleMessageEdit processes a MESSAGE_EDIT protocol message by extracting
 // the new content and applying it to the original message with edit history.
-func handleMessageEdit(db *store.Store, msg *events.Message, proto *waE2E.ProtocolMessage) {
+func handleMessageEdit(client *whatsmeow.Client, db *store.Store, msg *events.Message, proto *waE2E.ProtocolMessage) {
 	targetID := proto.GetKey().GetID()
 	if targetID == "" {
 		log.Warn().Msg("edit protocol message has no target message ID")
 		return
 	}
 
-	chatID := msg.Info.Chat.String()
+	chatID := resolveChatJID(client, msg.Info.Chat).String()
 	if proto.GetKey().GetRemoteJID() != "" {
 		chatID = proto.GetKey().GetRemoteJID()
 	}

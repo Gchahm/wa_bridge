@@ -275,12 +275,28 @@ func (l *Listener) HandleHistorySyncEvent(evt *events.HistorySync) {
 			continue
 		}
 
-		// Find the pending sync for this chat.
+		// Resolve @lid to @s.whatsapp.net so history messages share
+		// the same chat_id as live messages.
+		originalChatID := chatID
+		if chatJID, err := types.ParseJID(chatID); err == nil && chatJID.Server == types.HiddenUserServer {
+			if pnJID, err := l.client.Store.LIDs.GetPNForLID(context.Background(), chatJID); err == nil && !pnJID.IsEmpty() {
+				chatID = pnJID.String()
+			}
+		}
+
+		// Find the pending sync for this chat. Try the resolved ID first,
+		// then fall back to the original in case the command used @lid.
 		l.mu.Lock()
 		ps, exists := l.pendingSyncs[chatID]
 		if exists {
 			ps.timer.Stop()
 			delete(l.pendingSyncs, chatID)
+		} else if originalChatID != chatID {
+			ps, exists = l.pendingSyncs[originalChatID]
+			if exists {
+				ps.timer.Stop()
+				delete(l.pendingSyncs, originalChatID)
+			}
 		}
 		l.mu.Unlock()
 
