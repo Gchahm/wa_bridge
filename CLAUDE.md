@@ -42,6 +42,8 @@ This pattern ensures all communication goes through Postgres, keeping the Go ser
 - **go-app-architect** — Go service changes (`whatsapp-api/`): handlers, store, config, messaging
 - **postgresql-supabase-expert** — Database migrations, schema design, RLS policies
 - **supabase-data-layer** — Extracting business logic (calculations, transformations)
+- **Plan** — **MUST be used during plan mode** for designing implementation approaches. When in plan mode, always launch a Plan agent (up to 3 in parallel for complex tasks) to validate your understanding, consider alternatives, and produce a detailed implementation plan. Do not skip this step — direct planning without the Plan agent is not sufficient.
+
 ### Slash Commands
 
 - `/shadcn` — Guide for creating new shadcn/ui components (CVA variants, Radix primitives, accessibility)
