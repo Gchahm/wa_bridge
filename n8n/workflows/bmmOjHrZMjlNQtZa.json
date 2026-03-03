@@ -25,12 +25,16 @@
     {
       "id": "d1e2f3a4-b5c6-7890-abcd-100000000002",
       "name": "Send Message",
-      "type": "n8n-nodes-base.postgres",
-      "typeVersion": 2.6,
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
       "position": [400, 0],
       "parameters": {
-        "operation": "executeQuery",
-        "query": "INSERT INTO wa_bridge.outgoing_messages (chat_id, content)\nVALUES ('CHAT_ID_HERE', 'YOUR_MESSAGE_HERE');",
+        "method": "POST",
+        "url": "http://wa_bridge-whatsapp-1:8080/send",
+        "authentication": "none",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ number: 'CHAT_ID_HERE', text: 'YOUR_MESSAGE_HERE', is_group: true }) }}",
         "options": {}
       }
     }

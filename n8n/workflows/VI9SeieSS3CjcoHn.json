@@ -46,7 +46,7 @@
       "position": [800, 0],
       "parameters": {
         "method": "POST",
-        "url": "http://localhost:8080/messages/description",
+        "url": "http://wa_bridge-whatsapp-1:8080/messages/description",
         "authentication": "none",
         "sendBody": true,
         "specifyBody": "json",
