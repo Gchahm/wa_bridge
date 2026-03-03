@@ -91,6 +91,7 @@ type AgentChatMessage struct {
 	IsAgent     bool
 	MessageType string
 	MediaType   sql.NullString
+	Description sql.NullString
 	Timestamp   time.Time
 }
 
@@ -261,7 +262,7 @@ func (s *Store) GetBookingSegments(ctx context.Context, bookingID string) ([]Age
 // GetChatHistory returns the last N messages from a chat, ordered oldest first.
 func (s *Store) GetChatHistory(ctx context.Context, chatID string, limit int) ([]AgentChatMessage, error) {
 	rows, err := s.db.QueryContext(ctx,
-		`SELECT sender_name, content, is_from_me, is_agent, message_type, media_type, timestamp
+		`SELECT sender_name, content, is_from_me, is_agent, message_type, media_type, description, timestamp
 		 FROM wa_bridge.messages
 		 WHERE chat_id = $1
 		 ORDER BY timestamp DESC
@@ -277,7 +278,7 @@ func (s *Store) GetChatHistory(ctx context.Context, chatID string, limit int) ([
 		var m AgentChatMessage
 		if err := rows.Scan(
 			&m.SenderName, &m.Content, &m.IsFromMe, &m.IsAgent,
-			&m.MessageType, &m.MediaType, &m.Timestamp,
+			&m.MessageType, &m.MediaType, &m.Description, &m.Timestamp,
 		); err != nil {
 			return messages, fmt.Errorf("scanning chat message: %w", err)
 		}

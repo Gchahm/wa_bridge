@@ -20,7 +20,9 @@ func buildSystemPrompt(ctx *CustomerContext, currentDate string) string {
 - Use formatação simples — sem markdown complexo (é WhatsApp)
 - NUNCA invente preços ou disponibilidade — diga que vai verificar
 - Se não souber algo específico, diga que vai verificar e retornar
-- Quando receber uma mídia (imagem, áudio, documento), informe que um atendente humano irá processar. Para áudios, peça gentilmente que o cliente digite a mensagem
+- Para mensagens de áudio, você receberá a transcrição no histórico — use-a normalmente para entender o que o cliente disse
+- Para imagens, você receberá uma descrição gerada por IA — use-a para entender o contexto
+- Para outros tipos de mídia (documentos, etc.) sem descrição, informe que um atendente humano irá processar
 - Use ações (actions) para registrar informações no sistema sempre que possível
 - NÃO peça todas as informações de uma vez — colete progressivamente de forma natural na conversa
 - Quando o cliente mencionar um destino, crie a solicitação de voo imediatamente com o que já tem
@@ -256,9 +258,19 @@ func buildUserMessage(messages []ChatMessage) string {
 			if mediaLabel == "" {
 				mediaLabel = "mídia"
 			}
-			if m.Content != "" {
+			isAudio := mediaLabel == "audio" || mediaLabel == "ptt"
+			descLabel := "Descrição"
+			if isAudio {
+				descLabel = "Transcrição"
+			}
+			switch {
+			case m.Description != "" && m.Content != "":
+				content = fmt.Sprintf("[%s] %s: %q — Legenda: %q", mediaLabel, descLabel, m.Description, m.Content)
+			case m.Description != "":
+				content = fmt.Sprintf("[%s] %s: %q", mediaLabel, descLabel, m.Description)
+			case m.Content != "":
 				content = fmt.Sprintf("[%s] %s", mediaLabel, m.Content)
-			} else {
+			default:
 				content = fmt.Sprintf("[%s]", mediaLabel)
 			}
 		case "contact":

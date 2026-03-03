@@ -138,5 +138,6 @@ type ChatMessage struct {
 	IsAgent     bool      `json:"is_agent"`
 	MessageType string    `json:"message_type"`
 	MediaType   string    `json:"media_type"`
+	Description string    `json:"description"`
 	Timestamp   time.Time `json:"timestamp"`
 }

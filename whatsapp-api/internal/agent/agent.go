@@ -93,6 +93,7 @@ func (h *Handler) HandleMessage(ctx context.Context, req Request) Response {
 			IsAgent:     m.IsAgent,
 			MessageType: m.MessageType,
 			MediaType:   m.MediaType.String,
+			Description: m.Description.String,
 			Timestamp:   m.Timestamp,
 		}
 	}
