@@ -24,6 +24,16 @@ This is a WhatsApp bridge monorepo with three main components:
 - **Supabase Storage** — `wa-media` bucket stores message media (images, audio, video, documents). Private, requires auth.
 - **LISTEN/NOTIFY** — `new_outgoing_message` channel triggers the Go bridge to send queued messages.
 
+### Communication Architecture
+
+**The Go service (`whatsapp-api/`) has NO public-facing API.** Its HTTP endpoints (QR code, health) are only reachable locally by n8n and Docker-internal services.
+
+**Frontend ↔ Go service communication is always via the database:**
+- **Frontend → Go service**: Frontend inserts rows into a table (e.g., `outgoing_messages`). A Postgres trigger fires `pg_notify()` on a LISTEN/NOTIFY channel. The Go service listens on that channel, claims the row (status: pending → processing), executes the action, and updates the row with the result (sent/failed + error details).
+- **Go service → Frontend**: The Go service writes to `wa_bridge` tables (messages, chats, contacts). Supabase Realtime broadcast triggers push changes to the frontend.
+
+This pattern ensures all communication goes through Postgres, keeping the Go service off the public network. New features requiring frontend-to-bridge interaction (e.g., requesting chat history) should follow this same table + LISTEN/NOTIFY pattern.
+
 ## Specialized Agents (REQUIRED)
 
 **You MUST use these agents when their domain applies.** Do not attempt to do the work directly - always delegate to the appropriate agent:
