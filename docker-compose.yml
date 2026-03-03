@@ -12,6 +12,7 @@ services:
       - SUPABASE_URL=${WA_SUPABASE_URL}
       - SUPABASE_SERVICE_KEY=${WA_SUPABASE_SERVICE_KEY}
       - CLAUDE_CODE_OAUTH_TOKEN=${CLAUDE_CODE_OAUTH_TOKEN}
+      - LOG_LEVEL=debug
     tty: true
     stdin_open: true
     volumes:

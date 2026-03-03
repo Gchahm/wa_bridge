@@ -620,6 +620,60 @@ export type Database = {
           },
         ]
       }
+      bridge_commands: {
+        Row: {
+          chat_id: string | null
+          command_type: string | null
+          completed_at: string | null
+          created_at: string | null
+          error_message: string | null
+          id: number | null
+          payload: Json | null
+          result: Json | null
+          started_at: string | null
+          status: string | null
+        }
+        Insert: {
+          chat_id?: string | null
+          command_type?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          id?: number | null
+          payload?: Json | null
+          result?: Json | null
+          started_at?: string | null
+          status?: string | null
+        }
+        Update: {
+          chat_id?: string | null
+          command_type?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          id?: number | null
+          payload?: Json | null
+          result?: Json | null
+          started_at?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'fk_bridge_commands_chat'
+            columns: ['chat_id']
+            isOneToOne: false
+            referencedRelation: 'chats'
+            referencedColumns: ['chat_id']
+          },
+          {
+            foreignKeyName: 'fk_bridge_commands_chat'
+            columns: ['chat_id']
+            isOneToOne: false
+            referencedRelation: 'chats_with_preview'
+            referencedColumns: ['chat_id']
+          },
+        ]
+      }
       chats: {
         Row: {
           agent_active: boolean | null
@@ -1006,6 +1060,53 @@ export type Database = {
   }
   wa_bridge: {
     Tables: {
+      bridge_commands: {
+        Row: {
+          chat_id: string
+          command_type: string
+          completed_at: string | null
+          created_at: string
+          error_message: string | null
+          id: number
+          payload: Json
+          result: Json | null
+          started_at: string | null
+          status: string
+        }
+        Insert: {
+          chat_id: string
+          command_type: string
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: never
+          payload?: Json
+          result?: Json | null
+          started_at?: string | null
+          status?: string
+        }
+        Update: {
+          chat_id?: string
+          command_type?: string
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: never
+          payload?: Json
+          result?: Json | null
+          started_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'fk_bridge_commands_chat'
+            columns: ['chat_id']
+            isOneToOne: false
+            referencedRelation: 'chats'
+            referencedColumns: ['chat_id']
+          },
+        ]
+      }
       chats: {
         Row: {
           agent_active: boolean | null

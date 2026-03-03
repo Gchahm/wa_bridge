@@ -1,8 +1,11 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import {
+  AlertCircle,
   Bot,
+  CheckCircle,
   FileText,
+  History,
   Loader2,
   MessageSquare,
   Plane,
@@ -16,6 +19,7 @@ import { ChatDocumentsSheet } from './ChatDocumentsSheet'
 import { supabase } from '@/lib/supabase'
 import type { Database } from '@/lib/database.types'
 import type { Reaction } from '@/routes/_authenticated/chat/-hooks/useReactions'
+import { useHistorySync } from '@/routes/_authenticated/chat/-hooks/useHistorySync'
 import { CustomerSheet } from '@/routes/_authenticated/customers/-components/CustomerSheet'
 import { RequestsForCustomerSheet } from '@/routes/_authenticated/requests/-components/RequestsForCustomerSheet'
 import { Button } from '@/components/ui/button'
@@ -180,6 +184,13 @@ export function MessageView({
     [messages],
   )
 
+  const {
+    status: syncStatus,
+    errorMessage: syncError,
+    requestSync,
+    isLoading: isSyncing,
+  } = useHistorySync(chat?.chat_id ?? undefined)
+
   if (!chat) {
     return (
       <div
@@ -298,6 +309,38 @@ export function MessageView({
         {isFetchingNextPage && (
           <div className="flex justify-center py-2">
             <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
+          </div>
+        )}
+        {!hasNextPage && messages.length > 0 && (
+          <div className="flex justify-center py-3">
+            {syncStatus === 'idle' && (
+              <button
+                type="button"
+                onClick={requestSync}
+                className="flex items-center gap-2 bg-white px-4 py-2 rounded-full shadow-sm text-xs text-gray-500 hover:text-gray-700 hover:shadow transition-all"
+              >
+                <History className="w-3.5 h-3.5" />
+                Load older messages from WhatsApp
+              </button>
+            )}
+            {isSyncing && (
+              <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-full shadow-sm text-xs text-gray-500">
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                Syncing messages from WhatsApp...
+              </div>
+            )}
+            {syncStatus === 'completed' && (
+              <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-full shadow-sm text-xs text-green-600">
+                <CheckCircle className="w-3.5 h-3.5" />
+                Messages synced!
+              </div>
+            )}
+            {syncStatus === 'failed' && (
+              <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-full shadow-sm text-xs text-red-500">
+                <AlertCircle className="w-3.5 h-3.5" />
+                {syncError || 'Sync failed'}
+              </div>
+            )}
           </div>
         )}
         {messages.length === 0 ? (

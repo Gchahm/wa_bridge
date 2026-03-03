@@ -4,6 +4,7 @@ package store
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -325,4 +326,86 @@ func (s *Store) EnsureCustomer(ctx context.Context, phoneNumber, pushName string
 	if err != nil {
 		log.Error().Err(err).Str("phone_number", phoneNumber).Msg("failed to ensure customer")
 	}
+}
+
+// BridgeCommand represents a row from wa_bridge.bridge_commands.
+type BridgeCommand struct {
+	ID          int64
+	CommandType string
+	ChatID      string
+	Payload     json.RawMessage
+}
+
+// PendingCommandIDs returns the IDs of all pending bridge commands, ordered
+// by insertion order so older commands are processed first.
+func (s *Store) PendingCommandIDs(ctx context.Context) ([]int64, error) {
+	rows, err := s.db.QueryContext(ctx,
+		`SELECT id FROM wa_bridge.bridge_commands WHERE status = 'pending' ORDER BY id`)
+	if err != nil {
+		return nil, fmt.Errorf("querying pending commands: %w", err)
+	}
+	defer rows.Close()
+
+	var ids []int64
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return ids, fmt.Errorf("scanning command row: %w", err)
+		}
+		ids = append(ids, id)
+	}
+	return ids, rows.Err()
+}
+
+// ClaimCommand atomically transitions a pending command to 'processing' and
+// returns its fields. Returns sql.ErrNoRows if the command was already claimed.
+func (s *Store) ClaimCommand(ctx context.Context, id int64) (*BridgeCommand, error) {
+	var cmd BridgeCommand
+	err := s.db.QueryRowContext(ctx,
+		`UPDATE wa_bridge.bridge_commands
+		 SET status = 'processing', started_at = now()
+		 WHERE id = $1 AND status = 'pending'
+		 RETURNING id, command_type, chat_id, payload`,
+		id).Scan(&cmd.ID, &cmd.CommandType, &cmd.ChatID, &cmd.Payload)
+	if err != nil {
+		return nil, err
+	}
+	return &cmd, nil
+}
+
+// MarkCommandCompleted marks a bridge command as completed with a result payload.
+func (s *Store) MarkCommandCompleted(ctx context.Context, id int64, result json.RawMessage) error {
+	_, err := s.db.ExecContext(ctx,
+		`UPDATE wa_bridge.bridge_commands
+		 SET status = 'completed', result = $1, completed_at = now()
+		 WHERE id = $2`,
+		result, id)
+	return err
+}
+
+// MarkCommandFailed marks a bridge command as failed with an error message.
+func (s *Store) MarkCommandFailed(ctx context.Context, id int64, errMsg string) {
+	_, err := s.db.ExecContext(ctx,
+		`UPDATE wa_bridge.bridge_commands
+		 SET status = 'failed', error_message = $1, completed_at = now()
+		 WHERE id = $2`,
+		errMsg, id)
+	if err != nil {
+		log.Error().Err(err).Int64("command_id", id).Msg("failed to mark command as failed")
+	}
+	log.Warn().Int64("command_id", id).Str("error", errMsg).Msg("bridge command failed")
+}
+
+// ResetStaleProcessingCommands marks any commands stuck in 'processing' as
+// 'failed'. This recovers from crashes where the service died mid-processing
+// and the in-memory timeout was lost.
+func (s *Store) ResetStaleProcessingCommands(ctx context.Context) (int64, error) {
+	result, err := s.db.ExecContext(ctx,
+		`UPDATE wa_bridge.bridge_commands
+		 SET status = 'failed', error_message = 'service restarted while processing', completed_at = now()
+		 WHERE status = 'processing'`)
+	if err != nil {
+		return 0, fmt.Errorf("resetting stale processing commands: %w", err)
+	}
+	return result.RowsAffected()
 }

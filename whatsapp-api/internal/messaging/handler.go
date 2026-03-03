@@ -16,6 +16,7 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"whatsapp-bridge/internal/agent"
+	"whatsapp-bridge/internal/commands"
 	"whatsapp-bridge/internal/config"
 	"whatsapp-bridge/internal/logging"
 	"whatsapp-bridge/internal/media"
@@ -29,11 +30,16 @@ var log = logging.Component("messaging")
 // RegisterHandler attaches the message event handler to client. All
 // configuration and dependencies are provided explicitly so there is no
 // reliance on package-level globals.
-func RegisterHandler(client *whatsmeow.Client, cfg config.Config, db *store.Store, agentHandler *agent.Handler) {
+func RegisterHandler(client *whatsmeow.Client, cfg config.Config, db *store.Store, agentHandler *agent.Handler, cmdListener *commands.Listener) {
 	client.AddEventHandler(func(evt interface{}) {
 		log.Debug().Str("type", fmt.Sprintf("%T", evt)).Msg("event received")
-		if msg, ok := evt.(*events.Message); ok {
-			handleMessage(client, cfg, db, agentHandler, msg)
+		switch v := evt.(type) {
+		case *events.Message:
+			handleMessage(client, cfg, db, agentHandler, v)
+		case *events.HistorySync:
+			if cmdListener != nil {
+				go cmdListener.HandleHistorySyncEvent(v)
+			}
 		}
 	})
 }

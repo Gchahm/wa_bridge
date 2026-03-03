@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"whatsapp-bridge/internal/agent"
+	"whatsapp-bridge/internal/commands"
 	"whatsapp-bridge/internal/config"
 	"whatsapp-bridge/internal/logging"
 	"whatsapp-bridge/internal/messaging"
@@ -33,12 +34,14 @@ func main() {
 	client := waclient.New(ctx, cfg.DatabaseURL)
 
 	agentHandler := agent.NewHandler(db, client)
-	messaging.RegisterHandler(client, cfg, db, agentHandler)
+	cmdListener := commands.New(client, db, cfg.DatabaseURL)
+	messaging.RegisterHandler(client, cfg, db, agentHandler, cmdListener)
 	server.Start(ctx, client, qrStore, db, agentHandler, cfg.ListenAddr)
 	go waclient.Connect(ctx, client, qrStore)
 	go outbox.Listen(ctx, client, db, cfg.DatabaseURL)
 	go messaging.ListenGroupChats(ctx, client, db, cfg.DatabaseURL)
 	go agentHandler.Listen(ctx, cfg.DatabaseURL)
+	go cmdListener.Listen(ctx)
 	go func() {
 		ticker := time.NewTicker(15 * time.Second)
 		defer ticker.Stop()
