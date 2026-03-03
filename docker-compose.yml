@@ -29,6 +29,8 @@ services:
     image: n8nio/n8n:latest
     restart: unless-stopped
     network_mode: host
+    extra_hosts:
+      - "whatsapp:127.0.0.1"
     environment:
       - DB_TYPE=postgresdb
       - DB_POSTGRESDB_HOST=${N8N_DB_HOST}

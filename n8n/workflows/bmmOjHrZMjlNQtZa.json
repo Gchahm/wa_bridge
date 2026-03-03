@@ -30,7 +30,7 @@
       "position": [400, 0],
       "parameters": {
         "method": "POST",
-        "url": "http://wa_bridge-whatsapp-1:8080/send",
+        "url": "http://whatsapp:8080/send",
         "authentication": "none",
         "sendBody": true,
         "specifyBody": "json",
