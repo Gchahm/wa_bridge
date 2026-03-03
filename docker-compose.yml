@@ -55,6 +55,20 @@ services:
         labels: "service"
         loki-external-labels: "container={{.Name}}"
 
+  prometheus:
+    image: prom/prometheus:v3.2.1
+    restart: unless-stopped
+    network_mode: host
+    extra_hosts:
+      - "whatsapp:127.0.0.1"
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.retention.time=30d
+      - --web.listen-address=:9090
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+
   loki:
     image: grafana/loki:3.4.2
     restart: unless-stopped
@@ -74,6 +88,7 @@ services:
       - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
       - GF_SECURITY_ADMIN_PASSWORD=admin
       - LOKI_URL=http://localhost:3100
+      - PROMETHEUS_URL=http://localhost:9090
     volumes:
       - ./grafana/provisioning:/etc/grafana/provisioning:ro
       - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
@@ -83,4 +98,5 @@ volumes:
   n8n_data:
   wa_local:
   loki_data:
+  prometheus_data:
   grafana_data:
