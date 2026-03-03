@@ -7,7 +7,7 @@
 #   ./scripts/setup-grafana-token.sh
 #   ./scripts/setup-grafana-token.sh http://grafana.example.com:3000
 #
-# Requires: curl, jq
+# Requires: curl, grep, sed
 #
 
 set -euo pipefail
@@ -29,13 +29,16 @@ if [ -n "${GRAFANA_AUTH:-}" ]; then
   fi
 fi
 
-check_deps() {
-  for cmd in curl jq; do
-    if ! command -v "$cmd" &>/dev/null; then
-      echo "Error: $cmd is required but not found" >&2
-      exit 1
-    fi
-  done
+# Extract a JSON string value by key. Handles simple flat objects.
+# Usage: json_val '{"id":3,"name":"foo"}' "id"  =>  3
+json_val() {
+  local json="$1" key="$2"
+  echo "$json" | grep -o "\"${key}\"[[:space:]]*:[[:space:]]*\"[^\"]*\"" | sed "s/\"${key}\"[[:space:]]*:[[:space:]]*\"//;s/\"$//" || true
+}
+
+json_num() {
+  local json="$1" key="$2"
+  echo "$json" | grep -o "\"${key}\"[[:space:]]*:[[:space:]]*[0-9]*" | sed "s/\"${key}\"[[:space:]]*:[[:space:]]*//" || true
 }
 
 grafana_api() {
@@ -47,8 +50,6 @@ grafana_api() {
     "$@"
 }
 
-check_deps
-
 # Verify Grafana is reachable
 if ! grafana_api GET /api/health >/dev/null 2>&1; then
   echo "Error: cannot reach Grafana at $GRAFANA_URL" >&2
@@ -57,25 +58,36 @@ fi
 
 # Check if service account already exists
 EXISTING_SA=$(grafana_api GET "/api/serviceaccounts/search?query=${SA_NAME}" 2>/dev/null || echo '{}')
-SA_ID=$(echo "$EXISTING_SA" | jq -r ".serviceAccounts[]? | select(.name==\"${SA_NAME}\") | .id" 2>/dev/null)
+
+# Look for our service account name in the response and grab its id
+SA_ID=""
+if echo "$EXISTING_SA" | grep -q "\"name\":\"${SA_NAME}\""; then
+  # Extract the id from the object containing our name.
+  # The search response is: {"serviceAccounts":[{"id":N,...,"name":"claude-code",...}],...}
+  # Grab the chunk containing our SA name then extract the id from it.
+  SA_CHUNK=$(echo "$EXISTING_SA" | grep -o "{[^}]*\"name\":\"${SA_NAME}\"[^}]*}")
+  SA_ID=$(json_num "$SA_CHUNK" "id")
+fi
 
 if [ -n "$SA_ID" ]; then
   echo "Service account '${SA_NAME}' already exists (id: ${SA_ID})" >&2
 
-  # Check for existing tokens
+  # Check for existing token and delete it so we can create a fresh one
   EXISTING_TOKENS=$(grafana_api GET "/api/serviceaccounts/${SA_ID}/tokens" 2>/dev/null || echo '[]')
-  EXISTING_TOKEN_ID=$(echo "$EXISTING_TOKENS" | jq -r ".[]? | select(.name==\"${TOKEN_NAME}\") | .id" 2>/dev/null)
-
-  if [ -n "$EXISTING_TOKEN_ID" ]; then
-    echo "Deleting existing '${TOKEN_NAME}' token to generate a new one..." >&2
-    grafana_api DELETE "/api/serviceaccounts/${SA_ID}/tokens/${EXISTING_TOKEN_ID}" >/dev/null
+  if echo "$EXISTING_TOKENS" | grep -q "\"name\":\"${TOKEN_NAME}\""; then
+    TOKEN_CHUNK=$(echo "$EXISTING_TOKENS" | grep -o "{[^}]*\"name\":\"${TOKEN_NAME}\"[^}]*}")
+    EXISTING_TOKEN_ID=$(json_num "$TOKEN_CHUNK" "id")
+    if [ -n "$EXISTING_TOKEN_ID" ]; then
+      echo "Deleting existing '${TOKEN_NAME}' token to generate a new one..." >&2
+      grafana_api DELETE "/api/serviceaccounts/${SA_ID}/tokens/${EXISTING_TOKEN_ID}" >/dev/null
+    fi
   fi
 else
   echo "Creating service account '${SA_NAME}'..." >&2
   SA_RESPONSE=$(grafana_api POST /api/serviceaccounts -d "{\"name\":\"${SA_NAME}\",\"role\":\"Viewer\"}")
-  SA_ID=$(echo "$SA_RESPONSE" | jq -r '.id')
+  SA_ID=$(json_num "$SA_RESPONSE" "id")
 
-  if [ -z "$SA_ID" ] || [ "$SA_ID" = "null" ]; then
+  if [ -z "$SA_ID" ]; then
     echo "Error: failed to create service account" >&2
     echo "$SA_RESPONSE" >&2
     exit 1
@@ -85,9 +97,9 @@ fi
 
 # Generate token
 TOKEN_RESPONSE=$(grafana_api POST "/api/serviceaccounts/${SA_ID}/tokens" -d "{\"name\":\"${TOKEN_NAME}\"}")
-TOKEN=$(echo "$TOKEN_RESPONSE" | jq -r '.key')
+TOKEN=$(json_val "$TOKEN_RESPONSE" "key")
 
-if [ -z "$TOKEN" ] || [ "$TOKEN" = "null" ]; then
+if [ -z "$TOKEN" ]; then
   echo "Error: failed to create token" >&2
   echo "$TOKEN_RESPONSE" >&2
   exit 1
