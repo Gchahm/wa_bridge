@@ -22,6 +22,14 @@
         "N8N_API_URL": "http://localhost:5678",
         "N8N_API_KEY": "${N8N_API_KEY}"
       }
+    },
+    "grafana": {
+      "command": "uvx",
+      "args": ["mcp-grafana"],
+      "env": {
+        "GRAFANA_URL": "http://localhost:3200",
+        "GRAFANA_SERVICE_ACCOUNT_TOKEN": "${GRAFANA_SERVICE_ACCOUNT_TOKEN}"
+      }
     }
   }
 }
