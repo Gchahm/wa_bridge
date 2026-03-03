@@ -104,11 +104,16 @@ func (s *Store) SaveMessage(payload MessagePayload) {
 		return
 	}
 
+	var senderID *string
+	if payload.SenderID != "" {
+		senderID = &payload.SenderID
+	}
+
 	_, err = s.db.ExecContext(ctx,
 		`INSERT INTO wa_bridge.messages (message_id, chat_id, sender_id, sender_name, message_type, media_type, content, is_from_me, reply_to_message_id, timestamp)
 		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NULLIF($9, ''), $10)
 		 ON CONFLICT (message_id, chat_id) DO NOTHING`,
-		payload.MessageID, payload.ChatID, payload.SenderID, payload.SenderName,
+		payload.MessageID, payload.ChatID, senderID, payload.SenderName,
 		payload.MessageType, payload.MediaType, payload.Text, payload.IsFromMe,
 		payload.ReplyToMessageID, payload.Timestamp)
 	if err != nil {
