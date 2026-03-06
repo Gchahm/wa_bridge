@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Search } from 'lucide-react'
 import { ChatItem } from './ChatItem'
 import type { ChatWithPreview } from './ChatItem'
@@ -13,6 +14,19 @@ export function ChatList({
   selectedChatId,
   onSelectChat,
 }: ChatListProps) {
+  const [query, setQuery] = useState('')
+
+  const filteredChats = query.trim()
+    ? chats.filter((chat) => {
+        const q = query.toLowerCase()
+        return (
+          chat.customer_name?.toLowerCase().includes(q) ||
+          chat.name?.toLowerCase().includes(q) ||
+          chat.chat_id?.toLowerCase().includes(q)
+        )
+      })
+    : chats
+
   return (
     <div
       className="flex flex-col h-full"
@@ -37,19 +51,20 @@ export function ChatList({
             type="text"
             placeholder="Search or start new chat"
             className="flex-1 text-sm text-gray-700 placeholder-gray-400 outline-none bg-transparent"
-            readOnly
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
           />
         </div>
       </div>
 
       {/* Chat list */}
       <div className="flex-1 overflow-y-auto">
-        {chats.length === 0 ? (
+        {filteredChats.length === 0 ? (
           <div className="flex items-center justify-center h-32 text-sm text-gray-400">
-            No chats found
+            {query.trim() ? 'No chats match your search' : 'No chats found'}
           </div>
         ) : (
-          chats.map((chat) => (
+          filteredChats.map((chat) => (
             <ChatItem
               key={chat.chat_id}
               chat={chat}
