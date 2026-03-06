@@ -5,43 +5,81 @@
 
 ## Chamando o MCP
 
-Este site é consultado via **MCP server**. Não navegar no site diretamente.
+MCP configurado em `~/.claude.json` como `seats-aero`. Wrapper em:
+`~/.openclaw/skills/flight-search/scripts/seats-aero-wrapper.sh`
 
-> **TODO:** documentar aqui o comando de invocação do MCP, ferramentas disponíveis e parâmetros aceitos quando o servidor estiver configurado.
-> Exemplo esperado:
-> - Tool name: `search_seats_aero` (ou similar)
-> - Parâmetros: `origin`, `destination`, `date` (ou `date_from`/`date_to`), `cabin`, `passengers`
+### Tool: `search_flights_seats_aero`
 
-## O que seats.aero oferece
+```json
+{
+  "origin": "VCP",
+  "destination": "LIS",
+  "departure_date": "2026-03-23",
+  "passengers": 2,
+  "cabin": "economy",
+  "date_range_days": 0
+}
+```
 
-- Disponibilidade de espaço em cabine (award space) em tempo real
-- Agrega dados de múltiplos programas de fidelidade
-- Mostra custo em milhas + taxas, por programa e classe
+**Parâmetros:**
 
-## Mapeamento de campos (MCP → JSON padrão)
+| Campo | Tipo | Obrigatório | Descrição |
+|-------|------|-------------|-----------|
+| `origin` | string (IATA) | ✅ | Ex: VCP, GRU |
+| `destination` | string (IATA) | ✅ | Ex: LIS, DUB |
+| `departure_date` | string (YYYY-MM-DD) | ✅ | Data de partida |
+| `passengers` | integer (1–9) | — | Default: 1 |
+| `cabin` | economy/business/first/any | — | Default: economy |
+| `date_range_days` | integer (0–30) | — | Busca ±N dias ao redor da data. Default: 0 |
 
-Para cada resultado retornado pelo MCP, mapear para o formato padrão do skill:
+### Exemplo de resposta
 
-| Campo padrão | Campo MCP (ajustar conforme resposta real) |
+```json
+{
+  "success": true,
+  "flights": [
+    {
+      "site": "seats.aero",
+      "programa": "smiles",
+      "programa_key": "seats_aero",
+      "tipo": "miles",
+      "classe": "Economy",
+      "origem": "VCP",
+      "destino": "LIS",
+      "data_ida": "2026-03-23",
+      "passageiros": 2,
+      "milhas": 277000,
+      "escalas": 0,
+      "companhia": "AF, G3, IB, KL, TP, UX",
+      "link": "https://seats.aero/search?origins=VCP&destinations=LIS&date=2026-03-23",
+      "observacao": "7 seats available. Via smiles. Updated 2026-03-06T10:50:23Z."
+    }
+  ]
+}
+```
+
+## Mapeamento para o JSON padrão do skill
+
+| Campo padrão | Campo MCP |
 |---|---|
-| `programa` | nome do programa de fidelidade (ex: "United MileagePlus") |
-| `tipo` | sempre `"miles"` |
-| `classe` | Economy / Business / First |
-| `milhas` | milhas por passageiro |
-| `taxas_brl` | taxas em cash convertidas para BRL |
-| `escalas` | nº de conexões |
-| `link` | URL da busca no seats.aero |
-| `observacao` | "emissão via [programa]" |
+| `programa` | `programa` (nome do programa) |
+| `milhas` | `milhas` (por passageiro) |
+| `taxas_brl` | não retornado — usar 0 ou perguntar ao usuário |
+| `escalas` | `escalas` |
+| `companhia` | `companhia` (operadoras disponíveis) |
+| `link` | `link` |
+| `observacao` | `observacao` + "emissão via [programa]" |
 
 ## Cálculo do custo equivalente em BRL
 
 ```
-custo_equivalente_brl = (milhas / 1000) * taxa_por_1000 + taxas_em_brl
+custo_equivalente_brl = (milhas / 1000) * taxa_por_1000 + taxas_brl
 ```
 
-Usar a taxa `seats_aero` em `config.json`.
+Usar taxa `seats_aero` em `config.json` (padrão: R$40/1000 mi).
 
 ## Notas
-- seats.aero **não** vende passagens — o link é para referência
-- Indicar sempre qual programa emite o bilhete (ex: "via United MileagePlus")
-- Se o MCP retornar erro ou vazio, registrar como "Sem disponibilidade"
+- seats.aero **não** vende passagens — link é para referência/verificação
+- Indicar sempre qual programa emite o bilhete (campo `programa`)
+- Se `success: false`, registrar como "Sem disponibilidade" e continuar
+- Para range de datas, usar `date_range_days` em vez de iterar manualmente
