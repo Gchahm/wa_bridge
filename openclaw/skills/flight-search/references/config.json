@@ -1,0 +1,14 @@
+{
+  "miles_valuation": {
+    "description": "BRL por 1000 milhas — usado para converter milhas em valor equivalente em reais",
+    "currency": "BRL",
+    "per": 1000,
+    "last_updated": "2026-03-05",
+    "programs": {
+      "smiles": 40,
+      "tap_miles_go": 40,
+      "iberia_plus": 40,
+      "seats_aero": 40
+    }
+  }
+}
