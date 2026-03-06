@@ -1,0 +1,6 @@
+dist
+node_modules
+.browser-data*
+*.har
+test-*.ts
+.env
