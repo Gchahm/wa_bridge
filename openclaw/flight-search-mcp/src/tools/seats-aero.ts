@@ -8,6 +8,26 @@ function getApiKey(): string {
   return key
 }
 
+interface AvailabilityTrip {
+  ID: string
+  TotalDuration: number
+  Stops: number
+  Carriers: string
+  RemainingSeats: number
+  MileageCost: number
+  TotalTaxes: number
+  TaxesCurrency: string
+  OriginAirport: string
+  DestinationAirport: string
+  Connections?: string[]
+  Aircraft?: string[]
+  FlightNumbers: string
+  DepartsAt: string
+  ArrivesAt: string
+  Cabin: string
+  Source: string
+}
+
 interface AvailabilityRoute {
   OriginAirport: string
   DestinationAirport: string
@@ -18,29 +38,9 @@ interface AvailabilityResult {
   ID: string
   Route: AvailabilityRoute
   Date: string
-  ParsedDate: string
-  YAvailable: boolean
-  WAvailable: boolean
-  JAvailable: boolean
-  FAvailable: boolean
-  YMileageCost: string
-  WMileageCost: string
-  JMileageCost: string
-  FMileageCost: string
-  YRemainingSeats: number
-  WRemainingSeats: number
-  JRemainingSeats: number
-  FRemainingSeats: number
-  YAirlines: string
-  WAirlines: string
-  JAirlines: string
-  FAirlines: string
-  YDirect: boolean
-  WDirect: boolean
-  JDirect: boolean
-  FDirect: boolean
   Source: string
   UpdatedAt: string
+  AvailabilityTrips: AvailabilityTrip[]
 }
 
 interface CachedSearchResponse {
@@ -59,48 +59,53 @@ function cabinFilter(cabin: string): string | undefined {
   return map[cabin]
 }
 
-function parseMileageCost(cost: string): number {
-  if (!cost || cost === '0') return 0
-  return parseInt(cost.replace(/,/g, ''), 10)
+function cabinLabel(cabin: string): string {
+  const map: Record<string, string> = {
+    economy: 'Economy',
+    premium: 'Premium Economy',
+    business: 'Business',
+    first: 'First',
+  }
+  return map[cabin] || cabin
 }
 
 function buildFlights(data: AvailabilityResult[], input: SearchInput): FlightResult[] {
   const flights: FlightResult[] = []
 
   for (const item of data) {
-    const cabins = [
-      { key: 'Y', name: 'Economy', available: item.YAvailable, miles: item.YMileageCost, seats: item.YRemainingSeats, airlines: item.YAirlines, direct: item.YDirect },
-      { key: 'W', name: 'Premium Economy', available: item.WAvailable, miles: item.WMileageCost, seats: item.WRemainingSeats, airlines: item.WAirlines, direct: item.WDirect },
-      { key: 'J', name: 'Business', available: item.JAvailable, miles: item.JMileageCost, seats: item.JRemainingSeats, airlines: item.JAirlines, direct: item.JDirect },
-      { key: 'F', name: 'First', available: item.FAvailable, miles: item.FMileageCost, seats: item.FRemainingSeats, airlines: item.FAirlines, direct: item.FDirect },
-    ]
+    const trips = item.AvailabilityTrips || []
 
-    // Filter by requested cabin
-    const relevantCabins = input.cabin === 'any'
-      ? cabins
-      : cabins.filter((c) => c.name.toLowerCase().startsWith(input.cabin))
-
-    for (const cabin of relevantCabins) {
-      if (!cabin.available) continue
-      const miles = parseMileageCost(cabin.miles)
-      if (miles === 0) continue
-      if (cabin.seats < input.passengers) continue
+    for (const trip of trips) {
+      // Filter by cabin
+      if (input.cabin !== 'any' && trip.Cabin !== input.cabin) continue
+      // Filter by seats
+      if (trip.RemainingSeats < input.passengers) continue
+      // Skip zero-cost
+      if (trip.MileageCost <= 0) continue
 
       flights.push({
         site: 'seats.aero',
-        programa: item.Source || item.Route.Source,
+        programa: trip.Source || item.Source,
         programa_key: 'seats_aero',
         tipo: 'miles',
-        classe: cabin.name,
-        origem: item.Route.OriginAirport,
-        destino: item.Route.DestinationAirport,
+        classe: cabinLabel(trip.Cabin),
+        origem: trip.OriginAirport,
+        destino: trip.DestinationAirport,
         data_ida: item.Date,
         passageiros: input.passengers,
-        milhas: miles,
-        escalas: cabin.direct ? 0 : 'N/A',
-        companhia: cabin.airlines || undefined,
+        milhas: trip.MileageCost,
+        taxas_usd: trip.TotalTaxes > 0 ? trip.TotalTaxes / 100 : undefined,
+        escalas: trip.Stops,
+        conexoes: trip.Connections,
+        duracao_min: trip.TotalDuration,
+        companhia: trip.Carriers,
+        aeronaves: trip.Aircraft,
+        voos: trip.FlightNumbers,
+        horario_ida: trip.DepartsAt,
+        horario_chegada: trip.ArrivesAt,
+        assentos_disponiveis: trip.RemainingSeats,
         link: `https://seats.aero/search?origins=${input.origin}&destinations=${input.destination}&date=${item.Date}`,
-        observacao: `${cabin.seats} seats available. Via ${item.Source}. Updated ${item.UpdatedAt}.`,
+        observacao: `Emissão via ${trip.Source}. Dados atualizados em ${item.UpdatedAt}.`,
       })
     }
   }
@@ -126,6 +131,7 @@ export async function searchSeatsAero(input: SearchInput): Promise<SearchResult>
       start_date: fmt(startDate),
       end_date: fmt(endDate),
       take: '500',
+      include_trips: 'true',
     })
 
     const cabinParam = cabinFilter(input.cabin)

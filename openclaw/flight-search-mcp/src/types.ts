@@ -34,13 +34,17 @@ export interface FlightResult {
   data_ida: string
   passageiros: number
   milhas?: number
-  taxas_brl?: number
+  taxas_usd?: number
   preco_brl?: number
-  escalas: number | string
-  duracao?: string
+  escalas: number
+  conexoes?: string[]
+  duracao_min?: number
   companhia?: string
+  aeronaves?: string[]
+  voos?: string
   horario_ida?: string
   horario_chegada?: string
+  assentos_disponiveis?: number
   link: string
   observacao: string
 }

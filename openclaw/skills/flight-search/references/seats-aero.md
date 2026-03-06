@@ -25,12 +25,12 @@ MCP configurado em `~/.claude.json` como `seats-aero`. Wrapper em:
 
 | Campo | Tipo | Obrigatório | Descrição |
 |-------|------|-------------|-----------|
-| `origin` | string (IATA) | ✅ | Ex: VCP, GRU |
-| `destination` | string (IATA) | ✅ | Ex: LIS, DUB |
-| `departure_date` | string (YYYY-MM-DD) | ✅ | Data de partida |
-| `passengers` | integer (1–9) | — | Default: 1 |
+| `origin` | string (IATA) | sim | Ex: VCP, GRU |
+| `destination` | string (IATA) | sim | Ex: LIS, DUB |
+| `departure_date` | string (YYYY-MM-DD) | sim | Data de partida |
+| `passengers` | integer (1-9) | — | Default: 1 |
 | `cabin` | economy/business/first/any | — | Default: economy |
-| `date_range_days` | integer (0–30) | — | Busca ±N dias ao redor da data. Default: 0 |
+| `date_range_days` | integer (0-30) | — | Busca +/-N dias ao redor da data. Default: 0 |
 
 ### Exemplo de resposta
 
@@ -49,26 +49,39 @@ MCP configurado em `~/.claude.json` como `seats-aero`. Wrapper em:
       "data_ida": "2026-03-23",
       "passageiros": 2,
       "milhas": 277000,
-      "escalas": 0,
-      "companhia": "AF, G3, IB, KL, TP, UX",
+      "taxas_usd": 10.10,
+      "escalas": 2,
+      "conexoes": ["SSA", "MAD"],
+      "duracao_min": 1490,
+      "companhia": "G3, UX, UX",
+      "aeronaves": ["Boeing 737-800", "Boeing 787-9", "Boeing 737-800"],
+      "voos": "G31987, UX84, UX1155",
+      "horario_ida": "2026-03-23T11:25:00Z",
+      "horario_chegada": "2026-03-24T15:15:00Z",
+      "assentos_disponiveis": 2,
       "link": "https://seats.aero/search?origins=VCP&destinations=LIS&date=2026-03-23",
-      "observacao": "7 seats available. Via smiles. Updated 2026-03-06T10:50:23Z."
+      "observacao": "Emissão via smiles. Dados atualizados em 2026-03-06T10:50:23Z."
     }
   ]
 }
 ```
 
-## Mapeamento para o JSON padrão do skill
+### Campos da resposta
 
-| Campo padrão | Campo MCP |
-|---|---|
-| `programa` | `programa` (nome do programa) |
-| `milhas` | `milhas` (por passageiro) |
-| `taxas_brl` | não retornado — usar 0 ou perguntar ao usuário |
-| `escalas` | `escalas` |
-| `companhia` | `companhia` (operadoras disponíveis) |
-| `link` | `link` |
-| `observacao` | `observacao` + "emissão via [programa]" |
+| Campo | Descrição |
+|-------|-----------|
+| `programa` | Programa de milhas que oferece a emissão (smiles, united, aeroplan, etc.) |
+| `milhas` | Custo em milhas por passageiro |
+| `taxas_usd` | Taxas em USD (quando disponível) |
+| `escalas` | Número de paradas (0 = direto) |
+| `conexoes` | Aeroportos de conexão (ex: `["GIG", "CDG"]`) |
+| `duracao_min` | Duração total da viagem em minutos |
+| `companhia` | Companhias aéreas operando os trechos |
+| `aeronaves` | Modelos de aeronave por trecho |
+| `voos` | Números dos voos (ex: `"G31957, AF485, AF1194"`) |
+| `horario_ida` | Horário de partida (ISO 8601 UTC) |
+| `horario_chegada` | Horário de chegada (ISO 8601 UTC) |
+| `assentos_disponiveis` | Assentos restantes na cabine |
 
 ## Cálculo do custo equivalente em BRL
 
@@ -79,7 +92,8 @@ custo_equivalente_brl = (milhas / 1000) * taxa_por_1000 + taxas_brl
 Usar taxa `seats_aero` em `config.json` (padrão: R$40/1000 mi).
 
 ## Notas
-- seats.aero **não** vende passagens — link é para referência/verificação
-- Indicar sempre qual programa emite o bilhete (campo `programa`)
+- seats.aero **não** vende passagens — indicar sempre "emissão via [programa]"
 - Se `success: false`, registrar como "Sem disponibilidade" e continuar
 - Para range de datas, usar `date_range_days` em vez de iterar manualmente
+- Dados são cacheados — a coluna `observacao` indica quando foram atualizados
+- `duracao_min` está em minutos — converter para horas:minutos na tabela (ex: 1490 min = 24h50)
