@@ -12,6 +12,13 @@ export const SearchInputSchema = z.object({
     .enum(['economy', 'business', 'first', 'any'])
     .default('economy')
     .describe('Cabin class'),
+  date_range_days: z
+    .number()
+    .int()
+    .min(0)
+    .max(30)
+    .default(0)
+    .describe('Search +/- this many days around the departure date. 0 = exact date only.'),
 })
 
 export type SearchInput = z.infer<typeof SearchInputSchema>

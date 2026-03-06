@@ -10,8 +10,8 @@ const server = new McpServer({
 })
 
 server.tool(
-  'search_flights',
-  'Search for award flight availability. Returns miles pricing from various loyalty programs (Smiles, United, Aeroplan, Flying Blue, etc.). Provide origin/destination as IATA airport codes, departure date as YYYY-MM-DD, number of passengers, and cabin class.',
+  'search_flights_seats_aero',
+  'Search for award flight availability on seats.aero. Returns cached miles pricing from multiple loyalty programs (Smiles, United, Aeroplan, Flying Blue, etc.). Use date_range_days to search +/- days around the departure date.',
   SearchInputSchema.shape,
   async (params) => {
     const input = SearchInputSchema.parse(params)

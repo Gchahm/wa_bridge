@@ -112,11 +112,19 @@ export async function searchSeatsAero(input: SearchInput): Promise<SearchResult>
   try {
     const apiKey = getApiKey()
 
+    const days = input.date_range_days ?? 0
+    const depDate = new Date(input.departure_date)
+    const startDate = new Date(depDate)
+    startDate.setDate(startDate.getDate() - days)
+    const endDate = new Date(depDate)
+    endDate.setDate(endDate.getDate() + days)
+    const fmt = (d: Date) => d.toISOString().slice(0, 10)
+
     const params = new URLSearchParams({
       origin_airport: input.origin,
       destination_airport: input.destination,
-      start_date: input.departure_date,
-      end_date: input.departure_date,
+      start_date: fmt(startDate),
+      end_date: fmt(endDate),
       take: '500',
     })
 
