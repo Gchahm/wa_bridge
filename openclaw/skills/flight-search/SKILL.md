@@ -13,10 +13,10 @@ Toda busca é feita via **MCP servers**. Cada site tem seu próprio MCP (wrapper
 
 | Site | MCP disponível? |
 |------|----------------|
-| seats.aero | ✅ |
-| TAP | 🔜 em breve |
-| Smiles | 🔜 em breve |
-| Iberia | 🔜 em breve |
+| seats.aero | sim |
+| TAP | em breve |
+| Smiles | em breve |
+| Iberia | em breve |
 
 > Quando um MCP ainda não existe para um site, simplesmente ignore esse site na busca e informe o usuário quais foram consultados.
 
@@ -28,68 +28,88 @@ Toda busca é feita via **MCP servers**. Cada site tem seu próprio MCP (wrapper
    - Destino (código IATA ou cidade)
    - Data(s) de ida (fixa ou range: ex. 10 a 20 de junho)
    - Data(s) de volta (se ida e volta — fixa ou range)
-   - Nº de passageiros (adultos)
+   - N de passageiros (adultos)
    - Tipo: só ida ou ida e volta
 
 ## Execução da busca (paralelo)
 
 Spawnar **um sub-agente por MCP disponível**, todos em paralelo. Cada sub-agente deve:
-1. Chamar o MCP do seu site com os parâmetros da busca
-2. Para range de datas: buscar **apenas o melhor preço por dia**
-3. Retornar resultado no formato JSON padronizado (ver abaixo)
+1. Ler o guide do seu MCP em `references/<site>.md`
+2. Chamar o MCP do seu site com os parâmetros da busca
+3. Retornar o JSON completo recebido do MCP (não filtrar nem formatar)
 
 **MCPs e seus guides:**
 - `references/seats-aero.md` — seats.aero MCP (awards/milhas)
 
 > Quando novos MCPs forem adicionados, incluir seus guides aqui.
 
-## Formato JSON de resultado por sub-agente
-
-```json
-[
-  {
-    "site": "seats.aero",
-    "programa": "seats.aero",
-    "programa_key": "seats_aero",
-    "tipo": "miles",
-    "classe": "Econômica",
-    "origem": "GRU",
-    "destino": "LIS",
-    "data_ida": "2026-06-12",
-    "data_volta": "2026-06-26",
-    "passageiros": 2,
-    "milhas": 45000,
-    "taxas_brl": 800,
-    "escalas": 1,
-    "link": "https://seats.aero/...",
-    "observacao": ""
-  }
-]
-```
-
-**Campos:**
-- `tipo`: `"cash"` ou `"miles"`
-- `milhas`: valor por passageiro (para tipo miles)
-- `taxas_brl`: taxas obrigatórias em BRL (para tipo miles)
-- `preco_brl`: preço total para todos passageiros (para tipo cash)
-- `escalas`: número de escalas/conexões
-- `link`: URL direta para a busca no site
-- `observacao`: avisos importantes (ex: "requer login", "emissão via programa X")
-
 ## Agregação e exibição
 
-Após todos os sub-agentes retornarem, usar `scripts/aggregate.py` para:
-1. Converter milhas → BRL equivalente usando `config.json`
-2. Ordenar todos os resultados do melhor ao pior preço equivalente em BRL
-3. Exibir tabela markdown
+Após todos os sub-agentes retornarem, o agente principal deve:
 
-**Formato da tabela final:**
+1. Converter milhas em BRL equivalente usando `config.json`:
+   ```
+   custo_equiv_brl = (milhas / 1000) * taxa_por_1000 + taxas
+   ```
+2. Ordenar todos os voos do mais barato ao mais caro (BRL equivalente)
+3. Exibir em **dois blocos**: tabela resumo + detalhes
 
-| # | Site | Programa | Classe | Rota | Data Ida | Data Volta | Passag. | Preço | Taxa usada | Escalas | Link |
-|---|------|----------|--------|------|----------|------------|---------|-------|------------|---------|------|
-| 1 | seats.aero | — | Econômica | GRU→LIS | 12/jun | 26/jun | 2 | 45.000 mi + R$800 ≈ R$4.400 | R$40/mil | 1 | 🔗 |
+### Bloco 1: Tabela resumo
 
-> **Coluna "Taxa usada":** sempre mostrar a taxa do milheiro usada no cálculo (ex: `R$40/mil`)
+Tabela compacta com as colunas essenciais. Manter curta e legível.
+
+```
+**Resultados VCP > LIS** | 22-24/mar/2026 | 2 adultos | Economy | Só ida
+
+| # | Programa | Data | Milhas | ~BRL | Duração | Escalas | Voos |
+|---|----------|------|--------|------|---------|---------|------|
+| 1 | United | 24/mar | 45.000 | R$1.800 | 9h50 | direto | AD8750 |
+| 2 | Smiles | 23/mar | 277.000 | R$11.080 | 24h50 | 2 (SSA,MAD) | G31987,UX84,UX1155 |
+| 3 | Smiles | 23/mar | 332.000 | R$13.280 | 34h05 | 1 (GIG) | G31957,TP3098 |
+
+Taxa usada: R$40/mil (config.json)
+```
+
+**Regras da tabela:**
+- **Milhas**: formatar com ponto de milhar (45.000, 277.000)
+- **~BRL**: valor equivalente calculado
+- **Duração**: converter `duracao_min` para formato legível (1490 min = 24h50)
+- **Escalas**: numero + aeroportos entre parenteses (ex: `2 (SSA,MAD)`), ou `direto` se 0
+- **Voos**: números dos voos separados por vírgula
+- Máximo **10 linhas** na tabela — se houver mais, mostrar os 10 melhores
+
+### Bloco 2: Detalhes dos voos
+
+Abaixo da tabela, listar detalhes de cada voo numerado:
+
+```
+**Detalhes:**
+
+**1. United 45.000 mi — AD8750**
+  Azul A330-900neo | VCP 18:25 > LIS 07:15 (+1) | direto | 9h50
+  Emissão via United MileagePlus | 9 assentos
+
+**2. Smiles 277.000 mi — G31987, UX84, UX1155**
+  GOL 737-800 | VCP 11:25 > SSA
+  Air Europa 787-9 | SSA > MAD
+  Air Europa 737-800 | MAD > LIS 15:15 (+1) | 24h50 total
+  Emissão via Smiles | 2 assentos
+```
+
+**Regras dos detalhes:**
+- **Horários**: extrair de `horario_ida` e `horario_chegada` (formato HH:MM, indicar +1/+2 se chega em outro dia)
+- **Aeronaves**: usar `aeronaves[]` para listar o modelo por trecho
+- **Companhias**: usar `companhia` (carriers por trecho)
+- **Assentos**: indicar assentos disponíveis de `assentos_disponiveis`
+- Se muitos voos similares (mesmo programa, mesma rota, horários diferentes), agrupar: "Mais 3 opções Smiles a partir de 277.000 mi"
+
+### Notas finais
+
+Após os dois blocos, incluir:
+- Se algum MCP não retornou resultado: "TAP, Iberia: MCPs ainda não disponíveis"
+- seats.aero não vende bilhetes — "Emissão deve ser feita diretamente no programa indicado"
+- Se taxas não disponíveis: "Taxas não incluídas — verificar no momento da emissão"
+- Dados cacheados: "Dados do seats.aero podem não refletir disponibilidade em tempo real"
 
 ## Atualização de valor de milhas
 
@@ -100,10 +120,14 @@ Quando o usuário pedir para mudar o valor das milhas (ex: "muda o Smiles para 3
 4. Salvar o arquivo
 5. Confirmar a mudança para o usuário
 
+## Conversão de moedas
+
+**NUNCA fazer chamadas de API, web search ou qualquer lookup externo para obter taxas de câmbio.** Usar as taxas fixas de `config.json` (`currency_rates`). Se uma moeda não estiver no config, usar estimativa razoável e indicar "(taxa estimada)" no resultado.
+
 ## Notas importantes
 
 - Não gerar ou enviar capturas de tela/imagens — basta texto/tabelas
 - Se o MCP retornar erro ou não encontrar resultados, marcar como "Sem disponibilidade" e continuar
-- Taxas em EUR: converter para BRL usando taxa aproximada (buscar se necessário)
-- seats.aero não vende bilhetes diretamente — incluir nota "emissão via [programa]"
+- Taxas em EUR/USD: converter para BRL usando `currency_rates` do `config.json`
 - Para datas range com muitos dias: avisar o usuário que a busca pode demorar
+- **Minimizar consumo de contexto**: não fazer chamadas extras desnecessárias (web search, API calls, etc.) — toda informação necessária está no config ou nos resultados do MCP

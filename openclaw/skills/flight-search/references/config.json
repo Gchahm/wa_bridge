@@ -10,5 +10,11 @@
       "iberia_plus": 40,
       "seats_aero": 40
     }
+  },
+  "currency_rates": {
+    "description": "Taxas de câmbio aproximadas para BRL — atualizar manualmente quando necessário",
+    "last_updated": "2026-03-06",
+    "USD_BRL": 5.80,
+    "EUR_BRL": 6.30
   }
 }
