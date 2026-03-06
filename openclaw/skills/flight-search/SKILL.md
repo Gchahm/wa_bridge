@@ -1,9 +1,24 @@
 ---
 name: flight-search
-description: Pesquisa de voos em múltiplos sites em paralelo (seats.aero, TAP, Smiles, Iberia). Suporta tarifas cash e milhas, ida e volta ou só ida, 1 ou mais passageiros, datas fixas ou range. Resultados ordenados por melhor preço equivalente em BRL. Use quando o usuário pedir busca de voos, passagens, milhas, pesquisa aérea, comparação de preços de voo ou quiser verificar disponibilidade em programas de fidelidade. Também use quando o usuário pedir para atualizar o valor das milhas de algum programa.
+description: Pesquisa de voos em múltiplos sites em paralelo via MCP servers (seats.aero, TAP, Smiles, Iberia). Suporta tarifas cash e milhas, ida e volta ou só ida, 1 ou mais passageiros, datas fixas ou range. Resultados ordenados por melhor preço equivalente em BRL. Use quando o usuário pedir busca de voos, passagens, milhas, pesquisa aérea, comparação de preços de voo ou quiser verificar disponibilidade em programas de fidelidade. Também use quando o usuário pedir para atualizar o valor das milhas de algum programa.
 ---
 
 # Flight Search
+
+## Arquitetura
+
+Toda busca é feita via **MCP servers**. Cada site tem seu próprio MCP (wrapper de API ou Playwright — não importa o internals). O agente **nunca navega diretamente** nos sites; apenas chama os MCPs disponíveis.
+
+### MCPs disponíveis
+
+| Site | MCP disponível? |
+|------|----------------|
+| seats.aero | ✅ |
+| TAP | 🔜 em breve |
+| Smiles | 🔜 em breve |
+| Iberia | 🔜 em breve |
+
+> Quando um MCP ainda não existe para um site, simplesmente ignore esse site na busca e informe o usuário quais foram consultados.
 
 ## Passos obrigatórios antes de buscar
 
@@ -18,26 +33,24 @@ description: Pesquisa de voos em múltiplos sites em paralelo (seats.aero, TAP, 
 
 ## Execução da busca (paralelo)
 
-Spawnar **4 sub-agentes simultâneos**, um por site. Cada sub-agente deve:
-1. Ler o guia do seu site em `references/<site>.md`
-2. Usar Playwright MCP para navegar e extrair os dados
-3. Para range de datas: buscar **apenas o melhor preço por dia** (não todos os voos do dia)
-4. Retornar resultado no formato JSON padronizado (ver abaixo)
+Spawnar **um sub-agente por MCP disponível**, todos em paralelo. Cada sub-agente deve:
+1. Chamar o MCP do seu site com os parâmetros da busca
+2. Para range de datas: buscar **apenas o melhor preço por dia**
+3. Retornar resultado no formato JSON padronizado (ver abaixo)
 
-**Sites e seus guides:**
-- `references/seats-aero.md` — https://seats.aero/ (awards/milhas)
-- `references/tap.md` — https://booking.flytap.com/booking (cash + Miles&Go)
-- `references/smiles.md` — https://www.smiles.com.br/home (milhas Smiles)
-- `references/iberia.md` — https://www.iberia.com/br/ (cash + Avios)
+**MCPs e seus guides:**
+- `references/seats-aero.md` — seats.aero MCP (awards/milhas)
+
+> Quando novos MCPs forem adicionados, incluir seus guides aqui.
 
 ## Formato JSON de resultado por sub-agente
 
 ```json
 [
   {
-    "site": "Smiles",
-    "programa": "Smiles",
-    "programa_key": "smiles",
+    "site": "seats.aero",
+    "programa": "seats.aero",
+    "programa_key": "seats_aero",
     "tipo": "miles",
     "classe": "Econômica",
     "origem": "GRU",
@@ -48,23 +61,7 @@ Spawnar **4 sub-agentes simultâneos**, um por site. Cada sub-agente deve:
     "milhas": 45000,
     "taxas_brl": 800,
     "escalas": 1,
-    "link": "https://www.smiles.com.br/...",
-    "observacao": ""
-  },
-  {
-    "site": "TAP",
-    "programa": "Cash",
-    "programa_key": null,
-    "tipo": "cash",
-    "classe": "Econômica",
-    "origem": "GRU",
-    "destino": "LIS",
-    "data_ida": "2026-06-15",
-    "data_volta": "2026-06-29",
-    "passageiros": 2,
-    "preco_brl": 3200,
-    "escalas": 0,
-    "link": "https://booking.flytap.com/...",
+    "link": "https://seats.aero/...",
     "observacao": ""
   }
 ]
@@ -77,7 +74,7 @@ Spawnar **4 sub-agentes simultâneos**, um por site. Cada sub-agente deve:
 - `preco_brl`: preço total para todos passageiros (para tipo cash)
 - `escalas`: número de escalas/conexões
 - `link`: URL direta para a busca no site
-- `observacao`: avisos importantes (ex: "requer login", "conexão em MAD")
+- `observacao`: avisos importantes (ex: "requer login", "emissão via programa X")
 
 ## Agregação e exibição
 
@@ -90,7 +87,7 @@ Após todos os sub-agentes retornarem, usar `scripts/aggregate.py` para:
 
 | # | Site | Programa | Classe | Rota | Data Ida | Data Volta | Passag. | Preço | Taxa usada | Escalas | Link |
 |---|------|----------|--------|------|----------|------------|---------|-------|------------|---------|------|
-| 1 | Smiles | Smiles | Econômica | GRU→LIS | 12/jun | 26/jun | 2 | 45.000 mi + R$800 ≈ R$4.400 | R$40/mil | 1 | 🔗 |
+| 1 | seats.aero | — | Econômica | GRU→LIS | 12/jun | 26/jun | 2 | 45.000 mi + R$800 ≈ R$4.400 | R$40/mil | 1 | 🔗 |
 
 > **Coluna "Taxa usada":** sempre mostrar a taxa do milheiro usada no cálculo (ex: `R$40/mil`)
 
@@ -106,8 +103,7 @@ Quando o usuário pedir para mudar o valor das milhas (ex: "muda o Smiles para 3
 ## Notas importantes
 
 - Não gerar ou enviar capturas de tela/imagens — basta texto/tabelas
-- Se o site exigir login, CAPTCHA ou houver bloqueio, pedir ajuda ao usuário (ele consegue interagir na interface gráfica e inserir credenciais/se necessário)
-- Se um site não retornar resultado, marcar como "Sem disponibilidade" e continuar
+- Se o MCP retornar erro ou não encontrar resultados, marcar como "Sem disponibilidade" e continuar
 - Taxas em EUR: converter para BRL usando taxa aproximada (buscar se necessário)
-- Seats.aero: não vende bilhetes — incluir nota "emissão via [programa]"
+- seats.aero não vende bilhetes diretamente — incluir nota "emissão via [programa]"
 - Para datas range com muitos dias: avisar o usuário que a busca pode demorar
