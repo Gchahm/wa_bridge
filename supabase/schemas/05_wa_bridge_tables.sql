@@ -64,7 +64,9 @@ CREATE TABLE "wa_bridge"."messages" (
     "is_from_me"            boolean                     NOT NULL DEFAULT false,
     "is_agent"              boolean                     NOT NULL DEFAULT false,
     "timestamp"             timestamp without time zone,
-    "created_at"            timestamp without time zone          DEFAULT now()
+    "created_at"            timestamp without time zone          DEFAULT now(),
+    "edited_at"             timestamp without time zone,
+    "edit_history"          jsonb
 );
 
 ALTER TABLE "wa_bridge"."messages" ENABLE ROW LEVEL SECURITY;

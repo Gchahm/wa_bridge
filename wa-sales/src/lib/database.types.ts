@@ -1223,6 +1223,8 @@ export type Database = {
           content: string | null
           created_at: string | null
           description: string | null
+          edit_history: Json | null
+          edited_at: string | null
           is_agent: boolean
           is_from_me: boolean
           media_path: string | null
@@ -1239,6 +1241,8 @@ export type Database = {
           content?: string | null
           created_at?: string | null
           description?: string | null
+          edit_history?: Json | null
+          edited_at?: string | null
           is_agent?: boolean
           is_from_me?: boolean
           media_path?: string | null
@@ -1255,6 +1259,8 @@ export type Database = {
           content?: string | null
           created_at?: string | null
           description?: string | null
+          edit_history?: Json | null
+          edited_at?: string | null
           is_agent?: boolean
           is_from_me?: boolean
           media_path?: string | null
