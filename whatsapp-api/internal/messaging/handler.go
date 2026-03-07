@@ -35,7 +35,7 @@ func RegisterHandler(client *whatsmeow.Client, cfg config.Config, db *store.Stor
 		log.Debug().Str("type", fmt.Sprintf("%T", evt)).Msg("event received")
 		switch v := evt.(type) {
 		case *events.Message:
-			handleMessage(client, cfg, db, agentHandler, v)
+			go handleMessage(client, cfg, db, agentHandler, v)
 		case *events.HistorySync:
 			if cmdListener != nil {
 				go cmdListener.HandleHistorySyncEvent(v)
