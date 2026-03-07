@@ -10,13 +10,14 @@ var log = logging.Component("config")
 
 // Config holds all application configuration loaded from environment variables.
 type Config struct {
-	DatabaseURL        string
-	ListenAddr         string
-	WebhookURL         string
-	VoiceWebhookURL    string
-	ImageWebhookURL    string
-	SupabaseURL        string
-	SupabaseServiceKey string
+	DatabaseURL          string
+	ListenAddr           string
+	WebhookURL           string
+	VoiceWebhookURL      string
+	ImageWebhookURL      string
+	SupabaseURL          string
+	SupabaseServiceKey   string
+	IgnoreGroupMessages  bool
 }
 
 // Load reads configuration from environment variables and returns a Config.
@@ -48,13 +49,14 @@ func Load() Config {
 	}
 
 	return Config{
-		DatabaseURL:        databaseURL,
-		ListenAddr:         listenAddr,
-		WebhookURL:         webhookURL,
-		VoiceWebhookURL:    voiceWebhookURL,
-		ImageWebhookURL:    imageWebhookURL,
-		SupabaseURL:        os.Getenv("SUPABASE_URL"),
-		SupabaseServiceKey: os.Getenv("SUPABASE_SERVICE_KEY"),
+		DatabaseURL:         databaseURL,
+		ListenAddr:          listenAddr,
+		WebhookURL:          webhookURL,
+		VoiceWebhookURL:     voiceWebhookURL,
+		ImageWebhookURL:     imageWebhookURL,
+		SupabaseURL:         os.Getenv("SUPABASE_URL"),
+		SupabaseServiceKey:  os.Getenv("SUPABASE_SERVICE_KEY"),
+		IgnoreGroupMessages: os.Getenv("IGNORE_GROUP_MESSAGES") == "true",
 	}
 }
 

@@ -68,6 +68,12 @@ func handleMessage(client *whatsmeow.Client, cfg config.Config, db *store.Store,
 		return
 	}
 
+	// Skip group messages when configured to do so.
+	if cfg.IgnoreGroupMessages && msg.Info.IsGroup {
+		log.Debug().Str("message_id", msg.Info.ID).Str("chat_id", msg.Info.Chat.String()).Msg("skipping group message (IGNORE_GROUP_MESSAGES=true)")
+		return
+	}
+
 	// Handle protocol messages (edits, revocations, etc.) before building
 	// the regular payload. These are not user-visible content rows.
 	if proto := msg.Message.GetProtocolMessage(); proto != nil {
