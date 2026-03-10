@@ -43,7 +43,7 @@ type SendRequest struct {
 type UpdateDescriptionRequest struct {
 	MessageID   string `json:"message_id" binding:"required"`
 	ChatID      string `json:"chat_id" binding:"required"`
-	Description string `json:"description" binding:"required"`
+	Description string `json:"description"`
 }
 
 // ClaudeRequest is the JSON body accepted by POST /claude.
@@ -160,7 +160,13 @@ func (h *handler) disconnect(c *gin.Context) {
 func (h *handler) updateDescription(c *gin.Context) {
 	var req UpdateDescriptionRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.String(http.StatusBadRequest, "message_id, chat_id, and description are required")
+		log.Warn().Err(err).Msg("invalid update description request")
+		c.String(http.StatusBadRequest, "message_id and chat_id are required")
+		return
+	}
+
+	if req.Description == "" {
+		c.JSON(http.StatusOK, gin.H{"status": "ok", "skipped": true})
 		return
 	}
 
