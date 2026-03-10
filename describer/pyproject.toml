@@ -1,0 +1,14 @@
+[project]
+name = "wa-describer"
+version = "0.1.0"
+description = "Media description service for WhatsApp bridge — transcribes audio, describes images, extracts PDF text"
+requires-python = ">=3.11"
+dependencies = [
+    "supabase>=2",
+    "mlx-whisper",
+    "pdfplumber",
+    "python-dotenv",
+]
+
+[dependency-groups]
+dev = []
