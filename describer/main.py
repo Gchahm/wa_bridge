@@ -22,6 +22,7 @@ from supabase._async.client import AsyncClient, create_client
 
 from processors.audio import AudioProcessor
 from processors.document import DocumentProcessor
+from processors.image import ImageProcessor
 
 logging.basicConfig(
     level=os.environ.get('LOG_LEVEL', 'INFO').upper(),
@@ -48,6 +49,9 @@ def get_config():
             'WHISPER_MODEL', 'mlx-community/whisper-base-mlx'
         ),
         'whisper_language': os.environ.get('WHISPER_LANGUAGE', 'pt'),
+        'vision_model': os.environ.get(
+            'VISION_MODEL', 'mlx-community/Qwen2.5-VL-3B-Instruct-4bit'
+        ),
         'concurrency': int(os.environ.get('CONCURRENCY', '2')),
     }
 
@@ -58,15 +62,24 @@ async def download_media(sb: AsyncClient, media_path: str) -> bytes:
 
 
 async def reset_stale(sb: AsyncClient):
-    """Reset any rows stuck in processing state from a previous crash."""
-    resp = await (
+    """Reset rows stuck in processing or failed state from a previous crash/bug."""
+    resp1 = await (
         sb.table('messages')
         .update({'description': None})
         .eq('description', PROCESSING_SENTINEL)
         .execute()
     )
-    if resp.data:
-        log.info('Reset %d stale processing rows', len(resp.data))
+    if resp1.data:
+        log.info('Reset %d stale processing rows', len(resp1.data))
+
+    resp2 = await (
+        sb.table('messages')
+        .update({'description': None})
+        .like('description', f'{FAILED_PREFIX}%')
+        .execute()
+    )
+    if resp2.data:
+        log.info('Reset %d previously failed rows for retry', len(resp2.data))
 
 
 async def get_pending(sb: AsyncClient, media_types: list[str]) -> list[dict]:
@@ -251,7 +264,9 @@ async def run(cfg: dict):
             language=cfg['whisper_language'],
         ),
         'document': DocumentProcessor(),
-        # 'image': ImageProcessor() — add when ready
+        'image': ImageProcessor(
+            model=cfg.get('vision_model', 'mlx-community/Qwen2.5-VL-3B-Instruct-4bit'),
+        ),
     }
 
     executor = ThreadPoolExecutor(max_workers=cfg['concurrency'])

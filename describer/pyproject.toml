@@ -6,6 +6,8 @@ requires-python = ">=3.11"
 dependencies = [
     "supabase>=2",
     "mlx-whisper",
+    "mlx-vlm",
+    "torchvision",
     "pdfplumber",
     "python-dotenv",
 ]
