@@ -69,12 +69,12 @@ async def reset_stale(sb: AsyncClient):
         log.info('Reset %d stale processing rows', len(resp.data))
 
 
-async def get_pending(sb: AsyncClient) -> list[dict]:
-    """Get media messages that need description."""
+async def get_pending(sb: AsyncClient, media_types: list[str]) -> list[dict]:
+    """Get a batch of media messages that need description."""
     resp = await (
         sb.table('messages')
         .select('message_id, chat_id, media_type, media_path')
-        .in_('media_type', ['audio', 'image', 'document'])
+        .in_('media_type', media_types)
         .not_.is_('media_path', 'null')
         .is_('description', 'null')
         .order('timestamp')
@@ -198,17 +198,30 @@ async def drain_pending(
     executor: ThreadPoolExecutor,
     active: set,
 ):
-    """Process all pending messages."""
-    pending = await get_pending(sb)
-    if pending:
-        log.info('Draining %d pending messages', len(pending))
+    """Process all pending messages, looping until none remain."""
+    media_types = list(processors.keys())
+    total = 0
+    while True:
+        pending = await get_pending(sb, media_types)
+        if not pending:
+            break
+        total += len(pending)
+        log.info('Draining %d pending messages (%d total so far)', len(pending), total)
+        tasks = []
         for msg in pending:
             key = f"{msg['message_id']}:{msg['chat_id']}"
             if key not in active:
                 active.add(key)
-                task = asyncio.create_task(
-                    _process_and_cleanup(sb, processors, executor, msg, active, key)
+                tasks.append(
+                    asyncio.create_task(
+                        _process_and_cleanup(sb, processors, executor, msg, active, key)
+                    )
                 )
+        # Wait for this batch to finish before fetching the next
+        if tasks:
+            await asyncio.gather(*tasks)
+    if total:
+        log.info('Drain complete: processed %d messages', total)
 
 
 async def _process_and_cleanup(sb, processors, executor, msg, active, key):
@@ -219,10 +232,10 @@ async def _process_and_cleanup(sb, processors, executor, msg, active, key):
         active.discard(key)
 
 
-def _is_describable(record: dict) -> bool:
+def _is_describable(record: dict, processors: dict) -> bool:
     """Check if a record from postgres_changes is a describable media message."""
     return (
-        record.get('media_type') in ('audio', 'image', 'document')
+        record.get('media_type') in processors
         and record.get('media_path') is not None
         and record.get('description') is None
     )
@@ -263,7 +276,7 @@ async def run(cfg: dict):
         record = payload.get('data', {}).get('record', {})
         if not record:
             return
-        if _is_describable(record):
+        if _is_describable(record, processors):
             key = f"{record['message_id']}:{record['chat_id']}"
             if key not in active:
                 active.add(key)
