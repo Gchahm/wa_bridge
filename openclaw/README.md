@@ -7,28 +7,27 @@ ln -s "$(pwd)/skills" ~/.openclaw/skills
 ln -s "$(pwd)/flight-search-mcp" ~/.openclaw/flight-search-mcp
 ```
 
-## 2. Store the Seats.aero API key
+## 2. Create the openclaw keychain and store the API key
 
-The flight search MCP wrapper reads the API key from the macOS Keychain.
-
-If you're connecting via SSH, unlock the keychain first:
+Create a password-free keychain (accessible without unlocking, works over SSH):
 
 ```bash
-security unlock-keychain ~/Library/Keychains/login.keychain-db
+security create-keychain -p "" ~/Library/Keychains/openclaw.keychain-db
 ```
 
-Then add the key:
+Store the Seats.aero API key:
 
 ```bash
 security add-generic-password \
   -a "openclaw" \
   -s "seats-aero" \
   -U \
-  -w "<YOUR_SEATS_AERO_API_KEY>"
+  -w "<YOUR_SEATS_AERO_API_KEY>" \
+  ~/Library/Keychains/openclaw.keychain-db
 ```
 
-To verify it was stored correctly:
+Verify it was stored correctly:
 
 ```bash
-security find-generic-password -a "openclaw" -s "seats-aero" -w
+security find-generic-password -a "openclaw" -s "seats-aero" -w ~/Library/Keychains/openclaw.keychain-db
 ```
